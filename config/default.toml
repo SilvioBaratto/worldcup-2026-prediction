@@ -1,0 +1,85 @@
+# Default pipeline configuration for World Cup 2026 knockout prediction.
+
+[data]
+matches_path = "dataset/csv/matches.csv"
+teams_path = "dataset/csv/teams.csv"
+output_path = "dataset/train_data.csv"
+min_date = "2006-01-01"
+train_cutoff_date = "2026-06-01"
+epsilon = 0.001
+matches_start_year = 2006
+matches_end_year = 2026
+ranking_csv_path = "dataset/csv/ranking.csv"
+ranking_start_year = 2006
+ranking_end_year = 2026
+players_csv_path = "dataset/csv/players.csv"
+players_competition = "WC"
+match_details_csv_path = "dataset/csv/match_details.csv"
+match_details_checkpoint_every = 100
+
+[features]
+selected = [
+    "GOALS_home",
+    "SHOTS_home",
+    "SHOTS_ON_TARGET_home",
+    "POSSESSION_home",
+    "PASS_PCT_home",
+    "GOALS_away",
+    "SHOTS_away",
+    "SHOTS_ON_TARGET_away",
+    "POSSESSION_away",
+    "PASS_PCT_away",
+]
+per_team_count = 5
+
+[training]
+test_size = 0.3
+random_state = 42
+
+[training.svm]
+C = 0.1
+gamma = 0.1
+kernel = "linear"
+
+[training.random_forest]
+n_estimators = 500
+max_features = "sqrt"
+max_depth = 50
+bootstrap = true
+
+[training.naive_bayes]
+var_smoothing = 1.873817422860383e-07
+
+[distributions]
+min_season = 2018
+candidates = [
+    "norm",
+    "t",
+    "f",
+    "chi",
+    "cosine",
+    "alpha",
+    "beta",
+    "gamma",
+    "dgamma",
+    "dweibull",
+    "maxwell",
+    "pareto",
+    "fisk",
+]
+
+[simulation]
+n_simulations = 10000
+classifier = "naive_bayes"
+
+[visualization]
+dpi = 80
+style = "seaborn-v0_8"
+output_dir = "output/plots"
+
+[client]
+delay = 6.0
+max_retries = 5
+backoff_base = 2.0
+timeout = 120
+use_custom_headers = true

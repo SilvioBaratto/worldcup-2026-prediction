@@ -1,0 +1,86 @@
+name = "2026 FIFA World Cup — Knockout (Round of 32)"
+
+# 32 teams, 16 single-match ties. Adjacent matchups feed the next round, so the
+# list order defines the bracket tree (matchup 1 winner meets matchup 2 winner,
+# etc.). Replace with the real draw once the group stage concludes; this is a
+# plausible seeded field of likely qualifiers.
+
+[[matchups]]
+home = "Argentina"
+away = "Saudi Arabia"
+group = "Top"
+
+[[matchups]]
+home = "France"
+away = "Canada"
+group = "Top"
+
+[[matchups]]
+home = "Brazil"
+away = "South Korea"
+group = "Top"
+
+[[matchups]]
+home = "England"
+away = "Ecuador"
+group = "Top"
+
+[[matchups]]
+home = "Spain"
+away = "Japan"
+group = "Top"
+
+[[matchups]]
+home = "Portugal"
+away = "Nigeria"
+group = "Top"
+
+[[matchups]]
+home = "Netherlands"
+away = "Mexico"
+group = "Top"
+
+[[matchups]]
+home = "Germany"
+away = "Senegal"
+group = "Top"
+
+[[matchups]]
+home = "Italy"
+away = "United States"
+group = "Bottom"
+
+[[matchups]]
+home = "Belgium"
+away = "Australia"
+group = "Bottom"
+
+[[matchups]]
+home = "Croatia"
+away = "Morocco"
+group = "Bottom"
+
+[[matchups]]
+home = "Uruguay"
+away = "Ghana"
+group = "Bottom"
+
+[[matchups]]
+home = "Colombia"
+away = "Switzerland"
+group = "Bottom"
+
+[[matchups]]
+home = "Denmark"
+away = "Cameroon"
+group = "Bottom"
+
+[[matchups]]
+home = "Norway"
+away = "Egypt"
+group = "Bottom"
+
+[[matchups]]
+home = "Serbia"
+away = "Poland"
+group = "Bottom"

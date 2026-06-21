@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.env
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.DS_Store
+.vscode/
+.idea/
+
+# Generated datasets (raw CSV pulls can be large)
+dataset/csv/*.csv
+dataset/csv/*.partial
+dataset/train_data.csv
+
+# Generated artifacts
+output/models/*.joblib
+output/distributions.json
+output/plots/*.png
