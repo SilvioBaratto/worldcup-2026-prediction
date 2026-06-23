@@ -37,6 +37,7 @@ from __future__ import annotations
 import datetime
 import logging
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -75,7 +76,7 @@ class TeamsBuilder:
 
     def build(self) -> pd.DataFrame:
         """Fetch teams for each competition and return the deduplicated DataFrame."""
-        rows: list[dict[str, object]] = []
+        rows: list[dict[str, Any]] = []
         seen_ids: set[int] = set()
 
         for code in self._competition_codes:
@@ -104,11 +105,11 @@ class TeamsBuilder:
         logger.info("Built teams DataFrame: %d unique teams", len(df))
         return df
 
-    def _fetch_teams(self, code: str) -> list[dict[str, object]]:
+    def _fetch_teams(self, code: str) -> list[dict[str, Any]]:
         """Fetch teams for a single competition. Returns empty list on failure."""
         try:
             data = self._client.get(f"/competitions/{code}/teams")
-            teams: list[dict[str, object]] = data.get("teams", [])
+            teams: list[dict[str, Any]] = data.get("teams", [])
             logger.info("Fetched %d teams for competition %s", len(teams), code)
             return teams
         except Exception:
@@ -217,7 +218,7 @@ class MatchesBuilder:
                 f"/competitions/{code}/matches",
                 params={"season": str(year), "status": "FINISHED"},
             )
-            matches: list[dict[str, object]] = data.get("matches", [])
+            matches: list[dict[str, Any]] = data.get("matches", [])
             if not matches:
                 return None
             rows = [self._extract_match_row(m, code, year) for m in matches]
@@ -238,28 +239,28 @@ class MatchesBuilder:
 
     @staticmethod
     def _extract_match_row(
-        match: dict[str, object],
+        match: dict[str, Any],
         code: str,
         year: int,
-    ) -> dict[str, object] | None:
+    ) -> dict[str, Any] | None:
         """Map a single API match object to the matches.csv row schema.
 
         Pure transformation — no I/O.
         """
         try:
             home_team = (
-                match.get("homeTeam", {}).get("name", "")  # type: ignore[union-attr]
-                or match.get("homeTeam", {}).get("shortName", "")  # type: ignore[union-attr]
+                match.get("homeTeam", {}).get("name", "")
+                or match.get("homeTeam", {}).get("shortName", "")
             )
             away_team = (
-                match.get("awayTeam", {}).get("name", "")  # type: ignore[union-attr]
-                or match.get("awayTeam", {}).get("shortName", "")  # type: ignore[union-attr]
+                match.get("awayTeam", {}).get("name", "")
+                or match.get("awayTeam", {}).get("shortName", "")
             )
             if not home_team or not away_team:
                 return None
 
-            score = match.get("score", {})  # type: ignore[union-attr]
-            full_time = score.get("fullTime", {})  # type: ignore[union-attr]
+            score = match.get("score", {})
+            full_time = score.get("fullTime", {})
             home_goals = full_time.get("home")
             away_goals = full_time.get("away")
             if home_goals is None or away_goals is None:
@@ -269,7 +270,7 @@ class MatchesBuilder:
             date_str = utc_date[:10] if utc_date else ""  # "YYYY-MM-DD"
 
             return {
-                "MATCH_ID": int(match.get("id", 0)),  # type: ignore[call-overload]
+                "MATCH_ID": int(match.get("id", 0)),
                 "DATE": date_str,
                 "HOME_TEAM": str(home_team),
                 "AWAY_TEAM": str(away_team),
@@ -383,12 +384,12 @@ class RankingBuilder:
                 f"/competitions/{code}/standings",
                 params={"season": str(year)},
             )
-            standings: list[dict[str, object]] = data.get("standings", [])
+            standings: list[dict[str, Any]] = data.get("standings", [])
             if not standings:
                 return None
-            rows: list[dict[str, object]] = []
+            rows: list[dict[str, Any]] = []
             for table in standings:
-                table_rows: list[dict[str, object]] = table.get("table", [])  # type: ignore[assignment]
+                table_rows: list[dict[str, Any]] = table.get("table", [])
                 for entry in table_rows:
                     row = self._extract_ranking_row(entry, code, year)
                     if row is not None:
@@ -408,32 +409,24 @@ class RankingBuilder:
 
     @staticmethod
     def _extract_ranking_row(
-        entry: dict[str, object],
+        entry: dict[str, Any],
         code: str,
         year: int,
-    ) -> dict[str, object] | None:
+    ) -> dict[str, Any] | None:
         """Map a single standings table row to the ranking.csv schema.
 
         Pure transformation — no I/O.
         """
         try:
-            team = entry.get("team", {})  # type: ignore[union-attr]
-            team_name = team.get("name", "") or team.get("shortName", "")  # type: ignore[union-attr]
+            team = entry.get("team", {})
+            team_name = team.get("name", "") or team.get("shortName", "")
             if not team_name:
                 return None
             return {
                 "TEAM": str(team_name),
                 "COMPETITION": code,
                 "SEASON": year,
-                "POSITION": int(entry.get("position", 0)),  # type: ignore[call-overload]
-                "PLAYED": int(entry.get("playedGames", 0)),  # type: ignore[call-overload]
-                "WON": int(entry.get("won", 0)),  # type: ignore[call-overload]
-                "DRAW": int(entry.get("draw", 0)),  # type: ignore[call-overload]
-                "LOST": int(entry.get("lost", 0)),  # type: ignore[call-overload]
-                "POINTS": int(entry.get("points", 0)),  # type: ignore[call-overload]
-                "GOALS_FOR": int(entry.get("goalsFor", 0)),  # type: ignore[call-overload]
-                "GOALS_AGAINST": int(entry.get("goalsAgainst", 0)),  # type: ignore[call-overload]
-            }
+                "POSITION": int(entry.get("position", 0)),                "PLAYED": int(entry.get("playedGames", 0)),                "WON": int(entry.get("won", 0)),                "DRAW": int(entry.get("draw", 0)),                "LOST": int(entry.get("lost", 0)),                "POINTS": int(entry.get("points", 0)),                "GOALS_FOR": int(entry.get("goalsFor", 0)),                "GOALS_AGAINST": int(entry.get("goalsAgainst", 0)),            }
         except Exception:
             logger.debug("Skipping malformed standings entry: %s", entry, exc_info=True)
             return None
@@ -498,7 +491,7 @@ class PlayersBuilder:
             msg = f"No teams found for competition {self._competition}"
             raise RuntimeError(msg)
 
-        rows: list[dict[str, object]] = []
+        rows: list[dict[str, Any]] = []
         for team in teams:
             team_id = int(team.get("id", 0))
             squad = self._fetch_squad(team_id)
@@ -525,28 +518,28 @@ class PlayersBuilder:
         )
         return result
 
-    def _fetch_teams(self) -> list[dict[str, object]]:
+    def _fetch_teams(self) -> list[dict[str, Any]]:
         """Fetch team list for this competition. Failure is fatal."""
         data = self._client.get(f"/competitions/{self._competition}/teams")
-        teams: list[dict[str, object]] = data.get("teams", [])
+        teams: list[dict[str, Any]] = data.get("teams", [])
         logger.info(
             "Fetched %d teams for competition %s", len(teams), self._competition
         )
         return teams
 
-    def _fetch_squad(self, team_id: int) -> list[dict[str, object]]:
+    def _fetch_squad(self, team_id: int) -> list[dict[str, Any]]:
         """Fetch squad for a single team. Returns empty list on failure."""
         try:
             data = self._client.get(f"/teams/{team_id}")
-            squad: list[dict[str, object]] = data.get("squad", [])
+            squad: list[dict[str, Any]] = data.get("squad", [])
             return squad
         except Exception:
             logger.warning("Failed to fetch squad for team %d", team_id, exc_info=True)
             return []
 
     def _extract_player_row(
-        self, player: dict[str, object]
-    ) -> dict[str, object] | None:
+        self, player: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Map a single squad member to the players.csv row schema. Pure function."""
         try:
             name = player.get("name", "")
@@ -554,8 +547,7 @@ class PlayersBuilder:
                 return None
             return {
                 "PLAYER_NAME": str(name),
-                "PLAYER_ID": int(player.get("id", 0)),  # type: ignore[call-overload]
-                "NATIONALITY": str(player.get("nationality", "")),
+                "PLAYER_ID": int(player.get("id", 0)),                "NATIONALITY": str(player.get("nationality", "")),
                 "POSITION": str(player.get("position", "")),
                 "COMPETITION": self._competition,
             }
@@ -718,7 +710,7 @@ class MatchDetailsBuilder:
         logger.info("Built match_details DataFrame: %d rows", len(result_df))
         return result_df
 
-    def _fetch_match_detail(self, match_id: int) -> dict[str, object] | None:
+    def _fetch_match_detail(self, match_id: int) -> dict[str, Any] | None:
         """Fetch detail for a single match. Returns None on failure."""
         try:
             data = self._client.get(f"/matches/{match_id}")
@@ -731,20 +723,20 @@ class MatchDetailsBuilder:
 
     @staticmethod
     def _extract_detail_row(
-        data: dict[str, object], match_id: int
-    ) -> dict[str, object]:
+        data: dict[str, Any], match_id: int
+    ) -> dict[str, Any]:
         """Map raw API match object to the match_details.csv row schema.
 
         Falls back to deterministic heuristics for statistics not exposed
         by the football-data.org free tier.  Pure function — no I/O.
         """
-        score = data.get("score", {})  # type: ignore[union-attr]
-        full_time = score.get("fullTime", {})  # type: ignore[union-attr]
+        score = data.get("score", {})
+        full_time = score.get("fullTime", {})
         home_goals = int(full_time.get("home") or 0)
         away_goals = int(full_time.get("away") or 0)
 
         # Attempt to read stats from the API response (paid-tier / future fields)
-        odds = data.get("odds", {}) or {}  # type: ignore[union-attr]
+        odds = data.get("odds", {}) or {}
 
         home_shots = _heuristic_shots(home_goals)
         home_sot = _heuristic_shots_on_target(home_goals, home_shots)
@@ -756,7 +748,7 @@ class MatchDetailsBuilder:
         away_pass_pct: float = _NEUTRAL_PASS_PCT
 
         # If a paid tier ever exposes these fields they override the heuristics
-        stats: list[dict[str, object]] = data.get("statistics", []) or []  # type: ignore[assignment]
+        stats: list[dict[str, Any]] = data.get("statistics", []) or []
         for stat in stats:
             home_val = stat.get("home")
             away_val = stat.get("away")

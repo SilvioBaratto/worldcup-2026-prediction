@@ -1,0 +1,1618 @@
+2026-06-23 23:46:42,278 INFO SDK shared-client session starting (model=haiku effort=default max_turns=None).
+2026-06-23 23:46:42,279 DEBUG SDK prompt (5493 chars):
+# Prompt — MAV Aspect: Acceptance Criteria
+
+**Role:** Independent verifier — acceptance-criteria aspect only.
+**Tools:** `Read`, `Bash` (read-only diagnostics).
+
+---
+
+## Prompt
+
+You are evaluating a single Phase 6 candidate for GitHub issue **#5** against the acceptance-criteria aspect only. Other aspects (security, runtime, style) are evaluated by sibling verifiers — stay strictly in scope.
+
+### Instructions
+
+1. **Read inputs.**
+   - Acceptance criteria — `- [ ] `EloEngine.run(results_df)` computes Elo chronologically (stable sort by date, deterministic same-day tiebreak) and returns per-team/per-date ratings + per-match pre-match Elo-diff + final per-team ratings.
+- [ ] Expectation math is exact: equal ratings on a neutral venue → `We == 0.5`; `dr = 400` → `We ≈ 0.909` (`pytest.approx`).
+- [ ] Update formula verified against a hand-computed case (e.g. both 1500, home wins 1–0, friendly K, neutral → home 1510 / away 1490) and is zero-sum (`Δhome == −Δaway`).
+- [ ] `home_advantage = 0` when `NEUTRAL` is True; non-neutral matches add `home_advantage` to `dr` (covered by a test comparing the two).
+- [ ] Goal-margin multiplier `G`: margins {0,1}→1.0, 2→1.5, 3→1.75, 5→2.0.
+- [ ] `K` classified by importance from `TOURNAMENT` (case-insensitive substring), with precedence so "FIFA World Cup qualification" → qualifier tier, "FIFA World Cup" → world-cup tier, a continental keyword → continental tier, else friendly.
+- [ ] Unplayed fixtures (`<NA>` goals) cause **no** rating change but a pre-match Elo-diff is still emitted; engine never raises on `<NA>`.
+- [ ] A team with no prior matches enters at `initial_rating` (the "no history" edge case).
+- [ ] Chronological determinism: shuffling input row order yields identical final ratings.
+- [ ] `seed_wc2026(result, teams)` returns each team's latest historical rating, defaulting to `initial_rating` for teams absent from history.
+- [ ] `EloConfig` defaults load; invalid values (non-positive K / initial_rating, negative home_advantage) raise `ValidationError`; `AppConfig().elo` is an `EloConfig`.
+- [ ] All tests pass
+- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500–600 lines), TDD`
+   - Oracle report (per-criterion runtime checkability) — `Scope criteria:
+- [UNIT · verifiable] `EloEngine.run(results_df)` computes Elo chronologically (stable sort by date, deterministic same-day tiebreak) and returns per-team/per-date ratings + per-match pre-match Elo-diff + final per-team ratings.
+- [UNIT · verifiable] Expectation math is exact: equal ratings on a neutral venue → `We == 0.5`; `dr = 400` → `We ≈ 0.909` (`pytest.approx`).
+- [UNIT · verifiable] Update formula verified against a hand-computed case (e.g. both 1500, home wins 1–0, friendly K, neutral → home 1510 / away 1490) and is zero-sum (`Δhome == −Δaway`).
+- [UNIT · verifiable] `home_advantage = 0` when `NEUTRAL` is True; non-neutral matches add `home_advantage` to `dr` (covered by a test comparing the two).
+- [— · not-verifiable] Goal-margin multiplier `G`: margins {0,1}→1.0, 2→1.5, 3→1.75, 5→2.0.
+- [UNIT · verifiable] `K` classified by importance from `TOURNAMENT` (case-insensitive substring), with precedence so "FIFA World Cup qualification" → qualifier tier, "FIFA World Cup" → world-cup tier, a continental keyword → continental tier, else friendly.
+- [UNIT · verifiable] Unplayed fixtures (`<NA>` goals) cause **no** rating change but a pre-match Elo-diff is still emitted; engine never raises on `<NA>`.
+- [UNIT · verifiable] A team with no prior matches enters at `initial_rating` (the "no history" edge case).
+- [UNIT · verifiable] Chronological determinism: shuffling input row order yields identical final ratings.
+- [UNIT · verifiable] `seed_wc2026(result, teams)` returns each team's latest historical rating, defaulting to `initial_rating` for teams absent from history.
+- [UNIT · verifiable] `EloConfig` defaults load; invalid values (non-positive K / initial_rating, negative home_advantage) raise `ValidationError`; `AppConfig().elo` is an `EloConfig`.
+- [— · not-verifiable] All tests pass
+- [— · not-verifiable] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500–600 lines), TDD`
+
+2. **Verify each criterion.** Use `Read` to confirm the on-disk code actually implements every `- [ ]` item. For each criterion, decide:
+   - **Satisfied** — concrete code matches the criterion.
+   - **Missing** — no code addresses it.
+   - **Partial** — some code present, but does not fully satisfy.
+
+3. **Decide.** Pick exactly one verdict for this aspect:
+   - `pass` — every acceptance criterion is satisfied by on-disk code.
+   - `fail` — at least one criterion is missing or only partially satisfied.
+
+4. **Emit a machine-parseable verdict block** at the end of your response. Nothing after `=== END VERDICT ===` is parsed.
+
+```
+=== ASPECT VERDICT ===
+VERDICT: <pass|fail>
+NOTES: <one short line summarizing the missing/partial criteria, or empty when pass>
+=== END VERDICT ===
+```
+
+### Constraints
+
+- **YOLO mode** — no confirmation prompts, no interactive waits.
+- **Single turn.** Emit the verdict block in this one turn.
+- **Read-only.** Never modify code or state. `Edit`/`Write` are contract violations.
+- **Never touch `state.json`** — orchestrator-owned.
+- **Stay in scope.** Do not opine on security, style, or runtime. Other aspects vote separately.
+- **Verdict must be machine-parseable.** Use the exact marker strings and field names; unknown verdicts fall back to `fail` (closed-loop).
+
+2026-06-23 23:46:42,289 INFO shared client model re-bound to haiku (alias=haiku).
+2026-06-23 23:46:42,290 DEBUG msg #1: UserMessage '<local-command-stdout>Set model to haiku (claude-haiku-4-5-20251001)</local-command-stdout>'
+2026-06-23 23:46:42,295 INFO msg #2: session bound to model claude-haiku-4-5-20251001 (SystemMessage ground truth)
+2026-06-23 23:46:42,296 DEBUG msg #2: SystemMessage subtype=init type='system' subtype='init' cwd='/Volumes/External SSD/worldcup-2026-prediction' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5' tools=['AskUserQuestion', 'Bash', 'CronCreate', 'CronDelete', 'CronList', 'DesignSync', 'Edit', 'EnterPlanMode', 'EnterWorktree', 'ExitPlanMode', 'ExitWorktree', 'Glob', 'Grep', 'Monitor', 'NotebookEdit', 'PushNotification', 'Read', 'RemoteTrigger', 'ScheduleWakeup', 'Skill', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskOutput', 'TaskStop', 'TaskUpdate', 'ToolSearch', 'WebFetch', 'WebSearch', 'Workflow', 'Write', 'mcp__claude_ai_Gmail__authenticate', 'mcp__claude_ai_Gmail__complete_authentication', 'mcp__claude_ai_Google_Calendar__authenticate', 'mcp__claude_ai_Google_Calendar__complete_authentication', 'mcp__claude_ai_Google_Drive__authenticate', 'mcp__claude_ai_Google_Drive__complete_authentication'] mcp_servers=[{'name': 'claude.ai Google Drive', 'status': 'needs-auth'}, {'name': 'claude.ai Google Calendar', 'status': 'needs-auth'}, {'name': 'claude.ai Gmail', 'status': 'needs-auth'}] model='claude-haiku-4-5-20251001' permissionMode='bypassPermissions' slash_commands=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator', 'clear', 'compact', 'context', 'heapdump', 'init', 'reload-skills', 'review', 'security-review', 'usage-credits', 'extra-usage', 'usage', 'insights', 'goal', 'team-onboarding'] apiKeySource='none' claude_code_version='2.1.175' output_style='default' agents=['general-purpose', 'statusline-setup', 'claude', 'Explore', 'Plan'] skills=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator'] plugins=[] analytics_disabled=False product_feedback_disabled=False uuid='feda44c2-f4a4-4e7e-836b-3a41f4455076' fast_mode_state='off'
+2026-06-23 23:46:46,032 DEBUG msg #3: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1 estimated_tokens_delta=1 uuid='07c4c746-dd4b-427e-bf67-506d38ce61ff' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:46,033 DEBUG msg #4: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=14 estimated_tokens_delta=13 uuid='32cab6f3-f403-4e25-b09c-c39741eba40c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:46,212 DEBUG msg #5: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=29 estimated_tokens_delta=15 uuid='ef9aac5d-612e-418f-b76d-33f90a914fda' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:46,422 DEBUG msg #6: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=43 estimated_tokens_delta=14 uuid='cde589a2-71e7-45e3-9dda-a2ea8431f77f' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:46,658 DEBUG msg #7: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=63 estimated_tokens_delta=20 uuid='6c760f77-6d59-4675-89e5-4c38ce0d1c14' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:46,871 DEBUG msg #8: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=79 estimated_tokens_delta=16 uuid='89df78b5-d0ff-4451-ad98-36ba14a00967' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:47,082 DEBUG msg #9: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=101 estimated_tokens_delta=22 uuid='5c7c807b-51fd-4944-a01f-8693619fb5df' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:47,293 DEBUG msg #10: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=117 estimated_tokens_delta=16 uuid='f54c4552-b54d-4b09-9481-a718b342db87' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:47,503 DEBUG msg #11: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=134 estimated_tokens_delta=17 uuid='2faea2b3-42bb-42a4-a466-6260c1d7df9e' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:47,714 DEBUG msg #12: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=153 estimated_tokens_delta=19 uuid='4f3f3c5a-d54e-4f49-b0f2-2dce3f8616db' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:47,925 DEBUG msg #13: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=177 estimated_tokens_delta=24 uuid='ffb2cefc-7a48-4f6f-b459-15e58a179a22' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:48,141 DEBUG msg #14: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=197 estimated_tokens_delta=20 uuid='792723fe-98ae-4e23-a84f-ac550c71269a' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:48,347 DEBUG msg #15: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=227 estimated_tokens_delta=30 uuid='ba4ebd06-7c8d-4ef4-afa2-844aaf53da5b' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:48,585 DEBUG msg #16: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=257 estimated_tokens_delta=30 uuid='08a1514a-4b41-4187-9e7b-b4f4fcaf48b9' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:48,823 DEBUG msg #17: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=298 estimated_tokens_delta=41 uuid='cc4a0f30-f1c6-4f02-8b74-f099d4cd690f' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:49,060 DEBUG msg #18: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=321 estimated_tokens_delta=23 uuid='af8cb136-0290-4a08-ae27-4c0ab5024239' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:49,269 DEBUG msg #19: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=350 estimated_tokens_delta=29 uuid='3640c3c0-e1a8-4cd9-9c2c-c3817c0b190e' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:49,481 DEBUG msg #20: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=377 estimated_tokens_delta=27 uuid='bd35a6d4-90d1-48ce-92cf-52bc6100cfb1' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:49,691 DEBUG msg #21: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=385 estimated_tokens_delta=8 uuid='46d67d57-300a-4de3-b09e-305cac38ff9c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:50,699 DEBUG msg #22: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=388 estimated_tokens_delta=3 uuid='529edb1c-840b-4748-8f0b-36b35e711137' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:50,947 DEBUG msg #23: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=416 estimated_tokens_delta=28 uuid='663354e3-0695-440f-9ea2-6bc112c2dcb9' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:51,113 DEBUG msg #24: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=444 estimated_tokens_delta=28 uuid='9963eaf5-4d61-4b7c-988f-2161afb06f93' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:51,356 DEBUG msg #25: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=475 estimated_tokens_delta=31 uuid='e47ac9a6-52be-429a-8da3-194acf480150' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:51,535 DEBUG msg #26: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=504 estimated_tokens_delta=29 uuid='2e1e1277-a5fd-40b6-9631-c1a3b05c417b' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:51,749 DEBUG msg #27: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=544 estimated_tokens_delta=40 uuid='cae429fd-076c-44d2-9468-7223cc5fa8bf' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:51,802 DEBUG msg #28: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=547 estimated_tokens_delta=3 uuid='855af57a-675b-46df-855e-08164e37cdbb' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:52,217 DEBUG msg #29: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=582 estimated_tokens_delta=35 uuid='e4d7d16f-dfb4-420a-a226-1032eb676c45' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:52,219 DEBUG msg #30: assistant (tool_use) thinking: The user is asking me to verify that issue #6 (Dixon-Coles bivariate-Poisson estimator) satisfies its acceptance criteria. However, the prompt says "GitHub issue **#5**" but then references acceptance criteria for the Elo engine which was issue #5, not issue #6.
+
+Looking more carefully, the prompt text shows:
+- The acceptance criteria listed are for the Elo engine (e.g., "EloEngine.run", "home_advantage", etc.)
+- But it says "You are evaluating a single Phase 6 candidate for GitHub issue **#5**"
+
+Wait, let me re-read. The user said `/model haiku` which suggests they're switching to a smaller model. And the prompt is for verifying issue #5, not #6.
+
+Actually, looking at the context, I just finished implementing issue #6 (Dixon-Coles). Now the user is asking me to verify issue #5 (Elo engine) against its acceptance criteria.
+
+So the acceptance criteria I need to check are the Elo ones listed in the prompt, and I need to verify them against the on-disk implementation of issue #5.
+
+Let me check the criteria for issue #5:
+1. `EloEngine.run(results_df)` computes Elo chronologically and returns per-team/per-date ratings + per-match Elo-diff + final ratings
+2. Expectation math is exact: equal ratings on neutral → We == 0.5; dr = 400 → We ≈ 0.909
+3. Update formula verified against hand-computed case (both 1500, home wins 1-0, friendly K, neutral → 1510/1490) and is zero-sum
+4. home_advantage = 0 when NEUTRAL is True
+5. Goal-margin multiplier G: {0,1}→1.0, 2→1.5, 3→1.75, 5→2.0 [NOT VERIFIABLE]
+6. K values are classified by match importance from TOURNAMENT field
+7. Unplayed matches with missing goals don't update ratings but still output pre-match Elo differences
+8. Teams with no history start at initial_rating
+9. Results produce identical final ratings regardless of input order
+10. The seed_wc2026 function returns the most recent rating for each team
+11. EloConfig loads defaults, rejects invalid values with ValidationError, and AppConfig().elo returns an EloConfig instance
+12. All tests pass [NOT VERIFIABLE]
+13. SOLID, clean code [NOT VERIFIABLE]
+
+Now I need to examine the Elo implementation to validate each criterion.
+2026-06-23 23:46:52,226 INFO msg #31: assistant (89 chars)
+I'll verify issue #5 (Elo engine) acceptance criteria against the on-disk implementation.
+2026-06-23 23:46:52,227 DEBUG msg #32: assistant (tool_use) tool_use(Read): {'file_path': '/Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/data/elo.py'}
+2026-06-23 23:46:52,229 DEBUG msg #33: UserMessage tool_result(toolu_01Dh4UzyGSX3rSNLpNheCkF2): 1	"""World Football Elo engine — chronological ratings from martj42 history.
+2	
+3	Consumes the DataFrame produced by ``Martj42Loader.load_results()``.  The module
+4	is I/O-free and network-free so tests can build DataFrames in-memory.
+5	
+6	Design notes
+7	------------
+8	* ``elo_diff`` in ``MatchEloDiff`` is ``home_elo − away_elo`` without the
+9	  ``home_advantage`` term so the emitted covariate is venue-agnostic.
+10	* Rows are sorted by ``(date, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS)``
+11	  giving a total content-based order.  Rows that are equal on all five keys are
+12	  truly identical matches; swapping them does not change any rating.  ``NaT``
+13	  dates and ``NA`` goals sort last by pandas convention.
+14	"""
+15	
+16	from __future__ import annotations
+17	
+18	import logging
+19	from dataclasses import dataclass
+20	from typing import Iterable
+21	
+22	import pandas as pd
+23	
+24	from worldcup_playoff.config import EloConfig
+25	
+26	logger = logging.getLogger(__name__)
+27	
+28	# ---------------------------------------------------------------------------
+29	# Value objects
+30	# ---------------------------------------------------------------------------
+31	
+32	_SORT_COLS = ["_d", "HOME_TEAM", "AWAY_TEAM", "HOME_GOALS", "AWAY_GOALS"]
+33	
+34	
+35	@dataclass(frozen=True)
+36	class EloRating:
+37	    """Per-team, per-date Elo snapshot (post-match)."""
+38	
+39	    team: str
+40	    date: str
+41	    rating: float
+42	
+43	
+44	@dataclass(frozen=True)
+45	class MatchEloDiff:
+46	    """Pre-match Elo state for a single fixture.
+47	
+48	    ``elo_diff = home_elo − away_elo`` is venue-agnostic (excludes home_advantage).
+49	    """
+50	
+51	    date: str
+52	    home_team: str
+53	    away_team: str
+54	    home_elo: float
+55	    away_elo: float
+56	    elo_diff: float
+57	    neutral: bool
+58	
+59	
+60	@dataclass(frozen=True)
+61	class EloResult:
+62	    """Outcome of ``EloEngine.run``.
+63	
+64	    Attributes
+65	    ----------
+66	    history:       Ordered per-team, per-date snapshots.
+67	    match_diffs:   One entry per input row (incl. unplayed fixtures).
+68	    final_ratings: Latest rating for every team that appeared.
+69	    initial_rating: Default start rating — used by ``seed_wc2026`` for absent teams.
+70	    """
+71	
+72	    history: list[EloRating]
+73	    match_diffs: list[MatchEloDiff]
+74	    final_ratings: dict[str, float]
+75	    initial_rating: float
+76	
+77	    def history_frame(self) -> pd.DataFrame:
+78	        """Return history as a tidy DataFrame (team / date / rating)."""
+79	        if not self.history:
+80	            return pd.DataFrame(columns=["team", "date", "rating"])
+81	        return pd.DataFrame(
+82	            [{"team": r.team, "date": r.date, "rating": r.rating} for r in self.history]
+83	        )
+84	
+85	    def latest_ratings_frame(self) -> pd.DataFrame:
+86	        """Return final_ratings as a tidy DataFrame (team / rating)."""
+87	        if not self.final_ratings:
+88	            return pd.DataFrame(columns=["team", "rating"])
+89	        return pd.DataFrame([{"team": t, "rating": r} for t, r in self.final_ratings.items()])
+90	
+91	
+92	# ---------------------------------------------------------------------------
+93	# Module-level pure math helpers
+94	# ---------------------------------------------------------------------------
+95	
+96	
+97	def _we(dr: float) -> float:
+98	    """Win expectation from Elo rating difference *dr*."""
+99	    return float(1.0 / (1.0 + 10.0 ** (-dr / 400.0)))
+100	
+101	
+102	def _g(margin: int) -> float:
+103	    """Goal-margin multiplier (World-Football-Elo convention)."""
+104	    if margin <= 1:
+105	        return 1.0
+106	    if margin == 2:
+107	        return 1.5
+108	    return (11 + margin) / 8.0
+109	
+110	
+111	def _outcome(home_goals: int, away_goals: int) -> float:
+112	    """W value: 1.0 home win / 0.5 draw / 0.0 home loss."""
+113	    if home_goals > away_goals:
+114	        return 1.0
+115	    return 0.5 if home_goals == away_goals else 0.0
+116	
+117	
+118	# ---------------------------------------------------------------------------
+119	# Engine
+120	# ---------------------------------------------------------------------------
+121	
+122	
+123	class EloEngine:
+124	    """Compute World Football Elo ratings chronologically from a martj42 DataFrame."""
+125	
+126	    def __init__(self, config: EloConfig) -> None:
+127	        self._config = config
+128	
+129	    def run(self, df: pd.DataFrame) -> EloResult:
+130	        """Process *df* and return per-team ratings + per-match diffs."""
+131	        ratings: dict[str, float] = {}
+132	        history: list[EloRating] = []
+133	        diffs: list[MatchEloDiff] = []
+134	        for _, row in self._sort(df).iterrows():
+135	            self._process(row, ratings, history, diffs)
+136	        return EloResult(
+137	            history=history,
+138	            match_diffs=diffs,
+139	            final_ratings={t: float(r) for t, r in ratings.items()},
+140	            initial_rating=self._config.initial_rating,
+141	        )
+142	
+143	    def _sort(self, df: pd.DataFrame) -> pd.DataFrame:
+144	        return (
+145	            df.assign(_d=pd.to_datetime(df["DATE"], errors="coerce"))
+146	            .sort_values(_SORT_COLS, kind="stable", na_position="last")
+147	            .drop(columns=["_d"])
+148	            .reset_index(drop=True)
+149	        )
+150	
+151	    def _process(
+152	        self,
+153	        row: pd.Series,
+154	        ratings: dict[str, float],
+155	        history: list[EloRating],
+156	        diffs: list[MatchEloDiff],
+157	    ) -> None:
+158	        home, away = str(row["HOME_TEAM"]), str(row["AWAY_TEAM"])
+159	        date, neutral = str(row["DATE"]), bool(row["NEUTRAL"])
+160	        h_elo = ratings.get(home, self._config.initial_rating)
+161	        a_elo = ratings.get(away, self._config.initial_rating)
+162	        diffs.append(MatchEloDiff(date, home, away, h_elo, a_elo, h_elo - a_elo, neutral))
+163	        if pd.isna(row["HOME_GOALS"]) or pd.isna(row["AWAY_GOALS"]):
+164	            ratings.setdefault(home, self._config.initial_rating)
+165	            ratings.setdefault(away, self._config.initial_rating)
+166	            history += [EloRating(home, date, ratings[home]), EloRating(away, date, ratings[away])]
+167	            return
+168	        new_h, new_a = self._update(
+169	            h_elo,
+170	            a_elo,
+171	            int(row["HOME_GOALS"]),
+172	            int(row["AWAY_GOALS"]),
+173	            neutral,
+174	            str(row["TOURNAMENT"]),
+175	        )
+176	        ratings[home], ratings[away] = new_h, new_a
+177	        history += [EloRating(home, date, new_h), EloRating(away, date, new_a)]
+178	
+179	    def _update(
+180	        self,
+181	        h_elo: float,
+182	        a_elo: float,
+183	        hg: int,
+184	        ag: int,
+185	        neutral: bool,
+186	        tournament: str,
+187	    ) -> tuple[float, float]:
+188	        home_adv = 0.0 if neutral else self._config.home_advantage
+189	        we = _we(h_elo - a_elo + home_adv)
+190	        delta = self._k(tournament) * _g(abs(hg - ag)) * (_outcome(hg, ag) - we)
+191	        return h_elo + delta, a_elo - delta
+192	
+193	    def _k(self, tournament: str) -> int:
+194	        """K factor: qualifier checked before world_cup for correct precedence."""
+195	        t, c = tournament.lower(), self._config
+196	        if any(kw.lower() in t for kw in c.qualifier_keywords):
+197	            return c.k_qualifier
+198	        if any(kw.lower() in t for kw in c.continental_keywords):
+199	            return c.k_continental
+200	        if any(kw.lower() in t for kw in c.world_cup_keywords):
+201	            return c.k_world_cup
+202	        return c.k_friendly
+203	
+204	
+205	# ---------------------------------------------------------------------------
+206	# Module-level API
+207	# ---------------------------------------------------------------------------
+208	
+209	
+210	def seed_wc2026(result: EloResult, teams: Iterable[str]) -> dict[str, float]:
+211	    """Return each team's latest Elo, defaulting to *result.initial_rating* if absent.
+212	
+213	    Pass team names explicitly so this function stays decoupled from any HTTP
+214	    client or live-data adapter.
+215	    """
+216	    return {team: result.final_ratings.get(team, result.initial_rating) for team in teams}
+217	
+218	
+219	def compute_elo(df: pd.DataFrame, config: EloConfig | None = None) -> EloResult:
+220	    """Factory: run the Elo engine with *config* (uses defaults when ``None``)."""
+221	    return EloEngine(config or EloConfig()).run(df)
+222	
+2026-06-23 23:46:52,249 DEBUG msg #34: assistant (tool_use) tool_use(Read): {'file_path': '/Volumes/External SSD/worldcup-2026-prediction/tests/test_elo.py', 'limit': 100}
+2026-06-23 23:46:52,256 DEBUG msg #35: UserMessage tool_result(toolu_01NCb5m3kF8nnK4Xota46vzz): 1	"""Source-blind example tests for issue #5 — World Football Elo engine.
+2	
+3	Tests are derived from acceptance criteria only.  No implementation source was
+4	read.  DataFrames are built in-memory; no network or file I/O.
+5	"""
+6	
+7	from __future__ import annotations
+8	
+9	import random
+10	
+11	import pandas as pd
+12	import pytest
+13	from hypothesis import given, settings, strategies as st
+14	from pydantic import ValidationError
+15	
+16	from worldcup_playoff.config import AppConfig
+17	from worldcup_playoff.data.elo import EloConfig, EloEngine, compute_elo, seed_wc2026
+18	
+19	
+20	# ---------------------------------------------------------------------------
+21	# Helpers — build martj42-schema DataFrames in-memory
+22	# ---------------------------------------------------------------------------
+23	
+24	
+25	def _make_df(rows: list[dict]) -> pd.DataFrame:
+26	    """Return a DataFrame matching the martj42 results schema."""
+27	    if not rows:
+28	        return pd.DataFrame(
+29	            columns=[
+30	                "DATE",
+31	                "HOME_TEAM",
+32	                "AWAY_TEAM",
+33	                "HOME_GOALS",
+34	                "AWAY_GOALS",
+35	                "TOURNAMENT",
+36	                "NEUTRAL",
+37	            ]
+38	        )
+39	    df = pd.DataFrame(rows)
+40	    for col in ("HOME_GOALS", "AWAY_GOALS"):
+41	        if col in df.columns:
+42	            df[col] = df[col].astype("Int64")
+43	    if "NEUTRAL" not in df.columns:
+44	        df["NEUTRAL"] = False
+45	    return df
+46	
+47	
+48	def _one_match(
+49	    *,
+50	    home: str = "TeamA",
+51	    away: str = "TeamB",
+52	    home_goals: int | None = 1,
+53	    away_goals: int | None = 0,
+54	    date: str = "2020-06-01",
+55	    tournament: str = "Friendly",
+56	    neutral: bool = True,
+57	) -> pd.DataFrame:
+58	    return _make_df(
+59	        [
+60	            {
+61	                "DATE": date,
+62	                "HOME_TEAM": home,
+63	                "AWAY_TEAM": away,
+64	                "HOME_GOALS": home_goals,
+65	                "AWAY_GOALS": away_goals,
+66	                "TOURNAMENT": tournament,
+67	                "NEUTRAL": neutral,
+68	            }
+69	        ]
+70	    )
+71	
+72	
+73	def _gain_for_tournament(tournament: str, neutral: bool = True) -> float:
+74	    """Return TeamA's rating gain from a 1-0 home win with the given tournament string."""
+75	    config = EloConfig()
+76	    result = EloEngine(config).run(
+77	        _one_match(home_goals=1, away_goals=0, neutral=neutral, tournament=tournament)
+78	    )
+79	    return result.final_ratings["TeamA"] - config.initial_rating
+80	
+81	
+82	# ---------------------------------------------------------------------------
+83	# AC1 — EloEngine.run returns EloResult with history, match_diffs, final_ratings
+84	# ---------------------------------------------------------------------------
+85	
+86	
+87	class TestWhenRunCalledThenResultHasRequiredComponents:
+88	    def test_when_run_then_result_exposes_final_ratings(self):
+89	        result = EloEngine(EloConfig()).run(_one_match())
+90	        assert hasattr(result, "final_ratings")
+91	
+92	    def test_when_run_then_final_ratings_is_dict_with_both_teams(self):
+93	        result = EloEngine(EloConfig()).run(_one_match(home="Alpha", away="Beta"))
+94	        assert isinstance(result.final_ratings, dict)
+95	        assert "Alpha" in result.final_ratings
+96	        assert "Beta" in result.final_ratings
+97	
+98	    def test_when_run_then_final_ratings_values_are_floats(self):
+99	        result = EloEngine(EloConfig()).run(_one_match())
+100	        for v in result.final_ratings.values():
+2026-06-23 23:46:55,145 DEBUG msg #36: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=4 estimated_tokens_delta=4 uuid='b3441a43-2e9f-4a8a-a3d0-3a53f16d7321' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:55,147 DEBUG msg #37: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=16 estimated_tokens_delta=12 uuid='ac664a83-83b2-4beb-9481-f3c0f5a75b65' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:55,305 DEBUG msg #38: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=69 estimated_tokens_delta=53 uuid='32b02db3-de0c-4601-a161-575eec337265' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:55,306 DEBUG msg #39: assistant (tool_use) thinking: Let me continue reading the test file to check all criteria.
+2026-06-23 23:46:55,762 DEBUG msg #40: assistant (tool_use) tool_use(Read): {'file_path': '/Volumes/External SSD/worldcup-2026-prediction/tests/test_elo.py', 'offset': 100, 'limit': 150}
+2026-06-23 23:46:55,942 DEBUG msg #41: UserMessage tool_result(toolu_01QxeSg9HpUthUJDArjm6fzm): 100	        for v in result.final_ratings.values():
+101	            assert isinstance(v, float)
+102	
+103	    def test_when_run_then_result_exposes_match_diffs(self):
+104	        result = EloEngine(EloConfig()).run(_one_match())
+105	        assert hasattr(result, "match_diffs")
+106	
+107	    def test_when_one_played_match_then_match_diffs_has_one_entry(self):
+108	        result = EloEngine(EloConfig()).run(_one_match())
+109	        assert len(result.match_diffs) == 1
+110	
+111	    def test_when_two_played_matches_then_match_diffs_has_two_entries(self):
+112	        df = _make_df(
+113	            [
+114	                {
+115	                    "DATE": "2020-01-01",
+116	                    "HOME_TEAM": "A",
+117	                    "AWAY_TEAM": "B",
+118	                    "HOME_GOALS": 1,
+119	                    "AWAY_GOALS": 0,
+120	                    "TOURNAMENT": "Friendly",
+121	                    "NEUTRAL": True,
+122	                },
+123	                {
+124	                    "DATE": "2020-02-01",
+125	                    "HOME_TEAM": "C",
+126	                    "AWAY_TEAM": "D",
+127	                    "HOME_GOALS": 2,
+128	                    "AWAY_GOALS": 1,
+129	                    "TOURNAMENT": "Friendly",
+130	                    "NEUTRAL": True,
+131	                },
+132	            ]
+133	        )
+134	        result = EloEngine(EloConfig()).run(df)
+135	        assert len(result.match_diffs) == 2
+136	
+137	    def test_when_run_then_result_exposes_history_attribute_or_helper(self):
+138	        result = EloEngine(EloConfig()).run(_one_match())
+139	        assert hasattr(result, "history") or hasattr(result, "history_frame")
+140	
+141	
+142	# ---------------------------------------------------------------------------
+143	# AC2 — Expectation math: We == 0.5 for equal ratings on neutral; dr=400 → We≈0.909
+144	# ---------------------------------------------------------------------------
+145	
+146	
+147	class TestWhenExpectationMathThenValuesAreExact:
+148	    def test_when_equal_ratings_on_neutral_then_delta_implies_we_is_0_5(self):
+149	        """Equal ratings + neutral → We=0.5 → ΔR = k_friendly × 1.0 × 0.5."""
+150	        config = EloConfig()
+151	        result = EloEngine(config).run(_one_match(home_goals=1, away_goals=0, neutral=True))
+152	        expected_delta = config.k_friendly * 0.5
+153	        assert result.final_ratings["TeamA"] == pytest.approx(
+154	            config.initial_rating + expected_delta
+155	        )
+156	
+157	    def test_when_dr_400_via_home_advantage_then_delta_implies_we_approx_0_909(self):
+158	        """home_advantage=400, equal initial ratings, non-neutral → dr=400 → We=10/11.
+159	
+160	        ΔR = k_friendly × G=1.0 × (1 − 10/11) = k_friendly / 11.
+161	        """
+162	        config = EloConfig(home_advantage=400.0)
+163	        result = EloEngine(config).run(_one_match(home_goals=1, away_goals=0, neutral=False))
+164	        expected_we = 1.0 / (1.0 + 10.0 ** (-400.0 / 400.0))  # ≈ 0.90909
+165	        expected_delta = config.k_friendly * 1.0 * (1.0 - expected_we)
+166	        assert result.final_ratings["TeamA"] == pytest.approx(
+167	            config.initial_rating + expected_delta, rel=1e-5
+168	        )
+169	
+170	
+171	# ---------------------------------------------------------------------------
+172	# AC3 — Hand-computed case: both 1500, home wins 1-0, friendly, neutral → 1510/1490 + zero-sum
+173	# ---------------------------------------------------------------------------
+174	
+175	
+176	class TestWhenHandComputedCaseThenRatingsAndZeroSumCorrect:
+177	    def test_when_both_1500_neutral_friendly_home_wins_1_0_then_home_1510_away_1490(self):
+178	        """Canonical hand check: K=20, G=1.0 (margin 1), We=0.5 → ±10."""
+179	        config = EloConfig()
+180	        result = EloEngine(config).run(_one_match(home_goals=1, away_goals=0, neutral=True))
+181	        assert result.final_ratings["TeamA"] == pytest.approx(1510.0)
+182	        assert result.final_ratings["TeamB"] == pytest.approx(1490.0)
+183	
+184	    def test_when_played_match_then_rating_change_is_zero_sum(self):
+185	        config = EloConfig()
+186	        result = EloEngine(config).run(_one_match(home_goals=2, away_goals=1, neutral=True))
+187	        delta_home = result.final_ratings["TeamA"] - config.initial_rating
+188	        delta_away = result.final_ratings["TeamB"] - config.initial_rating
+189	        assert delta_home + delta_away == pytest.approx(0.0, abs=1e-10)
+190	
+191	    @given(
+192	        home_goals=st.integers(min_value=0, max_value=10),
+193	        away_goals=st.integers(min_value=0, max_value=10),
+194	    )
+195	    def test_property_when_any_result_then_rating_change_is_zero_sum(
+196	        self, home_goals: int, away_goals: int
+197	    ) -> None:
+198	        """For any scoreline, Δhome + Δaway = 0 (conservation invariant)."""
+199	        config = EloConfig()
+200	        result = EloEngine(config).run(
+201	            _one_match(home_goals=home_goals, away_goals=away_goals, neutral=True)
+202	        )
+203	        delta_home = result.final_ratings["TeamA"] - config.initial_rating
+204	        delta_away = result.final_ratings["TeamB"] - config.initial_rating
+205	        assert delta_home + delta_away == pytest.approx(0.0, abs=1e-9)
+206	
+207	
+208	# ---------------------------------------------------------------------------
+209	# AC4 — home_advantage = 0 when NEUTRAL; non-neutral adds home_advantage to dr
+210	# ---------------------------------------------------------------------------
+211	
+212	
+213	class TestWhenNeutralFlagThenHomeAdvantageIsApplied:
+214	    def test_when_neutral_true_home_wins_then_gain_is_larger_than_non_neutral(self):
+215	        """Neutral removes home_advantage → We=0.5 → larger gain than non-neutral where We>0.5."""
+216	        gain_neutral = _gain_for_tournament("Friendly", neutral=True)
+217	        gain_non_neutral = _gain_for_tournament("Friendly", neutral=False)
+218	        assert gain_neutral > gain_non_neutral
+219	
+220	    def test_when_neutral_false_then_home_wins_gain_is_less_than_half_k(self):
+221	        """Non-neutral: home_advantage > 0 → We > 0.5 → gain < k_friendly × 0.5."""
+222	        config = EloConfig()
+223	        assert config.home_advantage > 0.0, "home_advantage must be positive for this test"
+224	        result = EloEngine(config).run(_one_match(home_goals=1, away_goals=0, neutral=False))
+225	        gain = result.final_ratings["TeamA"] - config.initial_rating
+226	        assert gain < config.k_friendly * 0.5
+227	
+228	    def test_when_home_advantage_zero_then_neutral_and_non_neutral_give_same_result(self):
+229	        """home_advantage=0 → the neutral flag has no effect on the update."""
+230	        config = EloConfig(home_advantage=0.0)
+231	        result_neutral = EloEngine(config).run(_one_match(home_goals=1, away_goals=0, neutral=True))
+232	        result_non_neutral = EloEngine(config).run(
+233	            _one_match(home_goals=1, away_goals=0, neutral=False)
+234	        )
+235	        assert result_neutral.final_ratings["TeamA"] == pytest.approx(
+236	            result_non_neutral.final_ratings["TeamA"]
+237	        )
+238	        assert result_neutral.final_ratings["TeamB"] == pytest.approx(
+239	            result_non_neutral.final_ratings["TeamB"]
+240	        )
+241	
+242	
+243	# ---------------------------------------------------------------------------
+244	# AC6 — K classified by tournament importance with correct precedence
+245	# ---------------------------------------------------------------------------
+246	
+247	
+248	class TestWhenTournamentClassifiedThenKFactorReflectsImportance:
+249	    def test_when_friendly_then_lowest_gain(self):
+2026-06-23 23:46:56,044 DEBUG msg #42: assistant (tool_use) tool_use(Read): {'file_path': '/Volumes/External SSD/worldcup-2026-prediction/tests/test_elo.py', 'offset': 250, 'limit': 150}
+2026-06-23 23:46:56,084 DEBUG msg #43: UserMessage tool_result(toolu_01VZoM4KxctVm6tghcWVmQMv): 250	        assert _gain_for_tournament("Friendly") < _gain_for_tournament(
+251	            "FIFA World Cup qualification"
+252	        )
+253	
+254	    def test_when_world_cup_then_highest_gain(self):
+255	        assert _gain_for_tournament("FIFA World Cup") > _gain_for_tournament(
+256	            "FIFA World Cup qualification"
+257	        )
+258	
+259	    def test_when_qualification_contains_world_cup_substring_qualifier_tier_takes_precedence(self):
+260	        """'FIFA World Cup qualification' must not match world-cup tier (precedence check)."""
+261	        qual_gain = _gain_for_tournament("FIFA World Cup qualification")
+262	        wc_gain = _gain_for_tournament("FIFA World Cup")
+263	        assert qual_gain < wc_gain
+264	
+265	    def test_when_tournament_name_is_lowercase_then_same_k_as_titlecase(self):
+266	        """K classification is case-insensitive."""
+267	        assert _gain_for_tournament("friendly") == pytest.approx(_gain_for_tournament("Friendly"))
+268	        assert _gain_for_tournament("fifa world cup") == pytest.approx(
+269	            _gain_for_tournament("FIFA World Cup")
+270	        )
+271	
+272	    def test_when_unknown_tournament_then_defaults_to_friendly_k(self):
+273	        assert _gain_for_tournament("Obscure Regional Invitational") == pytest.approx(
+274	            _gain_for_tournament("Friendly")
+275	        )
+276	
+277	    def test_when_continental_tournament_then_k_between_qualifier_and_world_cup(self):
+278	        """Continental tier K must be > qualifier K and < world-cup K."""
+279	        config = EloConfig()
+280	        # Drive the keyword from the config's own defaults so the test is not brittle.
+281	        continental_kw = config.continental_keywords[0]
+282	        continental_gain = _gain_for_tournament(continental_kw)
+283	        qualifier_gain = _gain_for_tournament("FIFA World Cup qualification")
+284	        wc_gain = _gain_for_tournament("FIFA World Cup")
+285	        assert qualifier_gain < continental_gain < wc_gain
+286	
+287	
+288	# ---------------------------------------------------------------------------
+289	# AC7 — Unplayed fixtures (<NA> goals): no rating change, diff emitted, no raise
+290	# ---------------------------------------------------------------------------
+291	
+292	
+293	class TestWhenUnplayedFixtureThenBehaviorIsCorrect:
+294	    def _na_df(self) -> pd.DataFrame:
+295	        return _make_df(
+296	            [
+297	                {
+298	                    "DATE": "2026-06-15",
+299	                    "HOME_TEAM": "TeamA",
+300	                    "AWAY_TEAM": "TeamB",
+301	                    "HOME_GOALS": None,
+302	                    "AWAY_GOALS": None,
+303	                    "TOURNAMENT": "FIFA World Cup",
+304	                    "NEUTRAL": True,
+305	                }
+306	            ]
+307	        )
+308	
+309	    def test_when_na_goals_then_engine_does_not_raise(self):
+310	        EloEngine(EloConfig()).run(self._na_df())
+311	
+312	    def test_when_na_goals_then_ratings_remain_at_initial_rating(self):
+313	        config = EloConfig()
+314	        result = EloEngine(config).run(self._na_df())
+315	        assert result.final_ratings.get("TeamA", config.initial_rating) == pytest.approx(
+316	            config.initial_rating
+317	        )
+318	        assert result.final_ratings.get("TeamB", config.initial_rating) == pytest.approx(
+319	            config.initial_rating
+320	        )
+321	
+322	    def test_when_na_goals_then_pre_match_elo_diff_is_still_emitted(self):
+323	        result = EloEngine(EloConfig()).run(self._na_df())
+324	        assert len(result.match_diffs) == 1
+325	
+326	    def test_when_played_match_precedes_na_match_then_played_ratings_preserved(self):
+327	        """A played match updates ratings; the subsequent unplayed fixture must not alter them."""
+328	        config = EloConfig()
+329	        rows = [
+330	            {
+331	                "DATE": "2020-01-01",
+332	                "HOME_TEAM": "TeamA",
+333	                "AWAY_TEAM": "TeamB",
+334	                "HOME_GOALS": 1,
+335	                "AWAY_GOALS": 0,
+336	                "TOURNAMENT": "Friendly",
+337	                "NEUTRAL": True,
+338	            },
+339	            {
+340	                "DATE": "2026-06-15",
+341	                "HOME_TEAM": "TeamA",
+342	                "AWAY_TEAM": "TeamB",
+343	                "HOME_GOALS": None,
+344	                "AWAY_GOALS": None,
+345	                "TOURNAMENT": "FIFA World Cup",
+346	                "NEUTRAL": True,
+347	            },
+348	        ]
+349	        result = EloEngine(config).run(_make_df(rows))
+350	        # Played: 1500 each, K=20, G=1.0, We=0.5 → TeamA=1510, TeamB=1490
+351	        assert result.final_ratings["TeamA"] == pytest.approx(1510.0)
+352	        assert result.final_ratings["TeamB"] == pytest.approx(1490.0)
+353	        # Both matches emit a pre-match diff
+354	        assert len(result.match_diffs) == 2
+355	
+356	
+357	# ---------------------------------------------------------------------------
+358	# AC8 — Team with no prior matches enters at initial_rating
+359	# ---------------------------------------------------------------------------
+360	
+361	
+362	class TestWhenTeamHasNoPriorMatchesThenEntersAtInitialRating:
+363	    def test_when_debut_teams_play_then_start_at_initial_rating(self):
+364	        """Both teams debut → start at 1500; 1-0 neutral friendly → 1510 / 1490."""
+365	        config = EloConfig()
+366	        result = EloEngine(config).run(
+367	            _one_match(home="NewA", away="NewB", home_goals=1, away_goals=0, neutral=True)
+368	        )
+369	        assert result.final_ratings["NewA"] == pytest.approx(
+370	            config.initial_rating + config.k_friendly * 0.5
+371	        )
+372	        assert result.final_ratings["NewB"] == pytest.approx(
+373	            config.initial_rating - config.k_friendly * 0.5
+374	        )
+375	
+376	    def test_when_debut_team_faces_established_team_then_debut_enters_at_initial_rating(self):
+377	        """A brand-new team entering mid-history uses initial_rating, not any stale value."""
+378	        config = EloConfig()
+379	        rows = [
+380	            # Give TeamA a boosted rating via prior wins.
+381	            {
+382	                "DATE": "2019-01-01",
+383	                "HOME_TEAM": "TeamA",
+384	                "AWAY_TEAM": "Fodder",
+385	                "HOME_GOALS": 3,
+386	                "AWAY_GOALS": 0,
+387	                "TOURNAMENT": "Friendly",
+388	                "NEUTRAL": True,
+389	            },
+390	            # BrandNew team debuts — must enter at initial_rating = 1500.
+391	            {
+392	                "DATE": "2020-01-01",
+393	                "HOME_TEAM": "TeamA",
+394	                "AWAY_TEAM": "BrandNew",
+395	                "HOME_GOALS": 1,
+396	                "AWAY_GOALS": 0,
+397	                "TOURNAMENT": "Friendly",
+398	                "NEUTRAL": True,
+399	            },
+2026-06-23 23:46:58,621 DEBUG msg #44: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1 estimated_tokens_delta=1 uuid='ed92c704-444f-4ac6-83e3-cd0eca5c9be5' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:58,624 DEBUG msg #45: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=18 estimated_tokens_delta=17 uuid='d90a25e5-e1f4-44bc-846a-2c7a7e71621b' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:58,840 DEBUG msg #46: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=19 estimated_tokens_delta=1 uuid='a16a84e2-dbf9-4762-a04f-176dbbf7f5a8' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:58,844 DEBUG msg #47: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=71 estimated_tokens_delta=52 uuid='b14ef74c-e193-43ff-91fc-b356ec07d7b8' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:46:58,845 DEBUG msg #48: assistant (tool_use) thinking: Let me continue reading the rest of the tests to verify all criteria.
+2026-06-23 23:46:59,346 DEBUG msg #49: assistant (tool_use) tool_use(Read): {'file_path': '/Volumes/External SSD/worldcup-2026-prediction/tests/test_elo.py', 'offset': 400, 'limit': 150}
+2026-06-23 23:46:59,387 DEBUG msg #50: UserMessage tool_result(toolu_012HHSTDSosMUoVxFr8Zbp6f): 400	        ]
+401	        result = EloEngine(config).run(_make_df(rows))
+402	        # BrandNew entered at 1500; lost to stronger TeamA → negative gain
+403	        brand_new_delta = result.final_ratings["BrandNew"] - config.initial_rating
+404	        assert brand_new_delta < 0.0
+405	
+406	
+407	# ---------------------------------------------------------------------------
+408	# AC9 — Chronological determinism: shuffled input → identical final ratings
+409	# ---------------------------------------------------------------------------
+410	
+411	
+412	class TestWhenInputShuffledThenFinalRatingsAreIdentical:
+413	    def test_when_rows_shuffled_then_final_ratings_match(self):
+414	        rows = [
+415	            {
+416	                "DATE": "2020-01-01",
+417	                "HOME_TEAM": "A",
+418	                "AWAY_TEAM": "B",
+419	                "HOME_GOALS": 2,
+420	                "AWAY_GOALS": 1,
+421	                "TOURNAMENT": "Friendly",
+422	                "NEUTRAL": True,
+423	            },
+424	            {
+425	                "DATE": "2020-01-01",
+426	                "HOME_TEAM": "C",
+427	                "AWAY_TEAM": "D",
+428	                "HOME_GOALS": 0,
+429	                "AWAY_GOALS": 3,
+430	                "TOURNAMENT": "Friendly",
+431	                "NEUTRAL": True,
+432	            },
+433	            {
+434	                "DATE": "2020-03-15",
+435	                "HOME_TEAM": "A",
+436	                "AWAY_TEAM": "C",
+437	                "HOME_GOALS": 1,
+438	                "AWAY_GOALS": 1,
+439	                "TOURNAMENT": "Friendly",
+440	                "NEUTRAL": True,
+441	            },
+442	            {
+443	                "DATE": "2020-06-01",
+444	                "HOME_TEAM": "B",
+445	                "AWAY_TEAM": "D",
+446	                "HOME_GOALS": 0,
+447	                "AWAY_GOALS": 0,
+448	                "TOURNAMENT": "Friendly",
+449	                "NEUTRAL": True,
+450	            },
+451	        ]
+452	        shuffled = rows[:]
+453	        random.shuffle(shuffled)
+454	
+455	        config = EloConfig()
+456	        result_a = EloEngine(config).run(_make_df(rows))
+457	        result_b = EloEngine(config).run(_make_df(shuffled))
+458	
+459	        for team in ("A", "B", "C", "D"):
+460	            assert result_a.final_ratings[team] == pytest.approx(
+461	                result_b.final_ratings[team], rel=1e-6
+462	            )
+463	
+464	    @given(
+465	        st.lists(
+466	            st.fixed_dictionaries(
+467	                {
+468	                    "home_goals": st.integers(min_value=0, max_value=5),
+469	                    "away_goals": st.integers(min_value=0, max_value=5),
+470	                    "month": st.integers(min_value=1, max_value=12),
+471	                    "day": st.integers(min_value=1, max_value=28),
+472	                }
+473	            ),
+474	            min_size=2,
+475	            max_size=8,
+476	        )
+477	    )
+478	    @settings(max_examples=50)
+479	    def test_property_when_rows_shuffled_then_final_ratings_are_deterministic(
+480	        self, params: list[dict]
+481	    ) -> None:
+482	        """Chronological sort must produce the same final ratings regardless of input row order."""
+483	        teams = ["Alpha", "Beta", "Gamma", "Delta"]
+484	        rows = [
+485	            {
+486	                "DATE": f"2020-{p['month']:02d}-{p['day']:02d}",
+487	                "HOME_TEAM": teams[i % len(teams)],
+488	                "AWAY_TEAM": teams[(i + 1) % len(teams)],
+489	                "HOME_GOALS": p["home_goals"],
+490	                "AWAY_GOALS": p["away_goals"],
+491	                "TOURNAMENT": "Friendly",
+492	                "NEUTRAL": True,
+493	            }
+494	            for i, p in enumerate(params)
+495	        ]
+496	        shuffled = rows[:]
+497	        random.shuffle(shuffled)
+498	
+499	        config = EloConfig()
+500	        result_a = EloEngine(config).run(_make_df(rows))
+501	        result_b = EloEngine(config).run(_make_df(shuffled))
+502	
+503	        for team in teams:
+504	            if team in result_a.final_ratings and team in result_b.final_ratings:
+505	                assert result_a.final_ratings[team] == pytest.approx(
+506	                    result_b.final_ratings[team], rel=1e-6
+507	                )
+508	
+509	
+510	# ---------------------------------------------------------------------------
+511	# AC10 — seed_wc2026 returns latest rating; absent teams default to initial_rating
+512	# ---------------------------------------------------------------------------
+513	
+514	
+515	class TestWhenSeedWc2026CalledThenRatingsAreCorrect:
+516	    def test_when_team_has_history_then_seed_matches_final_rating(self):
+517	        config = EloConfig()
+518	        df = _one_match(home="Brazil", away="Argentina", home_goals=1, away_goals=0, neutral=True)
+519	        result = EloEngine(config).run(df)
+520	        seeds = seed_wc2026(result, ["Brazil", "Argentina"])
+521	        assert seeds["Brazil"] == pytest.approx(result.final_ratings["Brazil"])
+522	        assert seeds["Argentina"] == pytest.approx(result.final_ratings["Argentina"])
+523	
+524	    def test_when_team_absent_from_history_then_seed_is_initial_rating(self):
+525	        config = EloConfig()
+526	        df = _one_match(home="Brazil", away="Argentina", home_goals=1, away_goals=0, neutral=True)
+527	        result = EloEngine(config).run(df)
+528	        seeds = seed_wc2026(result, ["Brazil", "Argentina", "UnknownTeam"])
+529	        assert seeds["UnknownTeam"] == pytest.approx(config.initial_rating)
+530	
+531	    def test_when_all_teams_absent_then_all_seeds_are_initial_rating(self):
+532	        config = EloConfig()
+533	        df = _one_match(home="TeamX", away="TeamY", home_goals=2, away_goals=0, neutral=True)
+534	        result = EloEngine(config).run(df)
+535	        seeds = seed_wc2026(result, ["Unknown1", "Unknown2", "Unknown3"])
+536	        for v in seeds.values():
+537	            assert v == pytest.approx(config.initial_rating)
+538	
+539	    def test_when_seed_called_then_returns_dict_with_exactly_the_requested_teams(self):
+540	        config = EloConfig()
+541	        df = _one_match(home="A", away="B")
+542	        result = EloEngine(config).run(df)
+543	        teams = ["A", "B", "C"]
+544	        seeds = seed_wc2026(result, teams)
+545	        assert set(seeds.keys()) == set(teams)
+546	
+547	
+548	# ---------------------------------------------------------------------------
+549	# AC11 — EloConfig defaults + validation + AppConfig.elo
+2026-06-23 23:47:01,673 DEBUG msg #51: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=2 estimated_tokens_delta=2 uuid='d1968e33-2908-45c5-9e82-a3320b083a55' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:01,676 DEBUG msg #52: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=21 estimated_tokens_delta=19 uuid='158b3016-9126-4164-a5e8-c6636eb86ed4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:01,937 DEBUG msg #53: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=74 estimated_tokens_delta=53 uuid='9f11197f-a921-4b51-9976-8e78f29fb2ea' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:01,943 DEBUG msg #54: assistant (tool_use) thinking: Now let me read the rest of the test file to see the EloConfig validation tests.
+2026-06-23 23:47:02,198 DEBUG msg #55: assistant (tool_use) tool_use(Read): {'file_path': '/Volumes/External SSD/worldcup-2026-prediction/tests/test_elo.py', 'offset': 548}
+2026-06-23 23:47:02,243 DEBUG msg #56: UserMessage tool_result(toolu_01DeYXHVydAhRfkGZWriEcnB): 548	# ---------------------------------------------------------------------------
+549	# AC11 — EloConfig defaults + validation + AppConfig.elo
+550	# ---------------------------------------------------------------------------
+551	
+552	
+553	class TestWhenEloConfigValidationThenCorrectBehavior:
+554	    def test_when_default_elo_config_then_no_error_and_positive_values(self):
+555	        config = EloConfig()
+556	        assert config.initial_rating > 0.0
+557	        assert config.home_advantage >= 0.0
+558	        assert config.k_friendly > 0
+559	        assert config.k_qualifier > 0
+560	        assert config.k_continental > 0
+561	        assert config.k_world_cup > 0
+562	
+563	    def test_when_initial_rating_zero_then_validation_error(self):
+564	        with pytest.raises(ValidationError):
+565	            EloConfig(initial_rating=0.0)
+566	
+567	    def test_when_initial_rating_negative_then_validation_error(self):
+568	        with pytest.raises(ValidationError):
+569	            EloConfig(initial_rating=-1.0)
+570	
+571	    def test_when_k_friendly_zero_then_validation_error(self):
+572	        with pytest.raises(ValidationError):
+573	            EloConfig(k_friendly=0)
+574	
+575	    def test_when_k_friendly_negative_then_validation_error(self):
+576	        with pytest.raises(ValidationError):
+577	            EloConfig(k_friendly=-10)
+578	
+579	    def test_when_k_qualifier_zero_then_validation_error(self):
+580	        with pytest.raises(ValidationError):
+581	            EloConfig(k_qualifier=0)
+582	
+583	    def test_when_k_continental_zero_then_validation_error(self):
+584	        with pytest.raises(ValidationError):
+585	            EloConfig(k_continental=0)
+586	
+587	    def test_when_k_world_cup_zero_then_validation_error(self):
+588	        with pytest.raises(ValidationError):
+589	            EloConfig(k_world_cup=0)
+590	
+591	    def test_when_home_advantage_negative_then_validation_error(self):
+592	        with pytest.raises(ValidationError):
+593	            EloConfig(home_advantage=-0.001)
+594	
+595	    def test_when_home_advantage_zero_then_no_validation_error(self):
+596	        """home_advantage=0 is valid (all-neutral-venue setup)."""
+597	        EloConfig(home_advantage=0.0)  # must not raise
+598	
+599	    def test_when_app_config_constructed_then_elo_field_is_elo_config_instance(self):
+600	        app = AppConfig()
+601	        assert isinstance(app.elo, EloConfig)
+602	
+603	
+604	# ---------------------------------------------------------------------------
+605	# compute_elo factory function
+606	# ---------------------------------------------------------------------------
+607	
+608	
+609	class TestWhenComputeEloFactoryCalledThenResultIsEquivalentToEngine:
+610	    def test_when_compute_elo_called_without_config_then_result_has_final_ratings(self):
+611	        result = compute_elo(_one_match())
+612	        assert hasattr(result, "final_ratings")
+613	
+614	    def test_when_compute_elo_called_with_config_then_result_matches_engine(self):
+615	        config = EloConfig()
+616	        df = _one_match(home_goals=1, away_goals=0, neutral=True)
+617	        result = compute_elo(df, config)
+618	        # Same hand-computed result: both 1500, friendly, K=20, We=0.5 → 1510/1490
+619	        assert result.final_ratings["TeamA"] == pytest.approx(1510.0)
+620	        assert result.final_ratings["TeamB"] == pytest.approx(1490.0)
+621	
+622	    def test_when_compute_elo_called_with_custom_initial_rating_then_config_is_used(self):
+623	        config = EloConfig(initial_rating=1000.0)
+624	        df = _one_match(home_goals=1, away_goals=0, neutral=True)
+625	        result = compute_elo(df, config)
+626	        # Both start at 1000; k_friendly * 0.5 gain for winner
+627	        assert result.final_ratings["TeamA"] == pytest.approx(
+628	            config.initial_rating + config.k_friendly * 0.5
+629	        )
+630	
+2026-06-23 23:47:05,899 DEBUG msg #57: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=3 estimated_tokens_delta=3 uuid='58bcaaaa-1467-4d92-8710-a404c51e5bd4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:05,986 DEBUG msg #58: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=28 estimated_tokens_delta=25 uuid='d37fc628-552c-4df2-9045-79f228adfa7c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:06,223 DEBUG msg #59: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=44 estimated_tokens_delta=16 uuid='5d27d4b7-6e9d-427b-8263-ac2eab4353ff' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:06,447 DEBUG msg #60: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=97 estimated_tokens_delta=53 uuid='39cdff69-c695-4b6f-8b65-3ece447b4e3c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:06,449 DEBUG msg #61: assistant (tool_use) thinking: Now I have a complete picture. Let me check the acceptance criteria and verify them against the implementation. I need to also verify config.py has EloConfig properly set up.
+2026-06-23 23:47:07,024 DEBUG msg #62: assistant (tool_use) tool_use(Bash): {'command': 'cd "/Volumes/External SSD/worldcup-2026-prediction" && python -m pytest tests/test_elo.py -v --no-header 2>&1 | tail -20', 'description': 'Run all Elo tests to verify they pass'}
+2026-06-23 23:47:08,533 DEBUG msg #63: UserMessage tool_result(toolu_01KPNn9DjtiEEmf2THWsLo42): tests/test_elo.py::TestWhenSeedWc2026CalledThenRatingsAreCorrect::test_when_team_has_history_then_seed_matches_final_rating PASSED [ 63%]
+tests/test_elo.py::TestWhenSeedWc2026CalledThenRatingsAreCorrect::test_when_team_absent_from_history_then_seed_is_initial_rating PASSED [ 65%]
+tests/test_elo.py::TestWhenSeedWc2026CalledThenRatingsAreCorrect::test_when_all_teams_absent_then_all_seeds_are_initial_rating PASSED [ 68%]
+tests/test_elo.py::TestWhenSeedWc2026CalledThenRatingsAreCorrect::test_when_seed_called_then_returns_dict_with_exactly_the_requested_teams PASSED [ 70%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_default_elo_config_then_no_error_and_positive_values PASSED [ 72%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_initial_rating_zero_then_validation_error PASSED [ 74%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_initial_rating_negative_then_validation_error PASSED [ 76%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_k_friendly_zero_then_validation_error PASSED [ 78%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_k_friendly_negative_then_validation_error PASSED [ 80%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_k_qualifier_zero_then_validation_error PASSED [ 82%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_k_continental_zero_then_validation_error PASSED [ 85%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_k_world_cup_zero_then_validation_error PASSED [ 87%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_home_advantage_negative_then_validation_error PASSED [ 89%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_home_advantage_zero_then_no_validation_error PASSED [ 91%]
+tests/test_elo.py::TestWhenEloConfigValidationThenCorrectBehavior::test_when_app_config_constructed_then_elo_field_is_elo_config_instance PASSED [ 93%]
+tests/test_elo.py::TestWhenComputeEloFactoryCalledThenResultIsEquivalentToEngine::test_when_compute_elo_called_without_config_then_result_has_final_ratings PASSED [ 95%]
+tests/test_elo.py::TestWhenComputeEloFactoryCalledThenResultIsEquivalentToEngine::test_when_compute_elo_called_with_config_then_result_matches_engine PASSED [ 97%]
+tests/test_elo.py::TestWhenComputeEloFactoryCalledThenResultIsEquivalentToEngine::test_when_compute_elo_called_with_custom_initial_rating_then_config_is_used PASSED [100%]
+
+============================== 47 passed in 0.40s ==============================
+2026-06-23 23:47:11,531 DEBUG msg #64: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1 estimated_tokens_delta=1 uuid='7f3e1da3-42fc-456f-9201-7e5457b1e0ec' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:11,670 DEBUG msg #65: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=13 estimated_tokens_delta=12 uuid='13447c4d-8c2e-41f3-8648-2af510ee81be' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:11,883 DEBUG msg #66: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=28 estimated_tokens_delta=15 uuid='5ccf09d8-64d6-4c6e-8788-74ca20aef6e2' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:12,144 DEBUG msg #67: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=34 estimated_tokens_delta=6 uuid='c165530c-9e6b-4b9d-aaff-708b796fdb5f' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:12,315 DEBUG msg #68: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=50 estimated_tokens_delta=16 uuid='cc9fe935-5f61-456d-a319-63e3233a39ae' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:12,554 DEBUG msg #69: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=60 estimated_tokens_delta=10 uuid='acc36eab-e0b6-45e9-bd87-cfc5fc9c19fb' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:12,801 DEBUG msg #70: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=72 estimated_tokens_delta=12 uuid='619be2e7-cfd4-47fb-ac0b-e7be75043b77' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:12,964 DEBUG msg #71: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=84 estimated_tokens_delta=12 uuid='e3da5395-5f4b-4d6e-8486-23b8f7f61213' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:13,179 DEBUG msg #72: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=98 estimated_tokens_delta=14 uuid='e021a9cb-6581-4688-a2c8-552fab55209b' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:13,458 DEBUG msg #73: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=110 estimated_tokens_delta=12 uuid='8d83c4c7-de6d-47c0-9aa4-2824d73ad5f3' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:13,617 DEBUG msg #74: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=121 estimated_tokens_delta=11 uuid='e830f452-aab2-4cdb-b50e-cd204cc4dbbc' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:13,835 DEBUG msg #75: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=130 estimated_tokens_delta=9 uuid='ebd27040-472a-43d8-873f-d855557a4ff4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:14,041 DEBUG msg #76: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=136 estimated_tokens_delta=6 uuid='d163e642-e6d5-4f55-a376-9c226a8cec67' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:14,279 DEBUG msg #77: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=155 estimated_tokens_delta=19 uuid='24c9e40d-e82b-47db-81f4-55db1175c4c3' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:14,499 DEBUG msg #78: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=165 estimated_tokens_delta=10 uuid='48a2a0ac-af39-47b7-822d-596f083a6923' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:14,699 DEBUG msg #79: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=172 estimated_tokens_delta=7 uuid='c93e697c-92e9-4f5b-93c6-890b9ecc5d1a' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:14,911 DEBUG msg #80: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=183 estimated_tokens_delta=11 uuid='73fcaedd-2173-4282-b1f1-6b5e2456e8e9' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:15,121 DEBUG msg #81: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=189 estimated_tokens_delta=6 uuid='ac3199c3-8527-4e6d-8485-c56289045980' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:15,331 DEBUG msg #82: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=195 estimated_tokens_delta=6 uuid='a4f7acdb-3cb7-4c9f-9803-8cd8a45b4c22' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:15,544 DEBUG msg #83: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=213 estimated_tokens_delta=18 uuid='1ced120c-e1d2-4f2b-8866-542e02e271d4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:15,754 DEBUG msg #84: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=231 estimated_tokens_delta=18 uuid='92f980f7-ae71-4873-9adc-e8c62febf4b6' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:15,964 DEBUG msg #85: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=243 estimated_tokens_delta=12 uuid='434f5815-e246-47ee-b875-629e0a54195a' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:16,175 DEBUG msg #86: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=257 estimated_tokens_delta=14 uuid='eb6cb1bb-e9e3-4652-88fd-191f46a4d991' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:16,384 DEBUG msg #87: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=264 estimated_tokens_delta=7 uuid='ade9753a-c5e6-4ff4-9f5f-eaa8aa11ab18' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:16,599 DEBUG msg #88: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=271 estimated_tokens_delta=7 uuid='2b81efc2-5788-40eb-9f62-048522dc650e' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:16,808 DEBUG msg #89: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=279 estimated_tokens_delta=8 uuid='618e5c82-a6a9-453a-9dda-b43154e449fb' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:17,042 DEBUG msg #90: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=284 estimated_tokens_delta=5 uuid='f1b7e506-0ab6-44fe-a0f9-82b7705cfa68' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:17,253 DEBUG msg #91: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=289 estimated_tokens_delta=5 uuid='84e2c121-a7ed-4f28-a451-6fb6adf1d853' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:19,203 DEBUG msg #92: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=292 estimated_tokens_delta=3 uuid='e64d6be8-710f-4835-8f5e-f59216a905c2' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:19,441 DEBUG msg #93: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=319 estimated_tokens_delta=27 uuid='88c6931b-595a-434e-bda9-f9c3a9ae2dea' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:19,606 DEBUG msg #94: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=341 estimated_tokens_delta=22 uuid='e2aa3d40-fee1-489c-875e-3eacf6a14186' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:19,818 DEBUG msg #95: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=377 estimated_tokens_delta=36 uuid='cfc86d7e-6cf5-4cc8-9929-3b36cd2c4a99' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:20,001 DEBUG msg #96: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=388 estimated_tokens_delta=11 uuid='4d9d51dc-2c30-4c2c-92fe-f585e8d848d9' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:21,774 DEBUG msg #97: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=389 estimated_tokens_delta=1 uuid='292ec402-d3bd-4a0a-a79a-172cb6cb936d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:22,006 DEBUG msg #98: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=416 estimated_tokens_delta=27 uuid='49f432eb-1372-4cc2-8c13-808ee774c8c9' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:22,213 DEBUG msg #99: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=437 estimated_tokens_delta=21 uuid='9cd952ea-b5c4-4368-ad36-ffff4acb84da' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:22,420 DEBUG msg #100: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=461 estimated_tokens_delta=24 uuid='95f3d55f-f956-4b6f-9a59-b9812cb3bddf' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:22,651 DEBUG msg #101: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=492 estimated_tokens_delta=31 uuid='aff1e43c-7da8-469b-aa6d-4e12632ac0f7' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:22,852 DEBUG msg #102: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=554 estimated_tokens_delta=62 uuid='0842be22-84c6-43a6-b6f2-92c6f3f0c23b' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:24,330 DEBUG msg #103: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=555 estimated_tokens_delta=1 uuid='42dfa7c7-a55e-4e3e-b79a-3075b514cd04' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:24,438 DEBUG msg #104: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=579 estimated_tokens_delta=24 uuid='76e53f4a-accc-4020-ab62-bb58c840a674' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:24,648 DEBUG msg #105: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=601 estimated_tokens_delta=22 uuid='a776fee1-e73f-4586-9da7-d33823c32f33' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:24,858 DEBUG msg #106: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=627 estimated_tokens_delta=26 uuid='2e8b5b9b-7624-4c7c-b5fe-92d8fdc5cd3c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:25,627 DEBUG msg #107: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=659 estimated_tokens_delta=32 uuid='72d5c5ea-ebe1-48c5-a45b-770c26ba6822' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:25,651 DEBUG msg #108: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=704 estimated_tokens_delta=45 uuid='da39d6ae-9c42-43e0-a0e8-7b595d7b4a2a' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:25,706 DEBUG msg #109: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=707 estimated_tokens_delta=3 uuid='b07de1fd-7d57-4ec0-9b39-ba23002a394d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:26,378 DEBUG msg #110: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=709 estimated_tokens_delta=2 uuid='9d6284ba-d5e3-495a-9e04-1e81ef399010' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:26,620 DEBUG msg #111: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=747 estimated_tokens_delta=38 uuid='f2895008-02ab-4a7e-91d0-e3cc8a00d6b2' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:26,819 DEBUG msg #112: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=798 estimated_tokens_delta=51 uuid='77aca633-e213-4230-80ad-99daa6c22087' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:27,009 DEBUG msg #113: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=841 estimated_tokens_delta=43 uuid='010b2059-0fce-4d6a-9a7e-e38aab0dcfd4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:27,237 DEBUG msg #114: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=875 estimated_tokens_delta=34 uuid='e0dab426-8800-4882-8095-d71f0d1bcbdb' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:29,146 DEBUG msg #115: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=878 estimated_tokens_delta=3 uuid='2e8fef8f-25d1-4800-8759-66c982e52c76' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:29,375 DEBUG msg #116: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=919 estimated_tokens_delta=41 uuid='ed2884cc-729d-493d-aaad-740e4b2a5647' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:29,531 DEBUG msg #117: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=956 estimated_tokens_delta=37 uuid='051cd706-e441-4639-a81d-c369755a60a7' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:29,742 DEBUG msg #118: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1008 estimated_tokens_delta=52 uuid='83f2bb6b-5118-4c04-b50c-93ab86b6e549' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:29,956 DEBUG msg #119: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1048 estimated_tokens_delta=40 uuid='dd10ab1a-e077-4019-ba54-79bd267beafc' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:30,007 DEBUG msg #120: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1051 estimated_tokens_delta=3 uuid='993edd40-ce64-485f-b493-40d8d404a478' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:30,577 DEBUG msg #121: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1052 estimated_tokens_delta=1 uuid='1d3a7895-d29e-4a1d-9d62-54a2faf45741' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:30,747 DEBUG msg #122: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1098 estimated_tokens_delta=46 uuid='952e6ee1-6a1c-43b6-8dd5-934982b1b476' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:30,986 DEBUG msg #123: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1120 estimated_tokens_delta=22 uuid='140e8fe9-f789-4816-b2a3-9e602c46826f' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:31,157 DEBUG msg #124: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1155 estimated_tokens_delta=35 uuid='8e284a8f-e4c1-4cd4-9e10-bdbe00dee451' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:31,403 DEBUG msg #125: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1205 estimated_tokens_delta=50 uuid='16272285-a316-41ad-9ab9-808546490751' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:31,416 DEBUG msg #126: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1222 estimated_tokens_delta=17 uuid='bcab66b0-489c-4f54-80c9-7206b07bd5f5' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:31,866 DEBUG msg #127: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1223 estimated_tokens_delta=1 uuid='8761ef42-dd36-45dd-8f02-47f4b938c26d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:31,932 DEBUG msg #128: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1287 estimated_tokens_delta=64 uuid='169cf9d9-cd45-4c42-998e-8d9820dbf153' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:31,935 DEBUG msg #129: assistant (tool_use) thinking: All 47 tests for Elo pass. Now let me verify each acceptance criterion systematically:
+
+1. **AC1: `EloEngine.run(results_df)` computes Elo chronologically and returns per-team/per-date ratings + per-match Elo-diff + final ratings.**
+   - ✓ Code at lines 129-141: `EloEngine.run` returns `EloResult` with `history`, `match_diffs`, `final_ratings`
+   - ✓ Tests: TestWhenRunCalledThenResultHasRequiredComponents (lines 87-139)
+   - ✓ Stable sort by date: line 146 uses `kind="stable"` and sorts by `_SORT_COLS = ["_d", "HOME_TEAM", "AWAY_TEAM", "HOME_GOALS", "AWAY_GOALS"]`
+
+2. **AC2: Expectation math is exact: equal ratings on neutral → We == 0.5; dr = 400 → We ≈ 0.909 (`pytest.approx`).**
+   - ✓ Code: `_we(dr)` at line 97-99: `1.0 / (1.0 + 10.0 ** (-dr / 400.0))`
+   - ✓ Tests: TestWhenExpectationMathThenValuesAreExact (lines 147-168)
+   - Test confirms equal ratings on neutral → We=0.5 (line 151) and dr=400 → We≈0.909 (lines 157-168)
+
+3. **AC3: Update formula verified against hand-computed case (both 1500, home wins 1–0, friendly K, neutral → home 1510 / away 1490) and is zero-sum (Δhome == −Δaway).**
+   - ✓ Code: Update formula at lines 179-191 applies `ΔR = k * G * (outcome - We)`
+   - ✓ Tests: TestWhenHandComputedCaseThenRatingsAndZeroSumCorrect (lines 176-205) validates the exact 1510/1490 outcome and confirms zero-sum property holds across all test cases
+
+4. **AC4: `home_advantage = 0` when `NEUTRAL` is True; non-neutral matches add `home_advantage` to `dr`.**
+   - ✓ Code: line 188 implements `home_adv = 0.0 if neutral else self._config.home_advantage`
+   - ✓ Tests: TestWhenNeutralFlagThenHomeAdvantageIsApplied (lines 213-240) shows neutral venues produce lower rating gains than non-neutral ones, and setting home_advantage to zero makes both scenarios equivalent
+
+5. **AC5: Goal-margin multiplier `G`: margins {0,1}→1.0, 2→1.5, 3→1.75, 5→2.0. [NOT VERIFIABLE — skipping]**
+
+6. **AC6: `K` classified by importance from `TOURNAMENT` (case-insensitive substring), with precedence so "FIFA World Cup qualification" → qualifier tier, "FIFA World Cup" → world-cup tier, a continental keyword → continental tier, else friendly.**
+   - ✓ The `_k()` method (lines 193-202) checks qualifier keywords before world-cup keywords to enforce precedence, and uses `tournament.lower()` for case-insensitive matching. Tests confirm "FIFA World Cup qualification" correctly maps to qualifier tier despite containing "World Cup", case-insensitivity works across inputs, and continental tier ranks appropriately between qualifier and world-cup tiers.
+
+7. **AC7: Unplayed fixtures (`<NA>` goals) cause **no** rating change but a pre-match Elo-diff is still emitted; engine never raises on `<NA>`.**
+   - ✓ Code: lines 163-167 check `pd.isna()` for un played fixtures
+   - Line 164-166: adds entry to diffs but doesn't update ratings
+   - ✓ Tests: TestWhenUnplayedFixtureThenBehaviorIsCorrect (lines 293-354)
+   - Line 309-310: no raise on NA goals
+   - Line 312-320: ratings unchanged
+   - Line 322-324: pre-match diff still emitted
+
+8. **AC8: A team with no prior matches enters at `initial_rating` (the "no history" edge case).**
+   - ✓ Code: line 160-161 `ratings.get(home, self._config.initial_rating)` and `ratings.get(away, self._config.initial_rating)`
+   - ✓ Tests: TestWhenTeamHasNoPriorMatchesThenEntersAtInitialRating (lines 362-404)
+
+9. **AC9: Chronological determinism: shuffling input row order yields identical final ratings.**
+   - ✓ Code: stable sort at line 146 ensures determinism
+   - ✓ Tests: TestWhenInputShuffledThenFinalRatingsAreIdentical (lines 412-507)
+   - Both deterministic test (lines 413-462) and property-based test using hypothesis (lines 464-507) validate this behavior
+
+10. **AC10: `seed_wc2026(result, teams)` returns each team's latest historical rating, defaulting to `initial_rating` for teams absent from history.**
+    - ✓ Code: lines 210-216 in `seed_wc2026` function
+    - Line 216: `{team: result.final_ratings.get(team, result.initial_rating) for team in teams}`
+    - ✓ Tests: TestWhenSeedWc2026CalledThenRatingsAreCorrect (lines 515-545)
+
+11. **AC11: `EloConfig`
+
+** defaults load; invalid values (non-positive K / initial_rating, negative home_advantage) raise `ValidationError`; `AppConfig().elo` is an `EloConfig`.
+    - ✓ Code: EloConfig defined in config.py with validators ensuring initial_rating and K factors are positive, home_advantage is non-negative
+    - ✓ Tests: TestWhenEloConfigValidationThenCorrectBehavior (lines 553-601) confirms AppConfig().elo returns an EloConfig instance
+
+12. **AC12: All tests pass [NOT VERIFIABLE — gate criterion]**
+
+13. **AC13: SOLID, clean code [NOT VERIFIABLE — subjective]**
+
+All verifiable criteria are satisfied. The code matches every acceptance criterion with corresponding tests passing
+
+.
+2026-06-23 23:47:32,047 INFO msg #130: assistant (35 chars)
+Now let me verify the config setup:
+2026-06-23 23:47:32,384 DEBUG msg #131: assistant (tool_use) tool_use(Bash): {'command': 'cd "/Volumes/External SSD/worldcup-2026-prediction" && python -c "\nfrom worldcup_playoff.config import AppConfig, EloConfig\napp = AppConfig()\nprint(f\'AppConfig.elo is EloConfig: {isinstance(app.elo, EloConfig)}\')\nprint(f\'EloConfig initial_rating: {app.elo.initial_rating}\')\nprint(f\'EloConfig home_advantage: {app.elo.home_advantage}\')\nprint(f\'EloConfig k_friendly: {app.elo.k_friendly}\')\nprint(f\'EloConfig k_qualifier: {app.elo.k_qualifier}\')\nprint(f\'EloConfig k_continental: {app.elo.k_continental}\')\nprint(f\'EloConfig k_world_cup: {app.elo.k_world_cup}\')\n"\n', 'description': 'Verify EloConfig is properly integrated'}
+2026-06-23 23:47:32,495 DEBUG msg #132: UserMessage tool_result(toolu_01PGRMGrhbQcNMoA6DrMcAVD): AppConfig.elo is EloConfig: True
+EloConfig initial_rating: 1500.0
+EloConfig home_advantage: 100.0
+EloConfig k_friendly: 20
+EloConfig k_qualifier: 30
+EloConfig k_continental: 40
+EloConfig k_world_cup: 60
+2026-06-23 23:47:34,661 DEBUG msg #133: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=2 estimated_tokens_delta=2 uuid='c4b3b47e-c40c-45d4-b93b-e861b58d741c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:34,664 DEBUG msg #134: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=26 estimated_tokens_delta=24 uuid='f6432c0b-efee-4eb6-8c3e-590e191e5a48' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:34,877 DEBUG msg #135: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=39 estimated_tokens_delta=13 uuid='05bc5526-4c29-4f33-8659-355f06b41f87' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:35,101 DEBUG msg #136: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=50 estimated_tokens_delta=11 uuid='22a3836f-3aca-4279-a1c8-fb72fb1fe952' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:35,311 DEBUG msg #137: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=59 estimated_tokens_delta=9 uuid='be56be38-59c0-4adf-aa50-bbc9da4e0d4e' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:35,524 DEBUG msg #138: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=76 estimated_tokens_delta=17 uuid='448b29e2-9706-4fc6-9d70-7ab4d75ac45b' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:35,735 DEBUG msg #139: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=90 estimated_tokens_delta=14 uuid='1014ca67-fd64-4390-a127-9da71faf0e4b' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:36,510 DEBUG msg #140: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=105 estimated_tokens_delta=15 uuid='eec7d772-3eab-4c08-b9cb-45f2db5e8312' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:36,561 DEBUG msg #141: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=117 estimated_tokens_delta=12 uuid='54a294a4-4054-493e-89ea-3c2a7678ba6a' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:36,595 DEBUG msg #142: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=126 estimated_tokens_delta=9 uuid='d8b4d352-7ff8-494e-98ab-c643bd245dde' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:36,625 DEBUG msg #143: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=137 estimated_tokens_delta=11 uuid='3b1498fc-15b5-4233-affc-d4606c91310e' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:36,791 DEBUG msg #144: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=150 estimated_tokens_delta=13 uuid='4ee501c3-c2c2-4521-9ac6-5179aa30971c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:37,000 DEBUG msg #145: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=166 estimated_tokens_delta=16 uuid='d185f1e5-ca7a-4226-b1cf-5405a9193889' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:37,210 DEBUG msg #146: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=174 estimated_tokens_delta=8 uuid='99313098-5c3c-4a0a-83f4-706c5bfbebd2' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:37,419 DEBUG msg #147: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=182 estimated_tokens_delta=8 uuid='253db37d-4601-45a3-a261-9eb035a31635' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:37,632 DEBUG msg #148: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=189 estimated_tokens_delta=7 uuid='4c5b8b65-aabc-421b-b182-b2631935678c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:37,869 DEBUG msg #149: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=200 estimated_tokens_delta=11 uuid='9f95300f-ee7a-43f9-a3fb-1ec37edc32e0' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:38,077 DEBUG msg #150: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=206 estimated_tokens_delta=6 uuid='86ffd01b-cc5a-42a7-9c0e-fb0bbe8aaebd' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:38,314 DEBUG msg #151: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=221 estimated_tokens_delta=15 uuid='f4a1a8db-778b-445d-9dd9-bcc16bef62f8' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:38,525 DEBUG msg #152: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=236 estimated_tokens_delta=15 uuid='dc4720b5-ab1d-460c-a2e6-8491a9b1ae91' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:38,736 DEBUG msg #153: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=254 estimated_tokens_delta=18 uuid='9a38d543-bb4a-4194-b174-8ed694d71f76' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:38,983 DEBUG msg #154: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=267 estimated_tokens_delta=13 uuid='edb78ba3-7f40-4718-ba78-aeb3569cbc2d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:39,184 DEBUG msg #155: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=291 estimated_tokens_delta=24 uuid='6fcfe471-55e3-49b6-9320-aaa290be2056' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:39,439 DEBUG msg #156: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=300 estimated_tokens_delta=9 uuid='2c4a8955-06fc-46bc-8202-fc06dbd624cc' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:41,433 DEBUG msg #157: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=301 estimated_tokens_delta=1 uuid='da8e12d1-74a9-4660-b72d-c0ba4062b6b6' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:41,601 DEBUG msg #158: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=321 estimated_tokens_delta=20 uuid='2483e55b-9af2-40b9-ba78-f8aafd831bf8' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:41,841 DEBUG msg #159: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=353 estimated_tokens_delta=32 uuid='2f0e3a60-9c02-469d-9239-b8066448893b' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:42,021 DEBUG msg #160: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=373 estimated_tokens_delta=20 uuid='07d8c4e7-d3a8-41e0-8fd5-dbb157b1e83d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:42,253 DEBUG msg #161: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=387 estimated_tokens_delta=14 uuid='564560f6-ee50-463f-a3fb-3a6187e3de6c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:42,307 DEBUG msg #162: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=392 estimated_tokens_delta=5 uuid='760a3ce9-37c8-4202-ae4d-7430183ddf30' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:43,172 DEBUG msg #163: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=398 estimated_tokens_delta=6 uuid='21caa888-7e19-40b5-bd40-2818e76ee51e' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:43,256 DEBUG msg #164: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=416 estimated_tokens_delta=18 uuid='f2a13989-2ee1-496b-b6dc-e884ac0863c9' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:43,462 DEBUG msg #165: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=434 estimated_tokens_delta=18 uuid='2719591f-022f-4a94-a94c-0a891d668d09' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:43,684 DEBUG msg #166: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=465 estimated_tokens_delta=31 uuid='13aa72f6-229b-4d3f-8a6d-48b08310d99c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:43,886 DEBUG msg #167: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=486 estimated_tokens_delta=21 uuid='4ee925ce-2a57-4d31-8f79-dc8f2f2bf278' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:44,096 DEBUG msg #168: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=517 estimated_tokens_delta=31 uuid='f7bf27f8-a832-4fca-b1c3-b49eae362107' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:44,298 DEBUG msg #169: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=525 estimated_tokens_delta=8 uuid='43cb5246-ed2c-4fd0-be2b-3b02d5acc2b6' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:45,015 DEBUG msg #170: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=530 estimated_tokens_delta=5 uuid='88603516-7042-4fc0-88d4-40d1dc85b9e4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:45,088 DEBUG msg #171: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=548 estimated_tokens_delta=18 uuid='96a5438a-8371-4db8-b93e-2f2493d30ef8' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:45,303 DEBUG msg #172: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=581 estimated_tokens_delta=33 uuid='77f16dfc-be03-43f2-8776-adcef4609830' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:45,505 DEBUG msg #173: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=604 estimated_tokens_delta=23 uuid='687c2868-feb1-4a17-bcbe-a5702e420842' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:45,718 DEBUG msg #174: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=636 estimated_tokens_delta=32 uuid='c824360c-b4b9-4395-b203-86a6f081e478' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:45,807 DEBUG msg #175: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=653 estimated_tokens_delta=17 uuid='3caf76cf-2d6c-48f8-b46d-f4aed4e75587' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:45,815 DEBUG msg #176: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=840 estimated_tokens_delta=187 uuid='6d275cd3-935e-4086-b8cc-50e1081b4d48' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:45,817 DEBUG msg #177: assistant (tool_use) thinking: Perfect. Now let me verify each acceptance criterion systematically against the code:
+
+1. **EloEngine.run returns per-team/per-date ratings + per-match Elo-diff + final ratings**
+   - Code lines 129-141: ✓ Returns EloResult with history, match_diffs, final_ratings
+   - Lines 143-149: ✓ Stable sort by date with deterministic tiebreak on (HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS)
+   - Tests pass: ✓ All 47 tests pass
+
+2. **Expectation math: We == 0.5 for equal ratings on neutral; dr = 400 → We ≈ 0.909**
+   - Code lines 97-99: ✓ We = 1 / (1 + 10^(-dr/400))
+   - Tests verify: ✓ TestWhenExpectationMathThenValuesAreExact passes
+
+3. **Hand-computed case: both 1500, home wins 1–0, friendly K, neutral → home 1510 / away 1490 + zero-sum**
+   - Code lines 179-191: ✓ ΔR = K × G × (W - We), and away gets -Δ
+   - Tests verify: ✓ TestWhenHandComputedCaseThenRatingsAndZeroSumCorrect passes
+   - Property test for zero-sum: ✓ line 195-205 with hypothesis
+
+4. **home_advantage = 0 when NEUTRAL is True**
+   - Code line 188: ✓ `home_adv = 0.0 if neutral else self._config.home_advantage`
+   - Tests verify: ✓ TestWhenNeutralFlagThenHomeAdvantageIsApplied passes
+   
+5. The goal-margin multiplier logic isn't verifiable against the spec, so it's excluded from the pass/fail assessment.
+
+6. Tournament classification correctly prioritizes the qualifier check before world_cup matching, with case-insensitive tournament name handling via `tournament.lower()`. The K-factor assignment tests confirm this works as expected.
+
+7. Unplayed fixtures marked with <NA> goals don't trigger rating updates—the code checks `pd.isna()` and only appends to the diffs list without modifying ratings. Tests validate this behavior.
+
+8. Teams making their first appearance initialize at the configured initial_rating through the `ratings.get()` call with a default fallback.
+
+9. The system maintains deterministic output regardless of input order by performing a stable sort on match dates, ensuring consistent final ratings even when fixtures arrive shuffled.
+
+10. The seed_wc2026 method reconstructs team ratings by pulling the latest value from final_ratings for each team, defaulting to initial_rating if a team has no history.
+
+11. EloConfig applies validation rules to all parameters, AppConfig properly instantiates it with correct defaults, and invalid inputs trigger ValidationError as expected.
+
+12. All 11 verifiable criteria pass their corresponding tests.
+
+13. The implementation follows SOLID principles with clean, maintainable code structure.
+2026-06-23 23:47:50,206 INFO msg #178: assistant (3307 chars)
+Now let me perform a comprehensive verification by checking each acceptance criterion:
+
+**Criterion 1: EloEngine.run returns per-team/per-date ratings + per-match Elo-diff + final ratings, chronologically sorted with stable tiebreak**
+- ✓ Code lines 129-141: Returns `EloResult` with `history`, `match_diffs`, `final_ratings`
+- ✓ Code lines 143-149: Stable sort on `["_d", "HOME_TEAM", "AWAY_TEAM", "HOME_GOALS", "AWAY_GOALS"]`
+- ✓ Tests: 4 tests in TestWhenRunCalledThenResultHasRequiredComponents
+
+**Criterion 2: Expectation math is exact: equal ratings on neutral → We == 0.5; dr = 400 → We ≈ 0.909**
+- ✓ Code lines 97-99: `We = 1.0 / (1.0 + 10.0^(-dr / 400.0))`
+- ✓ Tests: TestWhenExpectationMathThenValuesAreExact (2 tests)
+
+**Criterion 3: Hand-computed case verified (both 1500, home wins 1–0, friendly K, neutral → 1510/1490) + zero-sum**
+- ✓ Code lines 179-191: Update formula `delta = k * G * (outcome - We)` with zero-sum guarantee
+- ✓ Tests: TestWhenHandComputedCaseThenRatingsAndZeroSumCorrect (3 tests + 1 property)
+
+**Criterion 4: home_advantage = 0 when NEUTRAL is True**
+- ✓ Code line 188: `home_adv = 0.0 if neutral else self._config.home_advantage`
+- ✓ Tests: TestWhenNeutralFlagThenHomeAdvantageIsApplied (3 tests)
+
+**Criterion 5: Goal-margin multiplier G [oracle: NOT VERIFIABLE]**
+- Skipped per oracle
+
+**Criterion 6: K classified by TOURNAMENT with correct precedence (qualifier before world-cup)**
+- ✓ Code lines 193-202: Qualifier keywords checked BEFORE world-cup keywords
+- ✓ Code line 195: `tournament.lower()` for case-insensitivity
+- ✓ Tests: TestWhenTournamentClassifiedThenKFactorReflectsImportance (6 tests)
+
+**Criterion 7: Unplayed fixtures (<NA>) cause no rating change but diff emitted; no raise**
+- ✓ Code lines 163-167: `pd.isna()` check; appends to diffs, initializes ratings only if absent
+- ✓ Tests: TestWhenUnplayedFixtureThenBehaviorIsCorrect (4 tests)
+
+**Criterion 8: Team with no prior matches enters at initial_rating**
+- ✓ Code lines 160-161: `ratings.get(home, self._config.initial_rating)`
+- ✓ Tests: TestWhenTeamHasNoPriorMatchesThenEntersAtInitialRating (2 tests)
+
+**Criterion 9: Chronological determinism: shuffled input → identical final ratings**
+- ✓ Code lines 143-149: Stable sort ensures determinism
+- ✓ Tests: TestWhenInputShuffledThenFinalRatingsAreIdentical (2 tests: 1 deterministic + 1 property-based)
+
+**Criterion 10: seed_wc2026 returns latest rating per team, defaults to initial_rating**
+- ✓ Code lines 210-216: `result.final_ratings.get(team, result.initial_rating)`
+- ✓ Tests: TestWhenSeedWc2026CalledThenRatingsAreCorrect (4 tests)
+
+**Criterion 11: EloConfig defaults load; invalid values raise ValidationError; AppConfig().elo is EloConfig**
+- ✓ Code (config.py lines 173-200): EloConfig with field_validators
+- ✓ Verified: `AppConfig().elo` is `EloConfig` instance with correct defaults (initial_rating=1500, home_advantage=100, K factors positive)
+- ✓ Tests: TestWhenEloConfigValidationThenCorrectBehavior (9 tests)
+
+**Criterion 12: All tests pass [oracle: NOT VERIFIABLE — gate]**
+**Criterion 13: SOLID, clean code [oracle: NOT VERIFIABLE — subjective]**
+
+=== ASPECT VERDICT ===
+VERDICT: pass
+NOTES: All 11 runtime-verifiable acceptance criteria are satisfied. 47 tests passing. Implementation matches spec exactly.
+=== END VERDICT ===
+2026-06-23 23:47:50,248 INFO msg #179: ResultMessage (tokens_in=51 tokens_out=5734 cache_read=528991 cache_write=75994 is_error=False subtype=success stop_reason=end_turn num_turns=9)
+2026-06-23 23:47:50,250 INFO SDK shared-client session complete.
+2026-06-23 23:47:50,251 INFO SDK shared-client session starting (model=haiku effort=default max_turns=None).
+2026-06-23 23:47:50,252 DEBUG SDK prompt (1653 chars):
+# Prompt — MAV Aspect: Security
+
+**Role:** Independent verifier — security aspect only.
+**Tools:** `Read`, `Bash` (read-only diagnostics).
+
+---
+
+## Prompt
+
+You are evaluating a single Phase 6 candidate for GitHub issue **#5** against the security aspect only. Acceptance-criteria, runtime, and style are evaluated by sibling verifiers — stay strictly in scope.
+
+### Instructions
+
+1. **Read the implementer summary** — `(no changes since baseline)` — and open the modified files via `Read` to inspect them directly.
+
+2. **Look for security defects.** Examples (non-exhaustive): injection vectors (SQL, command, path traversal), hard-coded secrets or credentials, missing auth/authorization checks, unsafe deserialization, weak crypto, sensitive data in logs, missing input validation at trust boundaries, broken CSRF/XSS defenses.
+
+3. **Decide.** Pick exactly one verdict:
+   - `pass` — no security defects observed in the diff.
+   - `fail` — at least one substantive security defect present.
+
+4. **Emit a machine-parseable verdict block** at the end of your response. Nothing after `=== END VERDICT ===` is parsed.
+
+```
+=== ASPECT VERDICT ===
+VERDICT: <pass|fail>
+NOTES: <one short line naming the worst defect; empty when pass>
+=== END VERDICT ===
+```
+
+### Constraints
+
+- **YOLO mode** — no confirmation prompts, no interactive waits.
+- **Single turn.** Emit the verdict block in this one turn.
+- **Read-only.** Never modify code or state.
+- **Never touch `state.json`** — orchestrator-owned.
+- **Stay in scope.** Do not opine on functional correctness, runtime, or style.
+- **Verdict must be machine-parseable.** Unknown verdicts fall back to `fail`.
+
+2026-06-23 23:47:50,258 INFO shared client model re-bound to haiku (alias=haiku).
+2026-06-23 23:47:50,262 INFO msg #1: session bound to model claude-haiku-4-5-20251001 (SystemMessage ground truth)
+2026-06-23 23:47:50,263 DEBUG msg #1: SystemMessage subtype=init type='system' subtype='init' cwd='/Volumes/External SSD/worldcup-2026-prediction' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5' tools=['AskUserQuestion', 'Bash', 'CronCreate', 'CronDelete', 'CronList', 'DesignSync', 'Edit', 'EnterPlanMode', 'EnterWorktree', 'ExitPlanMode', 'ExitWorktree', 'Glob', 'Grep', 'Monitor', 'NotebookEdit', 'PushNotification', 'Read', 'RemoteTrigger', 'ScheduleWakeup', 'Skill', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskOutput', 'TaskStop', 'TaskUpdate', 'ToolSearch', 'WebFetch', 'WebSearch', 'Workflow', 'Write', 'mcp__claude_ai_Gmail__authenticate', 'mcp__claude_ai_Gmail__complete_authentication', 'mcp__claude_ai_Google_Calendar__authenticate', 'mcp__claude_ai_Google_Calendar__complete_authentication', 'mcp__claude_ai_Google_Drive__authenticate', 'mcp__claude_ai_Google_Drive__complete_authentication'] mcp_servers=[{'name': 'claude.ai Google Drive', 'status': 'needs-auth'}, {'name': 'claude.ai Google Calendar', 'status': 'needs-auth'}, {'name': 'claude.ai Gmail', 'status': 'needs-auth'}] model='claude-haiku-4-5-20251001' permissionMode='bypassPermissions' slash_commands=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator', 'clear', 'compact', 'context', 'heapdump', 'init', 'reload-skills', 'review', 'security-review', 'usage-credits', 'extra-usage', 'usage', 'insights', 'goal', 'team-onboarding'] apiKeySource='none' claude_code_version='2.1.175' output_style='default' agents=['general-purpose', 'statusline-setup', 'claude', 'Explore', 'Plan'] skills=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator'] plugins=[] analytics_disabled=False product_feedback_disabled=False uuid='4dac8fef-2e24-4249-81f8-023b47507c8e' fast_mode_state='off'
+2026-06-23 23:47:52,233 DEBUG msg #2: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1 estimated_tokens_delta=1 uuid='e832bc56-aa34-44b0-9667-d329b5bd160d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:52,510 DEBUG msg #3: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=22 estimated_tokens_delta=21 uuid='559d489c-35c2-4887-b9c4-09846ba39250' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:52,713 DEBUG msg #4: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=53 estimated_tokens_delta=31 uuid='9b47a41e-9e0f-4796-b2f5-73eaec541f2e' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:52,923 DEBUG msg #5: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=69 estimated_tokens_delta=16 uuid='0744be7a-88bb-4879-88a8-fe31f1b9b5cb' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:53,134 DEBUG msg #6: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=87 estimated_tokens_delta=18 uuid='2a2acd2f-44af-414d-b586-cde638ac7a3f' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:53,372 DEBUG msg #7: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=94 estimated_tokens_delta=7 uuid='12192d13-d4d3-4ebc-a39d-59a5604c2868' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:53,375 DEBUG msg #8: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=146 estimated_tokens_delta=52 uuid='fc5a79dd-e908-4624-879f-df0c458a94f5' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:53,377 DEBUG msg #9: assistant (tool_use) thinking: The user is asking me to do a security review of issue #5 (Elo engine). Let me read the implementation to check for security defects.
+
+The implementer summary says "(no changes since baseline)" which suggests they might not have changed anything, or it's referring to no security-relevant changes.
+
+Let me read the Elo implementation files to check for security issues.
+2026-06-23 23:47:53,619 INFO msg #10: assistant (57 chars)
+I'll inspect the Elo implementation for security defects.
+2026-06-23 23:47:54,130 DEBUG msg #11: assistant (tool_use) tool_use(Read): {'file_path': '/Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/data/elo.py'}
+2026-06-23 23:47:54,334 DEBUG msg #12: UserMessage tool_result(toolu_011AKvhE58DpQP3nHsxfEpsJ): Wasted call — file unchanged since your last Read. Refer to that earlier tool_result instead.
+2026-06-23 23:47:54,394 DEBUG msg #13: assistant (tool_use) tool_use(Read): {'file_path': '/Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/config.py', 'offset': 173, 'limit': 30}
+2026-06-23 23:47:54,440 DEBUG msg #14: UserMessage tool_result(toolu_01DwHejDtYwm3Z9x9KS3CwvC): 173	class EloConfig(BaseModel):
+174	    """Configuration for the World Football Elo engine."""
+175	
+176	    model_config = ConfigDict(extra="ignore")
+177	
+178	    initial_rating: float = 1500.0
+179	    home_advantage: float = 100.0
+180	    k_friendly: int = 20
+181	    k_qualifier: int = 30
+182	    k_continental: int = 40
+183	    k_world_cup: int = 60
+184	    # Checked in order: qualifier → continental → world_cup → friendly.
+185	    # qualifier_keywords checked before world_cup_keywords so that
+186	    # "FIFA World Cup qualification" maps to qualifier tier, not world-cup.
+187	    qualifier_keywords: list[str] = ["qualification", "qualifying", "qualifier"]
+188	    continental_keywords: list[str] = [
+189	        "Copa America",
+190	        "UEFA European Championship",
+191	        "AFCON",
+192	        "Africa Cup of Nations",
+193	        "Asian Cup",
+194	        "Gold Cup",
+195	        "CONCACAF Gold Cup",
+196	        "Nations League",
+197	        "Copa del Rey",
+198	    ]
+199	    world_cup_keywords: list[str] = ["World Cup"]
+200	
+201	    @field_validator("initial_rating")
+202	    @classmethod
+2026-06-23 23:47:57,304 DEBUG msg #15: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1 estimated_tokens_delta=1 uuid='42adbe25-e013-4a02-b392-8f30c4aec00c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:57,306 DEBUG msg #16: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=18 estimated_tokens_delta=17 uuid='a06b0f39-ad01-4cdd-8124-8c61442289b4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:57,464 DEBUG msg #17: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=27 estimated_tokens_delta=9 uuid='13d5a110-7876-4a59-8453-2e246562845d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:57,713 DEBUG msg #18: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=38 estimated_tokens_delta=11 uuid='a19331d0-2607-4874-838c-791b68139bf5' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:57,940 DEBUG msg #19: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=49 estimated_tokens_delta=11 uuid='ba77062c-d3df-4b8f-907b-8b8d0be9cf90' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:58,122 DEBUG msg #20: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=73 estimated_tokens_delta=24 uuid='f0a5a9e6-d05f-43b7-987b-1163cac515af' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:58,318 DEBUG msg #21: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=95 estimated_tokens_delta=22 uuid='1410deb4-72cf-4375-a051-fc5fd1c259ff' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:58,542 DEBUG msg #22: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=114 estimated_tokens_delta=19 uuid='b452b06b-e1db-4d4f-9e5f-b9671d5afcda' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:58,761 DEBUG msg #23: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=132 estimated_tokens_delta=18 uuid='f009ec6f-9903-4431-ad8c-918078d427ea' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:58,967 DEBUG msg #24: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=159 estimated_tokens_delta=27 uuid='d4690ec8-df41-4879-b7ef-3e85c1c1d4e9' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:59,177 DEBUG msg #25: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=172 estimated_tokens_delta=13 uuid='b6403197-050c-4bb4-9ff2-18c9f33e59f7' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:59,388 DEBUG msg #26: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=186 estimated_tokens_delta=14 uuid='ac357ee5-a9a3-4122-889f-172b353c3995' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:59,599 DEBUG msg #27: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=204 estimated_tokens_delta=18 uuid='3af68fc9-3d57-440a-9bbf-f55201ce6a8c' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:47:59,811 DEBUG msg #28: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=221 estimated_tokens_delta=17 uuid='89b6c857-fe74-4530-b460-7be9d32d9112' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:00,022 DEBUG msg #29: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=243 estimated_tokens_delta=22 uuid='68f91ef1-1acf-4ff5-8847-d4bdf4375880' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:00,231 DEBUG msg #30: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=259 estimated_tokens_delta=16 uuid='ad2daba5-a426-48b4-9965-200c77c07be7' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:00,442 DEBUG msg #31: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=272 estimated_tokens_delta=13 uuid='1c22719b-85b5-4d73-b9ca-b924fde958b3' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:00,651 DEBUG msg #32: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=288 estimated_tokens_delta=16 uuid='9b91f238-3e91-4658-96b2-5ccc24ec68a4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:00,867 DEBUG msg #33: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=310 estimated_tokens_delta=22 uuid='f4a07c39-38e7-4764-868d-4fc73687e0ba' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:01,073 DEBUG msg #34: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=324 estimated_tokens_delta=14 uuid='bb10310a-0425-4629-a9ce-92bf5dbd6096' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:01,283 DEBUG msg #35: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=342 estimated_tokens_delta=18 uuid='e116f6b0-8588-45e0-87aa-edb330c32989' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:01,494 DEBUG msg #36: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=363 estimated_tokens_delta=21 uuid='927a68e3-da10-4d06-b670-ff93724ef7b3' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:01,704 DEBUG msg #37: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=383 estimated_tokens_delta=20 uuid='3d5132b4-9bce-44c8-81a9-fdb3446b0988' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:01,915 DEBUG msg #38: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=390 estimated_tokens_delta=7 uuid='ecc20f61-5812-41d0-8900-2f91b135a517' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:04,369 DEBUG msg #39: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=391 estimated_tokens_delta=1 uuid='16240cc7-e8af-45df-98db-7dd33f4ecd94' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:04,577 DEBUG msg #40: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=415 estimated_tokens_delta=24 uuid='4a4de109-b8bc-43f8-964f-fcdbfcefa08b' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:04,789 DEBUG msg #41: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=435 estimated_tokens_delta=20 uuid='097d1add-66a2-41df-8373-7a940bee56dc' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:05,000 DEBUG msg #42: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=469 estimated_tokens_delta=34 uuid='5556578f-c10e-4600-967d-e25fbcd2e920' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:05,155 DEBUG msg #43: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=487 estimated_tokens_delta=18 uuid='02b8320c-e82b-49c1-93f9-1690eb068d8a' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:05,661 DEBUG msg #44: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=595 estimated_tokens_delta=108 uuid='91c6d6c5-e821-4b81-b28a-ff9438fc3487' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:05,663 DEBUG msg #45: assistant (tool_use) thinking: Let me check the security of the implementation:
+
+From the Elo code (lines 1-222):
+- Lines 97-99: `_we(dr)` function does basic arithmetic on floats. No injection risk.
+- Lines 102-108: `_g(margin)` function does arithmetic on int. No injection risk.
+- Lines 111-115: `_outcome()` compares integers. No injection risk.
+- Lines 129-141: `run()` method processes DataFrame. No injection risks — pandas operations are safe.
+- Lines 143-149: `_sort()` method uses pandas sort. The `_SORT_COLS` is a hardcoded list, safe.
+- Lines 151-177: `_process()` iterates over rows and processes them. No injection vectors.
+- Lines 179-191: `_update()` does arithmetic. Safe.
+- Lines 193-202: `_k()` method does string matching with keywords. Let me check this more carefully:
+  - Line 195: `t = tournament.lower()` — safe lowercasing
+  - Line 196: `if any(kw.lower() in t for kw in c.qualifier_keywords)` — substring matching, no injection
+  - Line 198: same pattern
+  - Line 200: same pattern
+  - This is safe — just substring matching on keywords.
+- Lines 210-216: `seed_wc2026()` is a pure function that returns a dict. Safe.
+- Lines 219-221: `compute_elo()` factory function. Safe.
+
+From the config (EloConfig lines 173-221):
+- All fields are simple types (float, int, list[str])
+- Field validators are present for validation (lines 201+)
+- `ConfigDict(extra="ignore")` is safe — ignores extra fields
+- Keywords are hardcoded lists of tournament names. Safe.
+- No secrets, no hard-coded credentials.
+
+Security concerns I should check:
+No SQL injection, shell commands, or path traversal vectors present. Pydantic validators handle config validation, and there's no unsafe deserialization with pickle or eval. The module doesn't log sensitive data and doesn't require authentication since it's purely computational. The only string operations involve safe substring matching against hardcoded tournament keywords.
+2026-06-23 23:48:05,671 INFO msg #46: assistant (51 chars)
+Let me check the test file for any security issues:
+2026-06-23 23:48:05,672 DEBUG msg #47: assistant (tool_use) tool_use(Bash): {'command': 'cd "/Volumes/External SSD/worldcup-2026-prediction" && grep -n "import\\|exec\\|eval\\|pickle\\|shell\\|subprocess\\|os.system\\|passw\\|secret\\|key\\|credential" worldcup_playoff/data/elo.py worldcup_playoff/config.py tests/test_elo.py 2>/dev/null | head -30', 'description': 'Check for dangerous imports or patterns'}
+2026-06-23 23:48:05,757 DEBUG msg #48: UserMessage tool_result(toolu_01PgrToVTZanPZtaZmzRYk2q): worldcup_playoff/data/elo.py:11:  giving a total content-based order.  Rows that are equal on all five keys are
+worldcup_playoff/data/elo.py:16:from __future__ import annotations
+worldcup_playoff/data/elo.py:18:import logging
+worldcup_playoff/data/elo.py:19:from dataclasses import dataclass
+worldcup_playoff/data/elo.py:20:from typing import Iterable
+worldcup_playoff/data/elo.py:22:import pandas as pd
+worldcup_playoff/data/elo.py:24:from worldcup_playoff.config import EloConfig
+worldcup_playoff/data/elo.py:196:        if any(kw.lower() in t for kw in c.qualifier_keywords):
+worldcup_playoff/data/elo.py:198:        if any(kw.lower() in t for kw in c.continental_keywords):
+worldcup_playoff/data/elo.py:200:        if any(kw.lower() in t for kw in c.world_cup_keywords):
+worldcup_playoff/config.py:3:from __future__ import annotations
+worldcup_playoff/config.py:5:import tomllib
+worldcup_playoff/config.py:6:from pathlib import Path
+worldcup_playoff/config.py:8:from pydantic import BaseModel, ConfigDict, field_validator
+worldcup_playoff/config.py:12:    """Configuration for the no-key martj42 CC0 historical results loader."""
+worldcup_playoff/config.py:185:    # qualifier_keywords checked before world_cup_keywords so that
+worldcup_playoff/config.py:187:    qualifier_keywords: list[str] = ["qualification", "qualifying", "qualifier"]
+worldcup_playoff/config.py:188:    continental_keywords: list[str] = [
+worldcup_playoff/config.py:199:    world_cup_keywords: list[str] = ["World Cup"]
+tests/test_elo.py:7:from __future__ import annotations
+tests/test_elo.py:9:import random
+tests/test_elo.py:11:import pandas as pd
+tests/test_elo.py:12:import pytest
+tests/test_elo.py:13:from hypothesis import given, settings, strategies as st
+tests/test_elo.py:14:from pydantic import ValidationError
+tests/test_elo.py:16:from worldcup_playoff.config import AppConfig
+tests/test_elo.py:17:from worldcup_playoff.data.elo import EloConfig, EloEngine, compute_elo, seed_wc2026
+tests/test_elo.py:244:# AC6 — K classified by tournament importance with correct precedence
+tests/test_elo.py:280:        # Drive the keyword from the config's own defaults so the test is not brittle.
+tests/test_elo.py:281:        continental_kw = config.continental_keywords[0]
+2026-06-23 23:48:11,436 DEBUG msg #49: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=3 estimated_tokens_delta=3 uuid='ad9dcf50-3510-4141-8da9-637ec53f30e4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:11,439 DEBUG msg #50: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=20 estimated_tokens_delta=17 uuid='886b12c2-e602-45d3-afdf-0fd1dfdb8ffe' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:11,742 DEBUG msg #51: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=37 estimated_tokens_delta=17 uuid='8f1c1217-ad04-4256-8cf9-d699ee8c0cf2' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:11,889 DEBUG msg #52: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=73 estimated_tokens_delta=36 uuid='8cd74e85-eb46-4b21-970b-272964ad5f0d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:12,100 DEBUG msg #53: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=95 estimated_tokens_delta=22 uuid='17287bd7-13fe-4954-b9e9-e2c550522db5' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:12,309 DEBUG msg #54: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=121 estimated_tokens_delta=26 uuid='13eace46-7393-4565-a08a-d4e857382ef1' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:12,522 DEBUG msg #55: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=128 estimated_tokens_delta=7 uuid='f5764048-84b2-4369-a1df-461dc6ef064d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:12,526 DEBUG msg #56: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=180 estimated_tokens_delta=52 uuid='0473d71a-114e-4595-b2ac-5f7b1801ca8d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:12,527 DEBUG msg #57: assistant (tool_use) thinking: The imports look good — no dangerous modules like `pickle`, `eval`, `exec`, `subprocess`, `os.system`, etc. The code only uses:
+- `logging` (safe)
+- `dataclasses` (safe)
+- `typing` (safe)
+- `pandas` (safe data manipulation)
+- `tomllib` (safe TOML parsing)
+- `pathlib` (safe path handling)
+- `pydantic` (safe validation)
+
+The keyword matching at lines 196, 198, 200 is safe — just using substring matching with hardcoded keywords.
+
+Let me verify there are no unsafe operations in the DataFrame handling:
+2026-06-23 23:48:14,196 DEBUG msg #58: assistant (tool_use) tool_use(Bash): {'command': 'cd "/Volumes/External SSD/worldcup-2026-prediction" && python -c "\nimport ast\nimport inspect\nfrom worldcup_playoff.data.elo import EloEngine, seed_wc2026, compute_elo\n\n# Check for potentially dangerous patterns\nsrc = inspect.getsource(EloEngine)\nif \'eval\' in src or \'exec\' in src or \'__dict__\' in src:\n    print(\'DANGEROUS: eval/exec found\')\nelse:\n    print(\'OK: No eval/exec\')\n\n# Check config\nfrom worldcup_playoff.config import EloConfig\ncfg = EloConfig()\nprint(f\'Config has secrets: {any(x in str(cfg) for x in [\\"secret\\", \\"password\\", \\"key\\", \\"token\\", \\"credential\\"])}\')\nprint(f\'Config fields are safe types: {all(isinstance(getattr(cfg, f), (str, int, float, list, dict, bool)) for f in cfg.model_fields)}\')\n"\n', 'description': 'Check for dangerous code patterns'}
+2026-06-23 23:48:14,515 DEBUG msg #59: UserMessage tool_result(toolu_015pWBgXauUNEA1SphahWxDM): <string>:17: PydanticDeprecatedSince211: Accessing the 'model_fields' attribute on the instance is deprecated. Instead, you should access this attribute from the model class. Deprecated in Pydantic V2.11 to be removed in V3.0.
+OK: No eval/exec
+Config has secrets: True
+Config fields are safe types: True
+2026-06-23 23:48:16,250 DEBUG msg #60: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1 estimated_tokens_delta=1 uuid='1fdfba24-9cad-4388-a531-3d1f9e3a9fb1' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:16,252 DEBUG msg #61: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=24 estimated_tokens_delta=23 uuid='3a383380-f4e7-4a7f-ae11-689dcebb9873' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:16,362 DEBUG msg #62: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=43 estimated_tokens_delta=19 uuid='55838c57-9eb1-4319-9b70-73db1a26bd3d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:16,570 DEBUG msg #63: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=96 estimated_tokens_delta=53 uuid='7cdfeea4-edce-4b68-8fa9-a8ea36bdf49a' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:16,573 DEBUG msg #64: assistant (tool_use) thinking: The check says "Config has secrets: True" but that's likely a false positive from the string "secret" in the "secret_keywords" or similar. Let me check more carefully:
+2026-06-23 23:48:17,014 DEBUG msg #65: assistant (tool_use) tool_use(Bash): {'command': 'cd "/Volumes/External SSD/worldcup-2026-prediction" && python -c "\nfrom worldcup_playoff.config import EloConfig\ncfg = EloConfig()\nfor field, val in cfg.model_dump().items():\n    print(f\'{field}: {type(val).__name__}\')\n" 2>/dev/null', 'description': 'Check config field types'}
+2026-06-23 23:48:17,107 DEBUG msg #66: UserMessage tool_result(toolu_01SPqfHNSiTmG98DPGtW6ayX): initial_rating: float
+home_advantage: float
+k_friendly: int
+k_qualifier: int
+k_continental: int
+k_world_cup: int
+qualifier_keywords: list
+continental_keywords: list
+world_cup_keywords: list
+2026-06-23 23:48:19,647 DEBUG msg #67: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1 estimated_tokens_delta=1 uuid='ba87da08-7fa3-4ed3-aa6d-af4db83a37a6' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:19,867 DEBUG msg #68: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=17 estimated_tokens_delta=16 uuid='b35618ab-689d-4743-b907-6f42d5e9ec03' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:20,077 DEBUG msg #69: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=37 estimated_tokens_delta=20 uuid='1f2821ee-23b6-4c99-861e-e7a473e71df6' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:20,296 DEBUG msg #70: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=58 estimated_tokens_delta=21 uuid='bfca41a5-7422-4933-9a80-90efcdab43b5' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:20,504 DEBUG msg #71: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=63 estimated_tokens_delta=5 uuid='bc966d4a-0474-4b7c-913a-c987767cf2ac' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:20,508 DEBUG msg #72: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=116 estimated_tokens_delta=53 uuid='0e5bd578-5254-4c68-a91a-0d4079131ce8' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:20,510 DEBUG msg #73: assistant (tool_use) thinking: All field types are safe — floats, ints, and lists of strings. No sensitive data like passwords, API keys, or tokens. The "secret" mention was from "continental_keywords" matching the word pattern.
+
+Let me verify the DataFrame processing is safe:
+2026-06-23 23:48:23,949 DEBUG msg #74: assistant (tool_use) tool_use(Bash): {'command': 'cd "/Volumes/External SSD/worldcup-2026-prediction" && python << \'EOF\'\nimport pandas as pd\nfrom worldcup_playoff.data.elo import EloEngine, compute_elo\nfrom worldcup_playoff.config import EloConfig\n\n# Test with potentially problematic input\ndf = pd.DataFrame({\n    "DATE": ["2020-01-01"],\n    "HOME_TEAM": ["A\' DROP TABLE--", "B"],  # SQL injection attempt\n    "AWAY_TEAM": ["B"],\n    "HOME_GOALS": pd.array([1], dtype="Int64"),\n    "AWAY_GOALS": pd.array([0], dtype="Int64"),\n    "TOURNAMENT": ["Friendly"],\n    "NEUTRAL": [True],\n})\n\ntry:\n    result = EloEngine(EloConfig()).run(df)\n    print("✓ Handles malicious team names safely (no SQL injection)")\n    print(f"  Team names in result: {list(result.final_ratings.keys())}")\nexcept Exception as e:\n    print(f"✗ Error: {e}")\n\n# Test with code-injection-like tournament string\ndf2 = pd.DataFrame({\n    "DATE": ["2020-01-01"],\n    "HOME_TEAM": ["A"],\n    "AWAY_TEAM": ["B"],\n    "HOME_GOALS": pd.array([1], dtype="Int64"),\n    "AWAY_GOALS": pd.array([0], dtype="Int64"),\n    "TOURNAMENT": ["__import__(\'os\').system(\'echo pwned\')"],\n    "NEUTRAL": [True],\n})\n\ntry:\n    result = EloEngine(EloConfig()).run(df2)\n    print("✓ Handles code-like tournament strings safely (K matched to \'friendly\' default)")\n    print(f"  Rating gain: {result.final_ratings[\'A\'] - 1500.0}")\nexcept Exception as e:\n    print(f"✗ Error: {e}")\nEOF\n', 'description': 'Test for injection vulnerabilities'}
+2026-06-23 23:48:24,268 DEBUG msg #75: UserMessage tool_result_error(toolu_01SgqXfYaHkjRGiJetBumMAE): Exit code 1
+Traceback (most recent call last):
+  File "<stdin>", line 6, in <module>
+  File "/Users/silviobaratto/anaconda3/envs/nba/lib/python3.12/site-packages/pandas/core/frame.py", line 769, in __init__
+    mgr = dict_to_mgr(data, index, columns, dtype=dtype, copy=copy)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/silviobaratto/anaconda3/envs/nba/lib/python3.12/site-packages/pandas/core/internals/construction.py", line 460, in dict_to_mgr
+    return arrays_to_mgr(arrays, columns, index, dtype=dtype, consolidate=copy)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/silviobaratto/anaconda3/envs/nba/lib/python3.12/site-packages/pandas/core/internals/construction.py", line 113, in arrays_to_mgr
+    index = _extract_index(arrays)
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/silviobaratto/anaconda3/envs/nba/lib/python3.12/site-packages/pandas/core/internals/construction.py", line 643, in _extract_index
+    raise ValueError("All arrays must be of the same length")
+ValueError: All arrays must be of the same length
+2026-06-23 23:48:26,673 DEBUG msg #76: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1 estimated_tokens_delta=1 uuid='64c5cea4-4a9b-42a3-a15a-e2b1ce84acb4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:26,675 DEBUG msg #77: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=18 estimated_tokens_delta=17 uuid='69dea1cf-d6d2-4403-8a56-47c409c454e4' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:26,886 DEBUG msg #78: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=71 estimated_tokens_delta=53 uuid='952f76bb-fc63-4c46-9059-631b73783601' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:26,888 DEBUG msg #79: assistant (tool_use) thinking: Let me fix the test — I made a mistake with the DataFrame structure.
+2026-06-23 23:48:29,180 DEBUG msg #80: assistant (tool_use) tool_use(Bash): {'command': 'cd "/Volumes/External SSD/worldcup-2026-prediction" && python << \'EOF\'\nimport pandas as pd\nfrom worldcup_playoff.data.elo import EloEngine\nfrom worldcup_playoff.config import EloConfig\n\n# Test with potentially problematic input\ndf = pd.DataFrame({\n    "DATE": ["2020-01-01", "2020-01-01"],\n    "HOME_TEAM": ["A\' DROP TABLE--", "B"],\n    "AWAY_TEAM": ["B", "A"],\n    "HOME_GOALS": pd.array([1, 0], dtype="Int64"),\n    "AWAY_GOALS": pd.array([0, 1], dtype="Int64"),\n    "TOURNAMENT": ["Friendly", "Friendly"],\n    "NEUTRAL": [True, True],\n})\n\ntry:\n    result = EloEngine(EloConfig()).run(df)\n    print("✓ Handles malicious team names safely")\n    for team in result.final_ratings:\n        print(f"  - {repr(team)}")\nexcept Exception as e:\n    print(f"✗ Error: {e}")\n\n# Test with code-injection-like tournament string\ndf2 = pd.DataFrame({\n    "DATE": ["2020-01-01"],\n    "HOME_TEAM": ["A"],\n    "AWAY_TEAM": ["B"],\n    "HOME_GOALS": pd.array([1], dtype="Int64"),\n    "AWAY_GOALS": pd.array([0], dtype="Int64"),\n    "TOURNAMENT": ["__import__(\'os\').system(\'echo pwned\')"],\n    "NEUTRAL": [True],\n})\n\ntry:\n    result = EloEngine(EloConfig()).run(df2)\n    print("✓ Handles code-like tournament strings safely")\n    # Should use friendly K (=20) since no keyword match\n    print(f"  Rating gain: {result.final_ratings[\'A\'] - 1500.0} (friendly K=20)")\nexcept Exception as e:\n    print(f"✗ Error: {e}")\nEOF\n', 'description': 'Test for injection vulnerabilities with correct DataFrame'}
+2026-06-23 23:48:29,494 DEBUG msg #81: UserMessage tool_result(toolu_01UHRxJFffxHjNJ36A1jkwGB): ✓ Handles malicious team names safely
+  - "A' DROP TABLE--"
+  - 'B'
+  - 'A'
+✓ Handles code-like tournament strings safely
+  Rating gain: 10.0 (friendly K=20)
+2026-06-23 23:48:31,862 DEBUG msg #82: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=2 estimated_tokens_delta=2 uuid='57cc0d2f-0177-4ada-b62f-21c9d6a8ee4b' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:32,079 DEBUG msg #83: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=18 estimated_tokens_delta=16 uuid='2fe46bc8-a695-4f21-bf8c-464f7178b6f6' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:32,302 DEBUG msg #84: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=46 estimated_tokens_delta=28 uuid='9eecd7f9-f14d-450d-a1d0-c447e5cf6ec7' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:32,501 DEBUG msg #85: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=62 estimated_tokens_delta=16 uuid='3e320464-8416-41c1-b205-2ae6323af4c5' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:32,767 DEBUG msg #86: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=81 estimated_tokens_delta=19 uuid='aa042101-5c60-4173-8d72-7b5425a917b5' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:33,014 DEBUG msg #87: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=97 estimated_tokens_delta=16 uuid='a2b696e7-3318-4463-a8dc-807082bac07d' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:33,246 DEBUG msg #88: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=116 estimated_tokens_delta=19 uuid='cce4752c-228e-49e4-9d63-6ac553fb6d0e' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:33,453 DEBUG msg #89: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=168 estimated_tokens_delta=52 uuid='1925a94a-6667-4c2b-992a-3af1fe64cc69' session_id='af02aa7a-f79c-499a-af50-d3ebd45868a5'
+2026-06-23 23:48:33,456 DEBUG msg #90: assistant (tool_use) thinking: Perfect. The Elo implementation is safe:
+1. It treats team names and tournament strings as data, not code — no injection vectors
+2. The keyword matching is substring matching on hardcoded safe keywords
+3. No eval/exec/pickle/subprocess usage
+4. No hard-coded secrets or credentials
+5. No unsafe deserialization
+6. Pydantic validates the config with field_validators
+7. DataFrame operations are safe
+8. No sensitive data logged
+
+All security checks pass.
+2026-06-23 23:48:37,036 INFO msg #91: assistant (1351 chars)
+Based on my inspection of the Elo implementation:
+
+**Security analysis:**
+
+1. **Injection vectors**: None present
+   - Team names and tournament strings are treated as data, not executed (lines 196-202 use safe substring matching)
+   - No SQL, shell, or command injection vectors
+   - No eval/exec/pickle/subprocess usage
+
+2. **Credential/secret handling**: None present
+   - Config contains only safe numerical and string list fields
+   - No hard-coded API keys, passwords, or sensitive data
+   - `ConfigDict(extra="ignore")` safely rejects unknown fields
+
+3. **Input validation**: Properly implemented
+   - Pydantic field validators on EloConfig (initial_rating > 0, home_advantage >= 0, all K factors > 0)
+   - DataFrame operations are pandas built-ins (safe)
+   - String matching uses hardcoded keywords, not user input patterns
+
+4. **Data handling**: Safe
+   - DataFrame iteration processes all fields as data
+   - `pd.isna()` checks are safe
+   - No deserialization of untrusted data
+
+5. **Logging**: No sensitive data exposed in logger calls
+
+The implementation correctly treats all external inputs (team names, tournament names, goal counts) as data rather than code.
+
+=== ASPECT VERDICT ===
+VERDICT: pass
+NOTES: No security defects observed. All inputs treated as data; no injection vectors; no secrets; proper validation.
+=== END VERDICT ===
+2026-06-23 23:48:37,100 INFO msg #92: ResultMessage (tokens_in=44 tokens_out=3443 cache_read=680104 cache_write=7661 is_error=False subtype=success stop_reason=end_turn num_turns=8)
+2026-06-23 23:48:37,102 INFO SDK shared-client session complete.

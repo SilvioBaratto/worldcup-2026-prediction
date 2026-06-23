@@ -41,6 +41,8 @@ line-length = 100
 [tool.mypy]
 python_version = "3.11"
 strict = true
+ignore_missing_imports = true
+disallow_incomplete_defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

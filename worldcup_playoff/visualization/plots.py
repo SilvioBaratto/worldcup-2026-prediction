@@ -18,6 +18,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import matplotlib.axes
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
@@ -395,7 +396,7 @@ class ResultPlotter:
 
     def _draw_team_box(
         self,
-        ax: plt.Axes,
+        ax: matplotlib.axes.Axes,
         x: float,
         y: float,
         teams_with_probs: list[tuple[str, float]],
@@ -495,7 +496,7 @@ class ResultPlotter:
 
     @staticmethod
     def _draw_connector(
-        ax: plt.Axes,
+        ax: matplotlib.axes.Axes,
         parent_xy: tuple[float, float],
         child1_xy: tuple[float, float],
         child2_xy: tuple[float, float],

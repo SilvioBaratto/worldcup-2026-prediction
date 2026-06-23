@@ -170,6 +170,95 @@ class LiveConfig(BaseModel):
     competition: str = "WC"
 
 
+class EloConfig(BaseModel):
+    """Configuration for the World Football Elo engine."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    initial_rating: float = 1500.0
+    home_advantage: float = 100.0
+    k_friendly: int = 20
+    k_qualifier: int = 30
+    k_continental: int = 40
+    k_world_cup: int = 60
+    # Checked in order: qualifier → continental → world_cup → friendly.
+    # qualifier_keywords checked before world_cup_keywords so that
+    # "FIFA World Cup qualification" maps to qualifier tier, not world-cup.
+    qualifier_keywords: list[str] = ["qualification", "qualifying", "qualifier"]
+    continental_keywords: list[str] = [
+        "Copa America",
+        "UEFA European Championship",
+        "AFCON",
+        "Africa Cup of Nations",
+        "Asian Cup",
+        "Gold Cup",
+        "CONCACAF Gold Cup",
+        "Nations League",
+        "Copa del Rey",
+    ]
+    world_cup_keywords: list[str] = ["World Cup"]
+
+    @field_validator("initial_rating")
+    @classmethod
+    def initial_rating_must_be_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("initial_rating must be positive")
+        return v
+
+    @field_validator("home_advantage")
+    @classmethod
+    def home_advantage_must_be_non_negative(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("home_advantage must be non-negative")
+        return v
+
+    @field_validator("k_friendly", "k_qualifier", "k_continental", "k_world_cup")
+    @classmethod
+    def k_factor_must_be_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("K factor must be positive")
+        return v
+
+
+class PoissonConfig(BaseModel):
+    """Configuration for the Dixon-Coles bivariate-Poisson estimator.
+
+    All time-decay values are in DAYS.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    # Exponential decay half-life in DAYS (recent matches weigh more).
+    half_life_days: float = 365.0
+    max_goals: int = 10
+    rho_init: float = -0.1
+    home_adv_init: float = 0.25
+    min_matches: int = 1
+    random_seed: int = 42
+    optimizer_maxiter: int = 200
+
+    @field_validator("half_life_days")
+    @classmethod
+    def half_life_days_must_be_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("half_life_days must be positive")
+        return v
+
+    @field_validator("max_goals")
+    @classmethod
+    def max_goals_must_be_at_least_one(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("max_goals must be at least 1")
+        return v
+
+    @field_validator("optimizer_maxiter")
+    @classmethod
+    def optimizer_maxiter_must_be_at_least_one(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("optimizer_maxiter must be at least 1")
+        return v
+
+
 class AppConfig(BaseModel):
     data: DataConfig = DataConfig()
     features: FeaturesConfig = FeaturesConfig()
@@ -180,6 +269,8 @@ class AppConfig(BaseModel):
     client: ClientConfig = ClientConfig()
     martj42: Martj42Config = Martj42Config()
     live: LiveConfig = LiveConfig()
+    elo: EloConfig = EloConfig()
+    poisson: PoissonConfig = PoissonConfig()
 
 
 class Matchup(BaseModel):

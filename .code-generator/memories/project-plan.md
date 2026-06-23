@@ -1,4 +1,2 @@
-- #1 [priority:high] feat: team-name crosswalk for martj42 ↔ football-data.org normalization — agent: python-pro
-- #2 [priority:high] feat: no-key martj42 historical loader (results, shootouts, goalscorers) — agent: python-pro
-- #3 [priority:medium] feat: live WC2026 adapter over FootballClient (matches, standings, tournament state) — agent: python-pro
-- #4 [priority:medium] feat: WC2026 Round-of-32 bracket-slotting rules (top-2 + 8 best thirds) — agent: python-pro
+- #5 [priority:high] feat: World Football Elo engine (chronological ratings + pre-match Elo-diff from martj42) — agent: python-pro
+- #6 [priority:high] feat: Dixon-Coles bivariate-Poisson estimator (attack/defence abilities + scoreline sampler) — agent: python-pro

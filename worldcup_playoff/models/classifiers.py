@@ -16,7 +16,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-from worldcup_playoff.config import FeaturesConfig, TrainingConfig
+from worldcup_playoff.config import FeaturesConfig, NaiveBayesConfig, RandomForestConfig, SVMConfig, TrainingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +26,13 @@ class ClassifierFactory:
 
     @staticmethod
     def create(name: str, config: TrainingConfig) -> Any:
+        cfg: SVMConfig | RandomForestConfig | NaiveBayesConfig
         match name:
             case "svm":
                 cfg = config.svm
                 return make_pipeline(
                     StandardScaler(),
-                    SVC(C=cfg.C, gamma=cfg.gamma, kernel=cfg.kernel, probability=True),  # type: ignore[arg-type]
+                    SVC(C=cfg.C, gamma=cfg.gamma, kernel=cfg.kernel, probability=True),
                 )
             case "random_forest":
                 cfg = config.random_forest

@@ -1,5 +1,13 @@
 """Data loading and API client utilities for the World Cup prediction pipeline."""
 
+from worldcup_playoff.data.elo import (
+    EloEngine,
+    EloRating,
+    EloResult,
+    MatchEloDiff,
+    compute_elo,
+    seed_wc2026,
+)
 from worldcup_playoff.data.wc2026_bracket import (
     GROUPS,
     R32_SLOTS,
@@ -56,6 +64,12 @@ from worldcup_playoff.data.martj42_loader import (
 )
 
 __all__ = [
+    "EloEngine",
+    "EloRating",
+    "EloResult",
+    "MatchEloDiff",
+    "compute_elo",
+    "seed_wc2026",
     "GROUPS",
     "R32_SLOTS",
     "THIRD_PLACE_COMBINATIONS",

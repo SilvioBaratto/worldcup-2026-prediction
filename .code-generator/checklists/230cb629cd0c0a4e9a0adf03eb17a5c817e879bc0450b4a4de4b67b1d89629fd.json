@@ -1,7 +1,7 @@
 [
   {
-    "issue_number": 1,
-    "title": "feat: team-name crosswalk for martj42 \u2194 football-data.org normalization",
+    "issue_number": 5,
+    "title": "feat: World Football Elo engine (chronological ratings + pre-match Elo-diff from martj42)",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,
@@ -9,26 +9,8 @@
     "professionalized": false
   },
   {
-    "issue_number": 2,
-    "title": "feat: no-key martj42 historical loader (results, shootouts, goalscorers)",
-    "tests_passed": true,
-    "committed": false,
-    "feature_done": false,
-    "runtime_verified": true,
-    "professionalized": false
-  },
-  {
-    "issue_number": 3,
-    "title": "feat: live WC2026 adapter over FootballClient (matches, standings, tournament state)",
-    "tests_passed": true,
-    "committed": false,
-    "feature_done": false,
-    "runtime_verified": true,
-    "professionalized": false
-  },
-  {
-    "issue_number": 4,
-    "title": "feat: WC2026 Round-of-32 bracket-slotting rules (top-2 + 8 best thirds)",
+    "issue_number": 6,
+    "title": "feat: Dixon-Coles bivariate-Poisson estimator (attack/defence abilities + scoreline sampler)",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,

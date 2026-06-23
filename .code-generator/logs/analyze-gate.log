@@ -475,3 +475,399 @@ Right (strict JSON, deterministic, machine-parseable):
 2026-06-23 21:01:55,817 INFO msg #9: ResultMessage (tokens_in=2487 tokens_out=811 cache_read=16890 cache_write=31334 is_error=False subtype=success stop_reason=end_turn num_turns=1)
 2026-06-23 21:01:56,053 INFO SDK session complete.
 2026-06-23 21:01:56,056 INFO Phase analyze-gate complete: in=2487 cache_read=16890 cache_write=31334 out=811 total=51522
+2026-06-23 23:01:35,006 INFO SDK session starting (model=opus effort=high max_turns=None).
+2026-06-23 23:01:35,008 DEBUG SDK prompt (50852 chars):
+# Prompt — Analyze Coverage
+
+**Model:** `claude-opus-4-8`
+**Tools:** `Read`
+**Runtime placeholders:**
+- `# Cycle 2 — Statistical Abilities
+
+## Objective
+Compute the two ability systems that feed every downstream model: a chronological World Football Elo engine and a Dixon-Coles bivariate-Poisson estimator with time-decay. Both fit on martj42 history and emit per-team, per-date ratings/abilities, seeding WC2026 teams with current values.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline. It replaces the legacy classifier with a Groll-style RF hybrid (Dixon-Coles/Poisson abilities + Elo as covariates), conditioned on results to date.
+
+## Preceding cycles
+Cycle 1 delivered the normalized data layer: `data/martj42_loader.py` (history in `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS, TOURNAMENT, NEUTRAL` schema, plus shootouts/goalscorers), `data/live.py` (WC2026 state), the team-name crosswalk, and the WC2026 R32 bracket-slotting template. Consume those normalized frames here — do not re-parse raw CSVs.
+
+## Following cycles
+Feature assembly (Cycle 3) consumes these ratings; model training (Cycle 4); simulation/evaluation (Cycle 5). Do NOT assemble per-match feature vectors, train the hybrid, or run Monte Carlo here.
+
+## In scope
+- `data/elo.py`: compute World Football Elo chronologically from martj42 — `R' = R + K·G·(W − We)`, `We = 1/(1+10^(-dr/400))`, `dr = home_elo − away_elo + home_adv`, with K by match importance (Friendly < Qualifier < Continental < World Cup), G a goal-margin multiplier, and `home_adv = 0` when `neutral`. Emit per-team, per-date Elo and pre-match Elo-difference. Seed WC2026 teams with their latest historical rating.
+- `simulation/poisson.py`: Dixon-Coles / bivariate Poisson with per-team attack & defence strengths, home advantage, `rho` low-score correction, and exponential time-decay (recent matches weigh more). Fit on martj42; expose per-team attack/defence abilities as covariates AND a standalone scoreline sampler (goals ~ Poisson(λ)).
+- Tests for Elo update math, neutral-venue handling, time-decay weighting, and `rho` correction.
+
+## Out of scope
+- FIFA-ranking ingestion, recent-form, rest-days, confederation features — Cycle 3 (`features/build.py`).
+- The RF/GBM hybrid and ordered logit — Cycle 4 (`models/hybrid.py`, `models/ordered_logit.py`).
+- Tournament simulation using the scoreline sampler — Cycle 5.
+- `[elo]`/`[poisson]` TOML config wiring beyond what these modules need to run — finalized in Cycle 5.
+
+## Acceptance criteria
+- Both estimators run no-key from martj42 history alone.
+- Deterministic given a seed; no nondeterministic fitting that breaks replays.
+- `home_advantage = 0` for neutral matches (WC2026 host cities are neutral).
+- Per-team, per-date Elo + Elo-diff and Dixon-Coles attack/defence abilities are emitted for downstream consumption; WC2026 live state is seeded from history.
+- New modules ship with tests; the existing ~248-test suite stays green.
+` — canonical `requirements.md` content (post-`optimize`, post-`clarify`)
+- `[
+  {
+    "body": "## Goal\nImplement `worldcup_playoff/simulation/poisson.py` \u2014 a **Dixon-Coles / bivariate-Poisson estimator** fitted on martj42 history. It exposes (a) per-team attack & defence abilities (plus home advantage, `rho`, intercept) as model covariates, and (b) a standalone deterministic scoreline sampler (`goals ~ Poisson(\u03bb)` with the Dixon-Coles low-score correction). The abilities feed the Cycle 3 feature builder; the sampler feeds the Cycle 5 Monte Carlo tournament.\n\n## Context\nThe normalized data layer already exists (Cycle 1, merged on `main`). `worldcup_playoff/data/martj42_loader.py` \u2192 `Martj42Loader.load_results()` returns a DataFrame with **`DATE`** (object/ISO string \u2014 NOT datetime), **`HOME_TEAM`**, **`AWAY_TEAM`** (already crosswalk-normalized), **`HOME_GOALS`**/**`AWAY_GOALS`** (nullable `Int64`, `<NA>` for unplayed fixtures), **`TOURNAMENT`**, **`NEUTRAL`** (bool). Consume this frame directly.\n\nDixon-Coles model (1997):\n- `\u03bb_home = exp(intercept + attack_home \u2212 defence_away + home_adv)`, `\u03bb_away = exp(intercept + attack_away \u2212 defence_home)`\n- Low-score correction `\u03c4(h, a, \u03bb_home, \u03bb_away, \u03c1)`: `(0,0) \u2192 1 \u2212 \u03bb_home\u00b7\u03bb_away\u00b7\u03c1`; `(0,1) \u2192 1 + \u03bb_home\u00b7\u03c1`; `(1,0) \u2192 1 + \u03bb_away\u00b7\u03c1`; `(1,1) \u2192 1 \u2212 \u03c1`; else `1.0`. With `\u03c1 = 0` the model reduces to independent Poisson.\n- **Exponential time-decay**: weight `w_i = 0.5 ^ (age_days_i / half_life_days)`, `age_days_i = (reference_date \u2212 match_date).days`, reference defaults to the max `DATE` in the fitted data \u2014 recent matches weigh more.\n- Fit by **weighted MLE** with `scipy.optimize.minimize` (`statsmodels` is NOT a project dependency; `scipy>=1.11` is). The fit must be **deterministic** (fixed start values \u2192 L-BFGS-B is deterministic). Enforce a mean-zero attack normalization for identifiability.\n- `home_adv` is dropped (set to 0) when a match is neutral \u2014 WC2026 host cities are neutral (mirror the Elo neutral handling).\n\nConventions to follow (observed in `simulation/distributions.py`, `config.py`): `from __future__ import annotations`; frozen `@dataclass` for value objects (mirror `FittedDistribution`); Pydantic `BaseModel` + `ConfigDict(extra=\"ignore\")` + `@field_validator` for config; dependency injection (config into constructor, no globals); module-level factory functions (mirror `load_martj42_results` / `fit_*`); `logger = logging.getLogger(__name__)`; `|` unions. The sampler's determinism must mirror `FeatureSampler` in `distributions.py`: `np.random.default_rng(random_state)`, reproducible with the same seed, divergent across seeds. mypy strict, ruff line-length 100. The module must be **I/O-free / network-free**; tests build DataFrames in-memory. The existing ~411-test suite must stay green.\n\nThis task also adds the minimal `[poisson]` Pydantic config section \u2014 only what the estimator/sampler need to run (full TOML wiring is Cycle 5). It touches `config.py` additively (one new class + one `AppConfig` field); if the sibling Elo task already edited `config.py`, add your `poisson:` field without disturbing theirs.\n\n**Scope guard:** expose the abilities and sampler only. Do NOT assemble feature vectors (Cycle 3), train the hybrid (Cycle 4), or run the tournament Monte Carlo (Cycle 5).\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `dixon_coles_tau(h, a, \u03bb_home, \u03bb_away, \u03c1)` returns the exact correction for the four \u22641 scorelines and `1.0` otherwise; `\u03c1 = 0` \u21d2 all `\u03c4 == 1.0`; `\u03c4 > 0` for valid small `\u03c1` with default \u03bb (rho-validity check).\n- [ ] `DixonColesEstimator.fit(df)` returns `TeamAbilities(attack, defence, home_adv, rho, intercept)`, fitting only on **played** matches (rows with `<NA>` goals are dropped by `_prepare`; fit never raises on their presence).\n- [ ] Time-decay (half-life in **DAYS**): a match `half_life_days` old has half the weight of a fresh one; `2\u00b7half_life` old \u2192 quarter weight; the most-recent match (= reference date) \u2192 weight 1.0 (`pytest.approx`).\n- [ ] Fit is **deterministic**: fitting twice on identical data yields identical abilities (tight `approx`).\n- [ ] Fitted `attack` values satisfy the mean-zero normalization (`approx(0)`) \u2014 identifiability.\n- [ ] Recovery sanity (seeded synthetic data): a clearly stronger team gets a higher fitted `attack`.\n- [ ] `ScorelineSampler.sample(home, away, neutral=False, size, random_state)` returns an int array of shape `(size, 2)` with goals in `[0, max_goals]`; reproducible with the same seed, divergent across seeds; default seed comes from `PoissonConfig`.\n- [ ] `lambdas(abilities, home, away, neutral=True)` drops `home_adv` \u21d2 strictly lower `\u03bb_home` than the non-neutral case.\n- [ ] `score_matrix(...)` (joint pmf grid) sums to 1.0 (`approx`) and equals the product of marginals when `\u03c1 = 0`.\n- [ ] `PoissonConfig` defaults load; invalid values (`half_life_days <= 0`, `max_goals < 1`, `optimizer_maxiter < 1`) raise `ValidationError`; `AppConfig().poisson` is a `PoissonConfig`.\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500\u2013600 lines), TDD\n\n## Dependencies\n- None \u2014 consumes the Cycle 1 data layer (`data/martj42_loader.py`, `config.py`) already merged on `main`. Independent of the Elo task (shares only an additive `config.py` edit).\n\n## Implementation notes\n- **Create:** `worldcup_playoff/simulation/poisson.py`\n  - Frozen dataclass `TeamAbilities(attack: dict[str, float], defence: dict[str, float], home_adv: float, rho: float, intercept: float)`.\n  - Module-level pure function `dixon_coles_tau(...)` (the \u03c4 correction, no state).\n  - `DixonColesEstimator(config: PoissonConfig)` with small methods: `_prepare(df)` (drop `<NA>` goals via `.isna()`, `pd.to_datetime`, compute decay weights, build team index, extract integer goal arrays), `_neg_log_likelihood(params, ...)` (vectorized weighted DC log-likelihood using `scipy.stats.poisson.logpmf`), `fit(df) -> TeamAbilities` (pack params \u2192 `scipy.optimize.minimize(method=\"L-BFGS-B\", options={\"maxiter\": optimizer_maxiter})` \u2192 unpack \u2192 mean-zero normalize), `lambdas(abilities, home, away, neutral=False)`.\n  - `ScorelineSampler(abilities, config)` with `sample(...)` building the `(max_goals+1)\u00b2` joint-pmf grid with the \u03c4 correction, normalizing, and drawing via `rng.choice` on the flattened categorical (`np.random.default_rng(random_state or config.random_seed)`); plus `score_matrix(...)` returning the normalized grid.\n  - Module-level factories: `fit_dixon_coles(df, config=None)` and `make_sampler(abilities, config=None)`.\n- **Modify:** `worldcup_playoff/config.py` \u2014 add `class PoissonConfig(BaseModel)` (`ConfigDict(extra=\"ignore\")`) with: `half_life_days: float = 365.0` (document the DAYS unit), `max_goals: int = 10`, `rho_init: float = -0.1`, `home_adv_init: float = 0.25`, `min_matches: int = 1`, `random_seed: int = 42`, `optimizer_maxiter: int = 200`, plus `@field_validator`s (`half_life_days > 0`, `max_goals >= 1`, `optimizer_maxiter >= 1`). Register `poisson: PoissonConfig = PoissonConfig()` on `AppConfig` (additive \u2014 preserve any sibling `elo:` field).\n- **Create:** `tests/test_poisson.py` \u2014 BDD `test_when_..._then_...` naming; in-memory synthetic DataFrames (no network/I/O); parametrize the \u03c4 scorelines; seed all RNG for reproducibility; cover every acceptance criterion above.\n",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: simulation",
+        "id": "LA_kwDOTBxfPc8AAAACop6wtA",
+        "name": "area:simulation"
+      }
+    ],
+    "number": 6,
+    "state": "OPEN",
+    "title": "feat: Dixon-Coles bivariate-Poisson estimator (attack/defence abilities + scoreline sampler)"
+  },
+  {
+    "body": "## Goal\nImplement `worldcup_playoff/data/elo.py` \u2014 a **World Football Elo engine** that computes per-team Elo ratings chronologically from martj42 history. It emits (a) per-team, per-date ratings, (b) a pre-match Elo-difference for every match, and (c) a seed of each WC2026 team's latest historical rating. These ratings are a primary covariate for the Cycle 3 feature builder and the Cycle 4 hybrid model.\n\n## Context\nThe normalized data layer already exists (Cycle 1, merged on `main`). `worldcup_playoff/data/martj42_loader.py` \u2192 `Martj42Loader.load_results()` returns a DataFrame with columns **`DATE`** (object/ISO string \u2014 NOT datetime), **`HOME_TEAM`**, **`AWAY_TEAM`** (already crosswalk-normalized), **`HOME_GOALS`**/**`AWAY_GOALS`** (nullable `Int64`, `<NA>` for unplayed fixtures incl. WC2026), **`TOURNAMENT`** (object), **`NEUTRAL`** (numpy bool). Consume this frame directly \u2014 do not re-parse raw CSVs.\n\nThe World Football Elo update is:\n- `R' = R + K \u00b7 G \u00b7 (W \u2212 We)`\n- `We = 1 / (1 + 10^(\u2212dr/400))`, `dr = home_elo \u2212 away_elo + home_adv`\n- `home_adv = 0` when `NEUTRAL` is True (WC2026 host cities are neutral)\n- `W` = 1.0 home win / 0.5 draw / 0.0 home loss\n- `K` by match importance, classified from `TOURNAMENT` (Friendly < Qualifier < Continental < World Cup)\n- `G` is a goal-margin multiplier (World-Football-Elo style: 1.0 for margin \u2264 1, 1.5 for 2, `(11 + margin)/8` for \u2265 3)\n\nConventions to follow (observed in `martj42_loader.py`, `simulation/distributions.py`, `config.py`): `from __future__ import annotations`; frozen `@dataclass` for value objects (mirror `FittedDistribution`); Pydantic `BaseModel` + `ConfigDict(extra=\"ignore\")` + `@field_validator` for config; dependency injection (config passed into the constructor, no globals); module-level factory functions wrapping the class (mirror `load_martj42_results`); `logger = logging.getLogger(__name__)`; `|` unions, not `Optional`. mypy strict, ruff line-length 100. The module must be **I/O-free and network-free** so tests build DataFrames in-memory (mirror `tests/test_martj42_loader.py` / `tests/conftest.py`). The existing ~411-test suite must stay green. `statsmodels` is NOT a dependency (not needed here); numpy/pandas/scipy are available.\n\nThis task also adds the minimal `[elo]` Pydantic config section \u2014 only what the engine needs to run (full TOML wiring is Cycle 5). It touches `config.py` additively (one new class + one `AppConfig` field); if the sibling Dixon-Coles task already edited `config.py`, add your `elo:` field without disturbing theirs.\n\n**Scope guard:** do NOT assemble per-match feature vectors (Cycle 3), train any model (Cycle 4), or run Monte Carlo (Cycle 5).\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `EloEngine.run(results_df)` computes Elo chronologically (stable sort by date, deterministic same-day tiebreak) and returns per-team/per-date ratings + per-match pre-match Elo-diff + final per-team ratings.\n- [ ] Expectation math is exact: equal ratings on a neutral venue \u2192 `We == 0.5`; `dr = 400` \u2192 `We \u2248 0.909` (`pytest.approx`).\n- [ ] Update formula verified against a hand-computed case (e.g. both 1500, home wins 1\u20130, friendly K, neutral \u2192 home 1510 / away 1490) and is zero-sum (`\u0394home == \u2212\u0394away`).\n- [ ] `home_advantage = 0` when `NEUTRAL` is True; non-neutral matches add `home_advantage` to `dr` (covered by a test comparing the two).\n- [ ] Goal-margin multiplier `G`: margins {0,1}\u21921.0, 2\u21921.5, 3\u21921.75, 5\u21922.0.\n- [ ] `K` classified by importance from `TOURNAMENT` (case-insensitive substring), with precedence so \"FIFA World Cup qualification\" \u2192 qualifier tier, \"FIFA World Cup\" \u2192 world-cup tier, a continental keyword \u2192 continental tier, else friendly.\n- [ ] Unplayed fixtures (`<NA>` goals) cause **no** rating change but a pre-match Elo-diff is still emitted; engine never raises on `<NA>`.\n- [ ] A team with no prior matches enters at `initial_rating` (the \"no history\" edge case).\n- [ ] Chronological determinism: shuffling input row order yields identical final ratings.\n- [ ] `seed_wc2026(result, teams)` returns each team's latest historical rating, defaulting to `initial_rating` for teams absent from history.\n- [ ] `EloConfig` defaults load; invalid values (non-positive K / initial_rating, negative home_advantage) raise `ValidationError`; `AppConfig().elo` is an `EloConfig`.\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500\u2013600 lines), TDD\n\n## Dependencies\n- None \u2014 consumes the Cycle 1 data layer (`data/martj42_loader.py`, `data/crosswalk.py`, `config.py`) already merged on `main`.\n\n## Implementation notes\n- **Create:** `worldcup_playoff/data/elo.py`\n  - Frozen dataclasses: `EloRating(team, date, rating)`; `MatchEloDiff(date, home_team, away_team, home_elo, away_elo, elo_diff, neutral)` where `elo_diff = home_elo \u2212 away_elo` (pre-match, **venue-neutral** \u2014 keep the `home_advantage` term internal to the expectation calc so the emitted covariate is venue-agnostic; document this); `EloResult(history, match_diffs, final_ratings)` with convenience `history_frame()` / `latest_ratings_frame()` helpers (keep core data in plain structures for testability).\n  - `EloEngine(config: EloConfig)` with small (<10-line) methods: `_expected(home_elo, away_elo, neutral)`, `_goal_multiplier(margin)`, `_k_for_tournament(tournament)`, `_update_pair(...)`, and `run(df)` orchestrator. `run` must `pd.to_datetime(df[\"DATE\"], errors=\"coerce\")`, sort stably, maintain a `dict[str, float]` of current ratings defaulting to `initial_rating`, skip `<NA>`-goal rows for updates (use `.isna()` on the `Int64` columns) while still emitting their pre-match diff.\n  - `seed_wc2026(result, teams: Iterable[str]) -> dict[str, float]` \u2014 pass team names explicitly (e.g. from `wc2026_schedule(df)` or a `TournamentState`) so the module stays decoupled from `live.py`/the HTTP client.\n  - Module-level factory: `compute_elo(df, config: EloConfig | None = None) -> EloResult`.\n- **Modify:** `worldcup_playoff/config.py` \u2014 add `class EloConfig(BaseModel)` (`ConfigDict(extra=\"ignore\")`) with: `initial_rating: float = 1500.0`, `home_advantage: float = 100.0`, tiered K factors (`k_friendly=20`, `k_qualifier=30`, `k_continental=40`, `k_world_cup=60`), and data-driven keyword lists for tournament classification (`world_cup_keywords`, `continental_keywords`, `qualifier_keywords`). Add `@field_validator`s (positive K / initial_rating, non-negative home_advantage). Register `elo: EloConfig = EloConfig()` on `AppConfig` (additive \u2014 preserve any sibling `poisson:` field).\n- **Create:** `tests/test_elo.py` \u2014 BDD `test_when_..._then_...` naming; build small DataFrames in-memory (no network/I/O); cover every acceptance criterion above; parametrize the `G` and `K` cases; assert determinism with shuffled input.\n",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: data",
+        "id": "LA_kwDOTBxfPc8AAAACopKxrQ",
+        "name": "area:data"
+      }
+    ],
+    "number": 5,
+    "state": "OPEN",
+    "title": "feat: World Football Elo engine (chronological ratings + pre-match Elo-diff from martj42)"
+  }
+]` — JSON array of Phase 1 issues, each with `issue_number`, `title`, `body`, `labels`
+- `(project constitution unavailable — analyze gate cannot flag constitution violations)` — project constitution / non-negotiable constraints
+- `# Cycle 2 — Statistical Abilities
+
+## Objective
+Compute the two ability systems that feed every downstream model: a chronological World Football Elo engine and a Dixon-Coles bivariate-Poisson estimator with time-decay. Both fit on martj42 history and emit per-team, per-date ratings/abilities, seeding WC2026 teams with current values.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline. It replaces the legacy classifier with a Groll-style RF hybrid (Dixon-Coles/Poisson abilities + Elo as covariates), conditioned on results to date.
+
+## Preceding cycles
+Cycle 1 delivered the normalized data layer: `data/martj42_loader.py` (history in `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS, TOURNAMENT, NEUTRAL` schema, plus shootouts/goalscorers), `data/live.py` (WC2026 state), the team-name crosswalk, and the WC2026 R32 bracket-slotting template. Consume those normalized frames here — do not re-parse raw CSVs.
+
+## Following cycles
+Feature assembly (Cycle 3) consumes these ratings; model training (Cycle 4); simulation/evaluation (Cycle 5). Do NOT assemble per-match feature vectors, train the hybrid, or run Monte Carlo here.
+
+## In scope
+- `data/elo.py`: compute World Football Elo chronologically from martj42 — `R' = R + K·G·(W − We)`, `We = 1/(1+10^(-dr/400))`, `dr = home_elo − away_elo + home_adv`, with K by match importance (Friendly < Qualifier < Continental < World Cup), G a goal-margin multiplier, and `home_adv = 0` when `neutral`. Emit per-team, per-date Elo and pre-match Elo-difference. Seed WC2026 teams with their latest historical rating.
+- `simulation/poisson.py`: Dixon-Coles / bivariate Poisson with per-team attack & defence strengths, home advantage, `rho` low-score correction, and exponential time-decay (recent matches weigh more). Fit on martj42; expose per-team attack/defence abilities as covariates AND a standalone scoreline sampler (goals ~ Poisson(λ)).
+- Tests for Elo update math, neutral-venue handling, time-decay weighting, and `rho` correction.
+
+## Out of scope
+- FIFA-ranking ingestion, recent-form, rest-days, confederation features — Cycle 3 (`features/build.py`).
+- The RF/GBM hybrid and ordered logit — Cycle 4 (`models/hybrid.py`, `models/ordered_logit.py`).
+- Tournament simulation using the scoreline sampler — Cycle 5.
+- `[elo]`/`[poisson]` TOML config wiring beyond what these modules need to run — finalized in Cycle 5.
+
+## Acceptance criteria
+- Both estimators run no-key from martj42 history alone.
+- Deterministic given a seed; no nondeterministic fitting that breaks replays.
+- `home_advantage = 0` for neutral matches (WC2026 host cities are neutral).
+- Per-team, per-date Elo + Elo-diff and Dixon-Coles attack/defence abilities are emitted for downstream consumption; WC2026 live state is seeded from history.
+- New modules ship with tests; the existing ~248-test suite stays green.
+` — current cycle's scope (In scope / Out of scope / Acceptance criteria); empty string in single-cycle mode
+
+---
+
+## Requirements
+
+# Cycle 2 — Statistical Abilities
+
+## Objective
+Compute the two ability systems that feed every downstream model: a chronological World Football Elo engine and a Dixon-Coles bivariate-Poisson estimator with time-decay. Both fit on martj42 history and emit per-team, per-date ratings/abilities, seeding WC2026 teams with current values.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline. It replaces the legacy classifier with a Groll-style RF hybrid (Dixon-Coles/Poisson abilities + Elo as covariates), conditioned on results to date.
+
+## Preceding cycles
+Cycle 1 delivered the normalized data layer: `data/martj42_loader.py` (history in `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS, TOURNAMENT, NEUTRAL` schema, plus shootouts/goalscorers), `data/live.py` (WC2026 state), the team-name crosswalk, and the WC2026 R32 bracket-slotting template. Consume those normalized frames here — do not re-parse raw CSVs.
+
+## Following cycles
+Feature assembly (Cycle 3) consumes these ratings; model training (Cycle 4); simulation/evaluation (Cycle 5). Do NOT assemble per-match feature vectors, train the hybrid, or run Monte Carlo here.
+
+## In scope
+- `data/elo.py`: compute World Football Elo chronologically from martj42 — `R' = R + K·G·(W − We)`, `We = 1/(1+10^(-dr/400))`, `dr = home_elo − away_elo + home_adv`, with K by match importance (Friendly < Qualifier < Continental < World Cup), G a goal-margin multiplier, and `home_adv = 0` when `neutral`. Emit per-team, per-date Elo and pre-match Elo-difference. Seed WC2026 teams with their latest historical rating.
+- `simulation/poisson.py`: Dixon-Coles / bivariate Poisson with per-team attack & defence strengths, home advantage, `rho` low-score correction, and exponential time-decay (recent matches weigh more). Fit on martj42; expose per-team attack/defence abilities as covariates AND a standalone scoreline sampler (goals ~ Poisson(λ)).
+- Tests for Elo update math, neutral-venue handling, time-decay weighting, and `rho` correction.
+
+## Out of scope
+- FIFA-ranking ingestion, recent-form, rest-days, confederation features — Cycle 3 (`features/build.py`).
+- The RF/GBM hybrid and ordered logit — Cycle 4 (`models/hybrid.py`, `models/ordered_logit.py`).
+- Tournament simulation using the scoreline sampler — Cycle 5.
+- `[elo]`/`[poisson]` TOML config wiring beyond what these modules need to run — finalized in Cycle 5.
+
+## Acceptance criteria
+- Both estimators run no-key from martj42 history alone.
+- Deterministic given a seed; no nondeterministic fitting that breaks replays.
+- `home_advantage = 0` for neutral matches (WC2026 host cities are neutral).
+- Per-team, per-date Elo + Elo-diff and Dixon-Coles attack/defence abilities are emitted for downstream consumption; WC2026 live state is seeded from history.
+- New modules ship with tests; the existing ~248-test suite stays green.
+
+
+---
+
+## Issues
+
+[
+  {
+    "body": "## Goal\nImplement `worldcup_playoff/simulation/poisson.py` \u2014 a **Dixon-Coles / bivariate-Poisson estimator** fitted on martj42 history. It exposes (a) per-team attack & defence abilities (plus home advantage, `rho`, intercept) as model covariates, and (b) a standalone deterministic scoreline sampler (`goals ~ Poisson(\u03bb)` with the Dixon-Coles low-score correction). The abilities feed the Cycle 3 feature builder; the sampler feeds the Cycle 5 Monte Carlo tournament.\n\n## Context\nThe normalized data layer already exists (Cycle 1, merged on `main`). `worldcup_playoff/data/martj42_loader.py` \u2192 `Martj42Loader.load_results()` returns a DataFrame with **`DATE`** (object/ISO string \u2014 NOT datetime), **`HOME_TEAM`**, **`AWAY_TEAM`** (already crosswalk-normalized), **`HOME_GOALS`**/**`AWAY_GOALS`** (nullable `Int64`, `<NA>` for unplayed fixtures), **`TOURNAMENT`**, **`NEUTRAL`** (bool). Consume this frame directly.\n\nDixon-Coles model (1997):\n- `\u03bb_home = exp(intercept + attack_home \u2212 defence_away + home_adv)`, `\u03bb_away = exp(intercept + attack_away \u2212 defence_home)`\n- Low-score correction `\u03c4(h, a, \u03bb_home, \u03bb_away, \u03c1)`: `(0,0) \u2192 1 \u2212 \u03bb_home\u00b7\u03bb_away\u00b7\u03c1`; `(0,1) \u2192 1 + \u03bb_home\u00b7\u03c1`; `(1,0) \u2192 1 + \u03bb_away\u00b7\u03c1`; `(1,1) \u2192 1 \u2212 \u03c1`; else `1.0`. With `\u03c1 = 0` the model reduces to independent Poisson.\n- **Exponential time-decay**: weight `w_i = 0.5 ^ (age_days_i / half_life_days)`, `age_days_i = (reference_date \u2212 match_date).days`, reference defaults to the max `DATE` in the fitted data \u2014 recent matches weigh more.\n- Fit by **weighted MLE** with `scipy.optimize.minimize` (`statsmodels` is NOT a project dependency; `scipy>=1.11` is). The fit must be **deterministic** (fixed start values \u2192 L-BFGS-B is deterministic). Enforce a mean-zero attack normalization for identifiability.\n- `home_adv` is dropped (set to 0) when a match is neutral \u2014 WC2026 host cities are neutral (mirror the Elo neutral handling).\n\nConventions to follow (observed in `simulation/distributions.py`, `config.py`): `from __future__ import annotations`; frozen `@dataclass` for value objects (mirror `FittedDistribution`); Pydantic `BaseModel` + `ConfigDict(extra=\"ignore\")` + `@field_validator` for config; dependency injection (config into constructor, no globals); module-level factory functions (mirror `load_martj42_results` / `fit_*`); `logger = logging.getLogger(__name__)`; `|` unions. The sampler's determinism must mirror `FeatureSampler` in `distributions.py`: `np.random.default_rng(random_state)`, reproducible with the same seed, divergent across seeds. mypy strict, ruff line-length 100. The module must be **I/O-free / network-free**; tests build DataFrames in-memory. The existing ~411-test suite must stay green.\n\nThis task also adds the minimal `[poisson]` Pydantic config section \u2014 only what the estimator/sampler need to run (full TOML wiring is Cycle 5). It touches `config.py` additively (one new class + one `AppConfig` field); if the sibling Elo task already edited `config.py`, add your `poisson:` field without disturbing theirs.\n\n**Scope guard:** expose the abilities and sampler only. Do NOT assemble feature vectors (Cycle 3), train the hybrid (Cycle 4), or run the tournament Monte Carlo (Cycle 5).\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `dixon_coles_tau(h, a, \u03bb_home, \u03bb_away, \u03c1)` returns the exact correction for the four \u22641 scorelines and `1.0` otherwise; `\u03c1 = 0` \u21d2 all `\u03c4 == 1.0`; `\u03c4 > 0` for valid small `\u03c1` with default \u03bb (rho-validity check).\n- [ ] `DixonColesEstimator.fit(df)` returns `TeamAbilities(attack, defence, home_adv, rho, intercept)`, fitting only on **played** matches (rows with `<NA>` goals are dropped by `_prepare`; fit never raises on their presence).\n- [ ] Time-decay (half-life in **DAYS**): a match `half_life_days` old has half the weight of a fresh one; `2\u00b7half_life` old \u2192 quarter weight; the most-recent match (= reference date) \u2192 weight 1.0 (`pytest.approx`).\n- [ ] Fit is **deterministic**: fitting twice on identical data yields identical abilities (tight `approx`).\n- [ ] Fitted `attack` values satisfy the mean-zero normalization (`approx(0)`) \u2014 identifiability.\n- [ ] Recovery sanity (seeded synthetic data): a clearly stronger team gets a higher fitted `attack`.\n- [ ] `ScorelineSampler.sample(home, away, neutral=False, size, random_state)` returns an int array of shape `(size, 2)` with goals in `[0, max_goals]`; reproducible with the same seed, divergent across seeds; default seed comes from `PoissonConfig`.\n- [ ] `lambdas(abilities, home, away, neutral=True)` drops `home_adv` \u21d2 strictly lower `\u03bb_home` than the non-neutral case.\n- [ ] `score_matrix(...)` (joint pmf grid) sums to 1.0 (`approx`) and equals the product of marginals when `\u03c1 = 0`.\n- [ ] `PoissonConfig` defaults load; invalid values (`half_life_days <= 0`, `max_goals < 1`, `optimizer_maxiter < 1`) raise `ValidationError`; `AppConfig().poisson` is a `PoissonConfig`.\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500\u2013600 lines), TDD\n\n## Dependencies\n- None \u2014 consumes the Cycle 1 data layer (`data/martj42_loader.py`, `config.py`) already merged on `main`. Independent of the Elo task (shares only an additive `config.py` edit).\n\n## Implementation notes\n- **Create:** `worldcup_playoff/simulation/poisson.py`\n  - Frozen dataclass `TeamAbilities(attack: dict[str, float], defence: dict[str, float], home_adv: float, rho: float, intercept: float)`.\n  - Module-level pure function `dixon_coles_tau(...)` (the \u03c4 correction, no state).\n  - `DixonColesEstimator(config: PoissonConfig)` with small methods: `_prepare(df)` (drop `<NA>` goals via `.isna()`, `pd.to_datetime`, compute decay weights, build team index, extract integer goal arrays), `_neg_log_likelihood(params, ...)` (vectorized weighted DC log-likelihood using `scipy.stats.poisson.logpmf`), `fit(df) -> TeamAbilities` (pack params \u2192 `scipy.optimize.minimize(method=\"L-BFGS-B\", options={\"maxiter\": optimizer_maxiter})` \u2192 unpack \u2192 mean-zero normalize), `lambdas(abilities, home, away, neutral=False)`.\n  - `ScorelineSampler(abilities, config)` with `sample(...)` building the `(max_goals+1)\u00b2` joint-pmf grid with the \u03c4 correction, normalizing, and drawing via `rng.choice` on the flattened categorical (`np.random.default_rng(random_state or config.random_seed)`); plus `score_matrix(...)` returning the normalized grid.\n  - Module-level factories: `fit_dixon_coles(df, config=None)` and `make_sampler(abilities, config=None)`.\n- **Modify:** `worldcup_playoff/config.py` \u2014 add `class PoissonConfig(BaseModel)` (`ConfigDict(extra=\"ignore\")`) with: `half_life_days: float = 365.0` (document the DAYS unit), `max_goals: int = 10`, `rho_init: float = -0.1`, `home_adv_init: float = 0.25`, `min_matches: int = 1`, `random_seed: int = 42`, `optimizer_maxiter: int = 200`, plus `@field_validator`s (`half_life_days > 0`, `max_goals >= 1`, `optimizer_maxiter >= 1`). Register `poisson: PoissonConfig = PoissonConfig()` on `AppConfig` (additive \u2014 preserve any sibling `elo:` field).\n- **Create:** `tests/test_poisson.py` \u2014 BDD `test_when_..._then_...` naming; in-memory synthetic DataFrames (no network/I/O); parametrize the \u03c4 scorelines; seed all RNG for reproducibility; cover every acceptance criterion above.\n",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: simulation",
+        "id": "LA_kwDOTBxfPc8AAAACop6wtA",
+        "name": "area:simulation"
+      }
+    ],
+    "number": 6,
+    "state": "OPEN",
+    "title": "feat: Dixon-Coles bivariate-Poisson estimator (attack/defence abilities + scoreline sampler)"
+  },
+  {
+    "body": "## Goal\nImplement `worldcup_playoff/data/elo.py` \u2014 a **World Football Elo engine** that computes per-team Elo ratings chronologically from martj42 history. It emits (a) per-team, per-date ratings, (b) a pre-match Elo-difference for every match, and (c) a seed of each WC2026 team's latest historical rating. These ratings are a primary covariate for the Cycle 3 feature builder and the Cycle 4 hybrid model.\n\n## Context\nThe normalized data layer already exists (Cycle 1, merged on `main`). `worldcup_playoff/data/martj42_loader.py` \u2192 `Martj42Loader.load_results()` returns a DataFrame with columns **`DATE`** (object/ISO string \u2014 NOT datetime), **`HOME_TEAM`**, **`AWAY_TEAM`** (already crosswalk-normalized), **`HOME_GOALS`**/**`AWAY_GOALS`** (nullable `Int64`, `<NA>` for unplayed fixtures incl. WC2026), **`TOURNAMENT`** (object), **`NEUTRAL`** (numpy bool). Consume this frame directly \u2014 do not re-parse raw CSVs.\n\nThe World Football Elo update is:\n- `R' = R + K \u00b7 G \u00b7 (W \u2212 We)`\n- `We = 1 / (1 + 10^(\u2212dr/400))`, `dr = home_elo \u2212 away_elo + home_adv`\n- `home_adv = 0` when `NEUTRAL` is True (WC2026 host cities are neutral)\n- `W` = 1.0 home win / 0.5 draw / 0.0 home loss\n- `K` by match importance, classified from `TOURNAMENT` (Friendly < Qualifier < Continental < World Cup)\n- `G` is a goal-margin multiplier (World-Football-Elo style: 1.0 for margin \u2264 1, 1.5 for 2, `(11 + margin)/8` for \u2265 3)\n\nConventions to follow (observed in `martj42_loader.py`, `simulation/distributions.py`, `config.py`): `from __future__ import annotations`; frozen `@dataclass` for value objects (mirror `FittedDistribution`); Pydantic `BaseModel` + `ConfigDict(extra=\"ignore\")` + `@field_validator` for config; dependency injection (config passed into the constructor, no globals); module-level factory functions wrapping the class (mirror `load_martj42_results`); `logger = logging.getLogger(__name__)`; `|` unions, not `Optional`. mypy strict, ruff line-length 100. The module must be **I/O-free and network-free** so tests build DataFrames in-memory (mirror `tests/test_martj42_loader.py` / `tests/conftest.py`). The existing ~411-test suite must stay green. `statsmodels` is NOT a dependency (not needed here); numpy/pandas/scipy are available.\n\nThis task also adds the minimal `[elo]` Pydantic config section \u2014 only what the engine needs to run (full TOML wiring is Cycle 5). It touches `config.py` additively (one new class + one `AppConfig` field); if the sibling Dixon-Coles task already edited `config.py`, add your `elo:` field without disturbing theirs.\n\n**Scope guard:** do NOT assemble per-match feature vectors (Cycle 3), train any model (Cycle 4), or run Monte Carlo (Cycle 5).\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `EloEngine.run(results_df)` computes Elo chronologically (stable sort by date, deterministic same-day tiebreak) and returns per-team/per-date ratings + per-match pre-match Elo-diff + final per-team ratings.\n- [ ] Expectation math is exact: equal ratings on a neutral venue \u2192 `We == 0.5`; `dr = 400` \u2192 `We \u2248 0.909` (`pytest.approx`).\n- [ ] Update formula verified against a hand-computed case (e.g. both 1500, home wins 1\u20130, friendly K, neutral \u2192 home 1510 / away 1490) and is zero-sum (`\u0394home == \u2212\u0394away`).\n- [ ] `home_advantage = 0` when `NEUTRAL` is True; non-neutral matches add `home_advantage` to `dr` (covered by a test comparing the two).\n- [ ] Goal-margin multiplier `G`: margins {0,1}\u21921.0, 2\u21921.5, 3\u21921.75, 5\u21922.0.\n- [ ] `K` classified by importance from `TOURNAMENT` (case-insensitive substring), with precedence so \"FIFA World Cup qualification\" \u2192 qualifier tier, \"FIFA World Cup\" \u2192 world-cup tier, a continental keyword \u2192 continental tier, else friendly.\n- [ ] Unplayed fixtures (`<NA>` goals) cause **no** rating change but a pre-match Elo-diff is still emitted; engine never raises on `<NA>`.\n- [ ] A team with no prior matches enters at `initial_rating` (the \"no history\" edge case).\n- [ ] Chronological determinism: shuffling input row order yields identical final ratings.\n- [ ] `seed_wc2026(result, teams)` returns each team's latest historical rating, defaulting to `initial_rating` for teams absent from history.\n- [ ] `EloConfig` defaults load; invalid values (non-positive K / initial_rating, negative home_advantage) raise `ValidationError`; `AppConfig().elo` is an `EloConfig`.\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500\u2013600 lines), TDD\n\n## Dependencies\n- None \u2014 consumes the Cycle 1 data layer (`data/martj42_loader.py`, `data/crosswalk.py`, `config.py`) already merged on `main`.\n\n## Implementation notes\n- **Create:** `worldcup_playoff/data/elo.py`\n  - Frozen dataclasses: `EloRating(team, date, rating)`; `MatchEloDiff(date, home_team, away_team, home_elo, away_elo, elo_diff, neutral)` where `elo_diff = home_elo \u2212 away_elo` (pre-match, **venue-neutral** \u2014 keep the `home_advantage` term internal to the expectation calc so the emitted covariate is venue-agnostic; document this); `EloResult(history, match_diffs, final_ratings)` with convenience `history_frame()` / `latest_ratings_frame()` helpers (keep core data in plain structures for testability).\n  - `EloEngine(config: EloConfig)` with small (<10-line) methods: `_expected(home_elo, away_elo, neutral)`, `_goal_multiplier(margin)`, `_k_for_tournament(tournament)`, `_update_pair(...)`, and `run(df)` orchestrator. `run` must `pd.to_datetime(df[\"DATE\"], errors=\"coerce\")`, sort stably, maintain a `dict[str, float]` of current ratings defaulting to `initial_rating`, skip `<NA>`-goal rows for updates (use `.isna()` on the `Int64` columns) while still emitting their pre-match diff.\n  - `seed_wc2026(result, teams: Iterable[str]) -> dict[str, float]` \u2014 pass team names explicitly (e.g. from `wc2026_schedule(df)` or a `TournamentState`) so the module stays decoupled from `live.py`/the HTTP client.\n  - Module-level factory: `compute_elo(df, config: EloConfig | None = None) -> EloResult`.\n- **Modify:** `worldcup_playoff/config.py` \u2014 add `class EloConfig(BaseModel)` (`ConfigDict(extra=\"ignore\")`) with: `initial_rating: float = 1500.0`, `home_advantage: float = 100.0`, tiered K factors (`k_friendly=20`, `k_qualifier=30`, `k_continental=40`, `k_world_cup=60`), and data-driven keyword lists for tournament classification (`world_cup_keywords`, `continental_keywords`, `qualifier_keywords`). Add `@field_validator`s (positive K / initial_rating, non-negative home_advantage). Register `elo: EloConfig = EloConfig()` on `AppConfig` (additive \u2014 preserve any sibling `poisson:` field).\n- **Create:** `tests/test_elo.py` \u2014 BDD `test_when_..._then_...` naming; build small DataFrames in-memory (no network/I/O); cover every acceptance criterion above; parametrize the `G` and `K` cases; assert determinism with shuffled input.\n",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: data",
+        "id": "LA_kwDOTBxfPc8AAAACopKxrQ",
+        "name": "area:data"
+      }
+    ],
+    "number": 5,
+    "state": "OPEN",
+    "title": "feat: World Football Elo engine (chronological ratings + pre-match Elo-diff from martj42)"
+  }
+]
+
+---
+
+## Constitution
+
+(project constitution unavailable — analyze gate cannot flag constitution violations)
+
+---
+
+## Cycle Scope (current cycle only)
+
+# Cycle 2 — Statistical Abilities
+
+## Objective
+Compute the two ability systems that feed every downstream model: a chronological World Football Elo engine and a Dixon-Coles bivariate-Poisson estimator with time-decay. Both fit on martj42 history and emit per-team, per-date ratings/abilities, seeding WC2026 teams with current values.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline. It replaces the legacy classifier with a Groll-style RF hybrid (Dixon-Coles/Poisson abilities + Elo as covariates), conditioned on results to date.
+
+## Preceding cycles
+Cycle 1 delivered the normalized data layer: `data/martj42_loader.py` (history in `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS, TOURNAMENT, NEUTRAL` schema, plus shootouts/goalscorers), `data/live.py` (WC2026 state), the team-name crosswalk, and the WC2026 R32 bracket-slotting template. Consume those normalized frames here — do not re-parse raw CSVs.
+
+## Following cycles
+Feature assembly (Cycle 3) consumes these ratings; model training (Cycle 4); simulation/evaluation (Cycle 5). Do NOT assemble per-match feature vectors, train the hybrid, or run Monte Carlo here.
+
+## In scope
+- `data/elo.py`: compute World Football Elo chronologically from martj42 — `R' = R + K·G·(W − We)`, `We = 1/(1+10^(-dr/400))`, `dr = home_elo − away_elo + home_adv`, with K by match importance (Friendly < Qualifier < Continental < World Cup), G a goal-margin multiplier, and `home_adv = 0` when `neutral`. Emit per-team, per-date Elo and pre-match Elo-difference. Seed WC2026 teams with their latest historical rating.
+- `simulation/poisson.py`: Dixon-Coles / bivariate Poisson with per-team attack & defence strengths, home advantage, `rho` low-score correction, and exponential time-decay (recent matches weigh more). Fit on martj42; expose per-team attack/defence abilities as covariates AND a standalone scoreline sampler (goals ~ Poisson(λ)).
+- Tests for Elo update math, neutral-venue handling, time-decay weighting, and `rho` correction.
+
+## Out of scope
+- FIFA-ranking ingestion, recent-form, rest-days, confederation features — Cycle 3 (`features/build.py`).
+- The RF/GBM hybrid and ordered logit — Cycle 4 (`models/hybrid.py`, `models/ordered_logit.py`).
+- Tournament simulation using the scoreline sampler — Cycle 5.
+- `[elo]`/`[poisson]` TOML config wiring beyond what these modules need to run — finalized in Cycle 5.
+
+## Acceptance criteria
+- Both estimators run no-key from martj42 history alone.
+- Deterministic given a seed; no nondeterministic fitting that breaks replays.
+- `home_advantage = 0` for neutral matches (WC2026 host cities are neutral).
+- Per-team, per-date Elo + Elo-diff and Dixon-Coles attack/defence abilities are emitted for downstream consumption; WC2026 live state is seeded from history.
+- New modules ship with tests; the existing ~248-test suite stays green.
+
+
+---
+
+## Prompt
+
+You are a senior reviewer running the Analyze gate. Emit a deterministic, machine-parseable JSON report. The orchestrator parses your output as JSON without an LLM round-trip, so the schema is non-negotiable.
+
+This gate runs after Phase 1 (issue creation) and before any Phase 3/4 implementation spend.
+
+### What requirements to check
+
+**When `Cycle Scope` section is non-empty** (multi-cycle mode):
+- Check the **Issues** against the `## Acceptance criteria` section inside **Cycle Scope only**. This is the authoritative checklist for this cycle.
+- The full **Requirements** document is background context for constitution checks — do NOT generate coverage-gap findings against the full `## Scope`, `### N.` subsections, or `## Global acceptance criteria` from it. Those belong to future cycles.
+- Only flag gaps for acceptance criteria explicitly listed in the Cycle Scope's `## Acceptance criteria` section.
+
+**When `Cycle Scope` section is empty** (single-cycle mode):
+- Check the **Issues** against the full **Requirements** document as normal, including all `## Global acceptance criteria` rows.
+
+### What to detect
+
+1. **Coverage gaps** (`coverage-gap`) — acceptance criteria in the **active checklist** (see above) with no covering issue.
+2. **Duplications** (`duplication`) — two or more issues whose scope substantially overlaps.
+3. **Ambiguities** (`ambiguity`) — issues whose acceptance criteria are missing, vague, or untestable.
+4. **Constitution violations** (`constitution-violation`) — any issue that would violate the **Constitution**.
+
+### Severity and verdict rules
+
+- `critical` — blocks the pipeline. Any `constitution-violation` MUST be `critical`. Coverage gaps for items in the **active checklist** that are squarely in scope for this cycle are `critical`.
+- `warning` — non-blocking. Coverage gaps for items outside this cycle's active checklist, most duplications.
+- `info` — observational; safe to ignore.
+- `verdict` is `blocked` when **any** finding has severity `critical`; otherwise `pass`.
+
+A constitution / non-negotiable violation MUST be severity `critical` and MUST force `verdict=blocked` — this rule cannot be relaxed.
+
+### Output format — strict JSON, machine-parseable
+
+Emit a single JSON object. No prose, no code fences outside this block, nothing before or after the object except the trailing fix hint described below.
+
+```json
+{
+  "verdict": "pass | blocked",
+  "findings": [
+    {
+      "category": "coverage-gap | duplication | ambiguity | constitution-violation",
+      "severity": "critical | warning | info",
+      "issues": [123, 124],
+      "anchor": "Goal 3 / ### 2. Auth / Global acceptance criteria #4",
+      "summary": "One-line description of the problem."
+    }
+  ],
+  "fix_hint": "Human-readable next step (one or two sentences)."
+}
+```
+
+- `verdict` is exactly `pass` or `blocked` — no other strings.
+- `findings` is an empty list (`[]`) when the cycle is clean. Do **not** omit the key.
+- `issues` is a list of integer issue numbers; use `[]` for findings not tied to a specific issue (e.g. a missing-coverage gap).
+- `anchor` references a section/bullet/line from `Requirements` or `Constitution` so the operator can locate the problem without re-reading everything.
+- `summary` is one short sentence.
+- `fix_hint` is the **human-readable fix hint** that closes the report. Place it inside the JSON object as the final key. Do not emit it as free prose outside the object — the parser will reject mixed output.
+
+### Wrong vs Right
+
+Wrong (free prose, ambiguous verdict, unparseable):
+- ~~"There seem to be some coverage gaps. I'd suggest looking at issues 4 and 5."~~
+
+Right (strict JSON, deterministic, machine-parseable):
+- `{"verdict": "blocked", "findings": [{"category": "constitution-violation", "severity": "critical", "issues": [12], "anchor": "Non-negotiable #1 (Max subscription only)", "summary": "Issue 12 adds ANTHROPIC_API_KEY env var, violating the Max-only constraint."}], "fix_hint": "Remove the API key path from issue 12 and rely on the Max subscription only."}`
+
+### Constraints
+
+- **YOLO mode**: act without asking for confirmation.
+- **Strict JSON only** — any prose outside the single JSON object breaks the downstream parser.
+- **Constitution violations are always `critical`** and **always force `verdict=blocked`** — this rule cannot be relaxed under any condition.
+- **Schema is rigid**: keys, types, and enum values are exactly as documented above. Do not add fields.
+- **The report ends with `fix_hint`** inside the JSON object — a human-readable, one- or two-sentence next step the operator can act on.
+- **Read-only**: this prompt has no write tools. Do not propose code edits inline — only summaries + anchors.
+- **Be conservative**: when a finding is borderline, prefer `warning` over `critical`. Reserve `critical` for true blockers (constitution violations + active-checklist coverage gaps for in-scope items).
+
+2026-06-23 23:01:35,387 INFO msg #1: session bound to model claude-opus-4-8 (SystemMessage ground truth)
+2026-06-23 23:01:35,389 DEBUG msg #1: SystemMessage subtype=init type='system' subtype='init' cwd='/Volumes/External SSD/worldcup-2026-prediction' session_id='2b7e3bb8-3279-47e4-bf95-d839e50d3d3b' tools=['Task', 'AskUserQuestion', 'Bash', 'CronCreate', 'CronDelete', 'CronList', 'DesignSync', 'Edit', 'EnterPlanMode', 'EnterWorktree', 'ExitPlanMode', 'ExitWorktree', 'Glob', 'Grep', 'Monitor', 'NotebookEdit', 'PushNotification', 'Read', 'RemoteTrigger', 'ScheduleWakeup', 'Skill', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskOutput', 'TaskStop', 'TaskUpdate', 'ToolSearch', 'WebFetch', 'WebSearch', 'Workflow', 'Write'] mcp_servers=[] model='claude-opus-4-8' permissionMode='bypassPermissions' slash_commands=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator', 'clear', 'compact', 'context', 'heapdump', 'init', 'reload-skills', 'review', 'security-review', 'usage-credits', 'extra-usage', 'usage', 'insights', 'goal', 'team-onboarding'] apiKeySource='none' claude_code_version='2.1.175' output_style='default' agents=['claude', 'Explore', 'general-purpose', 'Plan', 'statusline-setup'] skills=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator'] plugins=[] analytics_disabled=False product_feedback_disabled=False uuid='88921a56-6ef4-4a01-9911-cbd340801aab' fast_mode_state='off'
+2026-06-23 23:01:37,069 INFO msg #2: RateLimitEvent
+2026-06-23 23:01:37,070 INFO RateLimitEvent: overage_status=rejected status=allowed rate_limit_type=five_hour utilization=None decision=continue
+2026-06-23 23:01:43,669 DEBUG msg #3: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=50 estimated_tokens_delta=50 uuid='1cec164c-9b81-4cbc-8446-785c28a1d981' session_id='2b7e3bb8-3279-47e4-bf95-d839e50d3d3b'
+2026-06-23 23:01:45,103 DEBUG msg #4: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=150 estimated_tokens_delta=100 uuid='4755c078-9611-4da4-9199-92a7111e0efa' session_id='2b7e3bb8-3279-47e4-bf95-d839e50d3d3b'
+2026-06-23 23:01:46,537 DEBUG msg #5: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=300 estimated_tokens_delta=150 uuid='9beed491-1bca-4e38-bf15-ada7c2f9b5c3' session_id='2b7e3bb8-3279-47e4-bf95-d839e50d3d3b'
+2026-06-23 23:01:47,970 DEBUG msg #6: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=400 estimated_tokens_delta=100 uuid='97252e19-d660-45f4-b46c-cab306ce136b' session_id='2b7e3bb8-3279-47e4-bf95-d839e50d3d3b'
+2026-06-23 23:01:49,404 DEBUG msg #7: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=550 estimated_tokens_delta=150 uuid='1d5c9f1f-4ea0-40ea-8a2d-b24ce5423f40' session_id='2b7e3bb8-3279-47e4-bf95-d839e50d3d3b'
+2026-06-23 23:01:50,837 DEBUG msg #8: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=650 estimated_tokens_delta=100 uuid='7f1f26f1-f745-4bf2-ba22-0bb946a6737f' session_id='2b7e3bb8-3279-47e4-bf95-d839e50d3d3b'
+2026-06-23 23:01:52,139 DEBUG msg #9: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=750 estimated_tokens_delta=100 uuid='a8b66c1a-f0ab-4e0d-af19-c45200bae88e' session_id='2b7e3bb8-3279-47e4-bf95-d839e50d3d3b'
+2026-06-23 23:01:52,636 DEBUG msg #10: assistant (tool_use) thinking: 
+2026-06-23 23:01:54,279 INFO msg #11: assistant (493 chars)
+```json
+{
+  "verdict": "pass",
+  "findings": [],
+  "fix_hint": "No blocking issues. Both cycle modules are covered: issue #5 (data/elo.py) satisfies the Elo, neutral-venue, determinism, and WC2026-seeding criteria; issue #6 (simulation/poisson.py) satisfies the Dixon-Coles abilities, time-decay, neutral home_adv, and determinism criteria. Both ship tests and run no-key on martj42 history. Constitution unavailable, so no constitution checks were performed. Proceed to implementation."
+}
+```
+2026-06-23 23:01:54,347 INFO msg #12: ResultMessage (tokens_in=2487 tokens_out=1032 cache_read=16890 cache_write=28533 is_error=False subtype=success stop_reason=end_turn num_turns=1)
+2026-06-23 23:01:54,582 INFO SDK session complete.
+2026-06-23 23:01:54,586 INFO Phase analyze-gate complete: in=2487 cache_read=16890 cache_write=28533 out=1032 total=48942

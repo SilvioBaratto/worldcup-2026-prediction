@@ -19,6 +19,17 @@ from worldcup_playoff.simulation.distributions import (
     FittedDistribution,
 )
 from worldcup_playoff.simulation.game import GamePredictor
+from worldcup_playoff.simulation.poisson import (
+    DixonColesEstimator,
+    ScorelineSampler,
+    TeamAbilities,
+    decay_weight,
+    dixon_coles_tau,
+    fit_dixon_coles,
+    lambdas,
+    make_sampler,
+    score_matrix,
+)
 from worldcup_playoff.simulation.tournament import (
     BracketSlot,
     RoundResult,
@@ -29,12 +40,21 @@ from worldcup_playoff.simulation.tournament import (
 
 __all__ = [
     "BracketSlot",
+    "DixonColesEstimator",
     "DistributionFitter",
     "FeatureSampler",
     "FittedDistribution",
     "GamePredictor",
     "RoundResult",
+    "ScorelineSampler",
+    "TeamAbilities",
     "TournamentSimulator",
     "build_bracket_tree",
+    "decay_weight",
+    "dixon_coles_tau",
     "extract_bracket_slots",
+    "fit_dixon_coles",
+    "lambdas",
+    "make_sampler",
+    "score_matrix",
 ]

@@ -151,7 +151,7 @@ class DistributionFitter:
         away_features: list[str] = selected[n:]   # GOALS_away … PASS_PCT_away
 
         unique_teams: np.ndarray = pd.unique(
-            pd.concat(  # type: ignore[arg-type]
+            pd.concat(
                 [df["HOME_TEAM"], df["AWAY_TEAM"]]
             )
         )
@@ -164,7 +164,7 @@ class DistributionFitter:
             # Games played away — take the _away columns and re-label them so
             # both slices share the same column names before stacking.
             df_away = df.loc[df["AWAY_TEAM"] == team][away_features].copy()
-            df_away.columns = home_features  # type: ignore[assignment]
+            df_away.columns = home_features
 
             combined = pd.concat([df_home, df_away], axis=0)
             team_data[str(team)] = combined.to_numpy()

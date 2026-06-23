@@ -1,17 +1,17 @@
 {
   "mode": "multi-cycle",
   "started_at": "2026-06-23T18:24:44Z",
-  "updated_at": "2026-06-23T20:52:26Z",
+  "updated_at": "2026-06-23T21:48:38Z",
   "state_version": 2,
-  "current_cycle": 1,
+  "current_cycle": 2,
   "cycles": [
     {
       "id": 1,
       "name": "Data Foundations",
       "milestone_number": 1,
       "milestone_title": "Cycle 1 \u2014 Data Loaders & Normalization",
-      "status": "open",
-      "phase": 65,
+      "status": "completed",
+      "phase": 7,
       "issues": [
         {
           "number": 1,
@@ -158,19 +158,30 @@
           "cache_write_1h": 76880,
           "compaction_events": 0,
           "clear_events": 0
+        },
+        "phase7": {
+          "input": 2487,
+          "output": 130,
+          "cache_read": 15328,
+          "cache_write": 10852,
+          "num_turns": 1,
+          "cache_write_5m": 0,
+          "cache_write_1h": 10852,
+          "compaction_events": 0,
+          "clear_events": 0
         }
       },
       "started_at": "2026-06-23T18:53:12Z",
-      "finished_at": "2026-06-23T20:15:37Z",
+      "finished_at": "2026-06-23T20:52:35Z",
       "cache_telemetry": {
-        "input": 19400,
-        "output": 407476,
-        "cache_read": 14832473,
-        "cache_write": 869109,
-        "cache_write_1h": 436621,
+        "input": 21887,
+        "output": 407606,
+        "cache_read": 14847801,
+        "cache_write": 879961,
+        "cache_write_1h": 447473,
         "cache_write_5m": 432488,
         "cache_hit_pct": 94.3,
-        "wall_seconds": 4384.020957290835
+        "wall_seconds": 4389.822736915841
       },
       "phase2_batch_id": null,
       "ollama_model": null,
@@ -248,11 +259,40 @@
     {
       "id": 2,
       "name": "Statistical Abilities",
-      "milestone_number": null,
+      "milestone_number": 2,
       "milestone_title": "Cycle 2 \u2014 Elo & Dixon-Coles Estimation",
       "status": "open",
-      "phase": 0,
-      "issues": [],
+      "phase": 65,
+      "issues": [
+        {
+          "number": 5,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:data"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-23T21:03:28Z):\n> Determinism trap in `run()`: the implementation note says \"sort stably\" but the acceptance criteria require BOTH a \"deterministic same-day tiebreak\" AND that \"shuffling input row order yields identical final ratings.\" These conflict. A stable sort on `DATE` alone preserves the *input* relative order for rows sharing a date \u2014 so under a shuffled input, same-day matches are processed in a different order, and since Elo updates are path-dependent (`R' = R + K\u00b7G\u00b7(W\u2212We)`), the final ratings diverge and the shuffle-determinism test fails. martj42 `results.csv` has many same-day fixtures, so this is hit in practice, not a corner case.\n> \n> Fix: sort on a composite deterministic key that does not depend on row order, e.g. `df.assign(_d=pd.to_datetime(df[\"DATE\"], errors=\"coerce\")).sort_values([\"_d\", \"HOME_TEAM\", \"AWAY_TEAM\"], kind=\"stable\")`. Add this tiebreak explicitly to the `run` implementation note and assert it in the shuffle test (build a DataFrame with \u22652 matches on the same date involving overlapping teams, then shuffle and compare final ratings). Note also that `pd.to_datetime(errors=\"coerce\")` yields `NaT` for unparseable dates and pandas sorts `NaT` last \u2014 decide whether such rows should be dropped or trailed, and cover it.\n> \n> Everything else checks out against the code: the `Martj42Loader.load_results()` schema you describe is accurate (`DATE` object, `HOME_GOALS`/`AWAY_GOALS` nullable `Int64`, `NEUTRAL` numpy bool, teams already crosswalk-normalized), the K-tier substring precedence (qualifier before world-cup so \"FIFA World Cup qualification\" doesn't match the WC tier) is correctly specified, and the additive `config.py` edit fits the existing `AppConfig` pattern.",
+          "title": "feat: World Football Elo engine (chronological ratings + pre-match Elo-diff from martj42)"
+        },
+        {
+          "number": 6,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:simulation"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-23T21:03:29Z):\n> Numerical-stability bug risk in the weighted MLE: the Dixon-Coles \u03c4 correction is not guaranteed positive during optimization. `\u03c4(0,0) = 1 \u2212 \u03bb_home\u00b7\u03bb_away\u00b7\u03c1` and the (0,1)/(1,0)/(1,1) cases can each go \u2264 0 as L-BFGS-B explores large \u03bb or large |\u03c1|. Once \u03c4 \u2264 0, `log(\u03c4)` in `_neg_log_likelihood` returns `nan`/`-inf`, which makes the objective non-finite and lets L-BFGS-B either stall or return garbage \u2014 silently breaking both the \"fit is deterministic\" and \"stronger team gets higher attack\" acceptance criteria. This is the classic Dixon-Coles pitfall and won't show up on tiny toy data but will on realistic fits.\n> \n> Fix: constrain \u03c1 during the fit. Pass `bounds=` to `scipy.optimize.minimize(method=\"L-BFGS-B\", ...)` keeping \u03c1 in a safe interval (e.g. `[-0.2, 0.0]` or a \u03bb-aware bound), and/or clip \u03c4 to a small positive floor (`np.maximum(tau, 1e-10)`) before taking the log. Add an acceptance test asserting the fitted log-likelihood is finite and that no `log(\u03c4)` of a non-positive value occurs.\n> \n> Two smaller notes: (1) for the `score_matrix` criterion, the \u03c4-corrected grid must be normalized (\u03a3 \u2260 1 before normalization because \u03c4 perturbs the independent-Poisson product AND the grid is truncated at `max_goals`) \u2014 make sure \"equals the product of marginals when \u03c1=0\" is asserted against the *normalized* truncated marginals, not the raw scipy pmf, or the approx will fail. (2) Confirm `_prepare` drops `<NA>`-goal rows via `.isna()` on the `Int64` columns *before* `.astype(int)`, since casting `Int64` `<NA>` to a numpy int array raises.\n> \n> The rest is well-grounded: the loader schema you cite is accurate, the seeded-RNG sampler contract correctly mirrors `FeatureSampler` (`np.random.default_rng`), and the additive `PoissonConfig` edit fits the `AppConfig` pattern. Heads-up on the shared `config.py` edit with the sibling Elo issue (#5) \u2014 both append a field to `AppConfig` and a new import, so expect a trivial merge conflict there; keep the edit minimal and additive as noted.",
+          "title": "feat: Dixon-Coles bivariate-Poisson estimator (attack/defence abilities + scoreline sampler)"
+        }
+      ],
       "commit_sha": null,
       "depends_on": [
         1
@@ -272,31 +312,124 @@
           "effort": "high"
         }
       ],
-      "base_commit": null,
-      "token_usage": {},
-      "started_at": null,
+      "base_commit": "c58e2c809d876a3f41c87de18a138260adeed05d",
+      "token_usage": {
+        "phase1": {
+          "input": 13358,
+          "output": 20010,
+          "cache_read": 615700,
+          "cache_write": 76546,
+          "num_turns": 19,
+          "cache_write_5m": 0,
+          "cache_write_1h": 76546,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase2": {
+          "input": 3,
+          "output": 5891,
+          "cache_read": 42067,
+          "cache_write": 55578,
+          "num_turns": 4,
+          "cache_write_5m": 0,
+          "cache_write_1h": 55578,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase3_4": {
+          "input": 229,
+          "output": 136351,
+          "cache_read": 6134712,
+          "cache_write": 236295,
+          "num_turns": 77,
+          "cache_write_5m": 236295,
+          "cache_write_1h": 0,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase5": {
+          "input": 6614,
+          "output": 20805,
+          "cache_read": 810471,
+          "cache_write": 83963,
+          "num_turns": 24,
+          "cache_write_5m": 0,
+          "cache_write_1h": 83963,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase6": {
+          "input": 576,
+          "output": 20047,
+          "cache_read": 4866932,
+          "cache_write": 57130,
+          "num_turns": 87,
+          "cache_write_5m": 0,
+          "cache_write_1h": 57130,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "mav": {
+          "input": 95,
+          "output": 9177,
+          "cache_read": 1209095,
+          "cache_write": 83655,
+          "num_turns": 17,
+          "cache_write_5m": 0,
+          "cache_write_1h": 83655,
+          "compaction_events": 0,
+          "clear_events": 0
+        }
+      },
+      "started_at": "2026-06-23T20:52:37Z",
       "finished_at": null,
       "cache_telemetry": {
-        "input": 0,
-        "output": 0,
-        "cache_read": 0,
-        "cache_write": 0,
-        "cache_write_1h": 0,
-        "cache_write_5m": 0,
-        "cache_hit_pct": 0.0,
-        "wall_seconds": 0
+        "input": 20875,
+        "output": 212281,
+        "cache_read": 13678977,
+        "cache_write": 593167,
+        "cache_write_1h": 356872,
+        "cache_write_5m": 236295,
+        "cache_hit_pct": 95.7,
+        "wall_seconds": 2477.88255274907
       },
       "phase2_batch_id": null,
       "ollama_model": null,
       "gemini_model": null,
       "codex_model": null,
-      "cache_prewarmed": false,
-      "cache_ttl_probe": null,
-      "phase6_5": null,
+      "cache_prewarmed": true,
+      "cache_ttl_probe": "1h",
+      "phase6_5": {
+        "attempt": 0,
+        "last_tier": "DONE",
+        "tiers_passed": [
+          "T0"
+        ],
+        "tiers_failed": [],
+        "tiers_skipped": [
+          "T1",
+          "T2",
+          "T3",
+          "T4"
+        ],
+        "skip_reasons": {
+          "T1": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+          "T2": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+          "T3": "no frontend",
+          "T4": "no docker"
+        }
+      },
       "vigil_triggered": false,
       "phase8": null,
       "phase4_bon": [],
-      "phase6_mav": null,
+      "phase6_mav": {
+        "aspects_passed": [
+          "acceptance_criteria",
+          "security"
+        ],
+        "aspects_failed": [],
+        "overall_pass": true
+      },
       "vg_config": null,
       "cycle5_decisions": [],
       "tool_search_enabled": false,
@@ -308,10 +441,37 @@
       "github_mode": true,
       "commit_enabled": true,
       "static_blocker": false,
-      "static_status": null,
+      "static_status": "scanned",
       "mutation_score": null,
-      "pbt_result": null,
-      "model_cost": {}
+      "pbt_result": {
+        "passed": 15,
+        "failed": 0
+      },
+      "model_cost": {
+        "phase3_4": {
+          "claude-haiku-4-5-20251001": {
+            "cost_usd": 0.003961,
+            "input_tokens": 3801,
+            "output_tokens": 32,
+            "cache_read": 0,
+            "cache_write": 0
+          },
+          "claude-sonnet-4-6": {
+            "cost_usd": 5.348724600000001,
+            "input_tokens": 232,
+            "output_tokens": 136355,
+            "cache_read": 6151072,
+            "cache_write": 242897
+          },
+          "claude-opus-4-8": {
+            "cost_usd": 0.7241035,
+            "input_tokens": 3,
+            "output_tokens": 5891,
+            "cache_read": 42067,
+            "cache_write": 55578
+          }
+        }
+      }
     },
     {
       "id": 3,
@@ -545,7 +705,7 @@
     }
   },
   "session_mode": "shared",
-  "client_alive_at": "2026-06-23T20:32:31+00:00",
+  "client_alive_at": "2026-06-23T20:52:37+00:00",
   "phase2_batch_id": null,
   "repo": {
     "host": "github.com",

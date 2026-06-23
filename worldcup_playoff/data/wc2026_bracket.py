@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 from itertools import combinations
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +119,7 @@ THIRD_PLACE_COMBINATIONS: dict[frozenset[str], dict[str, str]] = _compute_third_
 # ---------------------------------------------------------------------------
 
 
-def _get_row_at(table: list[dict], position: int) -> dict:
+def _get_row_at(table: list[dict[str, Any]], position: int) -> dict[str, Any]:
     """Return the row whose `position` field equals *position*, or fall back by index."""
     return next(
         (r for r in table if r.get("position") == position),
@@ -126,7 +127,7 @@ def _get_row_at(table: list[dict], position: int) -> dict:
     )
 
 
-def _third_sort_key(group: str, row: dict) -> tuple:
+def _third_sort_key(group: str, row: dict[str, Any]) -> tuple[int, int, int, str]:
     """FIFA tiebreak key for third-placed teams (lower = better rank)."""
     return (
         -row.get("points", 0),
@@ -138,13 +139,14 @@ def _third_sort_key(group: str, row: dict) -> tuple:
 
 def _resolve_slot(
     slot: str,
-    standings: dict[str, list[dict]],
+    standings: dict[str, list[dict[str, Any]]],
     third_map: dict[str, str],
 ) -> str:
     """Translate a bracket slot label into a concrete team name."""
     group = third_map[slot] if slot.startswith("3") else slot[1]
     pos = 3 if slot.startswith("3") else int(slot[0])
-    return _get_row_at(standings[group], pos)["team"]["name"]
+    team_info: dict[str, Any] = _get_row_at(standings[group], pos)["team"]
+    return cast(str, team_info["name"])
 
 
 # ---------------------------------------------------------------------------
@@ -152,7 +154,7 @@ def _resolve_slot(
 # ---------------------------------------------------------------------------
 
 
-def rank_third_places(standings: dict[str, list[dict]]) -> list[str]:
+def rank_third_places(standings: dict[str, list[dict[str, Any]]]) -> list[str]:
     """Return the 8 qualifying third-place group letters ranked by FIFA tiebreak.
 
     *standings* maps group letter → list-of-table-row dicts (football-data.org v4 schema).
@@ -169,7 +171,7 @@ def assign_thirds(qualified_third_groups: frozenset[str]) -> dict[str, str]:
     return THIRD_PLACE_COMBINATIONS[qualified_third_groups]
 
 
-def resolve_r32(standings: dict[str, list[dict]]) -> list[tuple[str, str]]:
+def resolve_r32(standings: dict[str, list[dict[str, Any]]]) -> list[tuple[str, str]]:
     """Resolve 16 R32 ties from final group standings to concrete (home, away) pairs."""
     third_map = assign_thirds(frozenset(rank_third_places(standings)))
     return [
