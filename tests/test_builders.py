@@ -87,9 +87,7 @@ def _standings_response(n_teams: int = 4) -> dict:
 
 
 def _players_teams_response(n: int = 2) -> dict:
-    return {
-        "teams": [{"id": 200 + i, "name": f"Nation{i}"} for i in range(n)]
-    }
+    return {"teams": [{"id": 200 + i, "name": f"Nation{i}"} for i in range(n)]}
 
 
 def _squad_response(n: int = 3) -> dict:
@@ -109,9 +107,7 @@ def _squad_response(n: int = 3) -> dict:
 def _match_detail_response(match_id: int = 1001, home_goals: int = 2, away_goals: int = 1) -> dict:
     return {
         "id": match_id,
-        "score": {
-            "fullTime": {"home": home_goals, "away": away_goals}
-        },
+        "score": {"fullTime": {"home": home_goals, "away": away_goals}},
         "statistics": [],
     }
 
@@ -206,7 +202,9 @@ class TestMatchesBuilder:
         shared_response = _matches_response(n=2)
         client = MagicMock()
         client.get.return_value = shared_response
-        builder = MatchesBuilder(client, start_year=2022, end_year=2022, competition_codes=["WC", "EC"])
+        builder = MatchesBuilder(
+            client, start_year=2022, end_year=2022, competition_codes=["WC", "EC"]
+        )
         df = builder.build()
         assert df["MATCH_ID"].nunique() == len(df)
 

@@ -33,7 +33,14 @@ class GamePredictor:
     The NBA ``GamePredictor.predict`` accepted ``num_games`` for a best-of-N
     series.  Here ``predict_tie`` always simulates exactly one match — the World
     Cup knockout format leaves no room for series length configuration.
+
+    Teams too sparse to fit their own distributions (e.g. nations with only a
+    handful of matches in the training window) fall back to the pooled
+    league-average distribution stored under ``POOLED_KEY`` when present — an
+    "unknown-strength prior" — instead of raising ``KeyError``.
     """
+
+    POOLED_KEY = "__POOLED__"
 
     def __init__(
         self,
@@ -62,16 +69,26 @@ class GamePredictor:
             The country name of the winning team (either *home* or *away*).
 
         Raises:
-            KeyError: If *home* or *away* are not present in
-                ``team_distributions``.
+            KeyError: If *home* or *away* are absent and no ``POOLED_KEY``
+                fallback distribution is available.
         """
-        home_features = self._sampler.sample(
-            self._team_distributions[home], size=1
-        )
-        away_features = self._sampler.sample(
-            self._team_distributions[away], size=1
-        )
+        home_features = self._sampler.sample(self._dists_for(home), size=1)
+        away_features = self._sampler.sample(self._dists_for(away), size=1)
         combined: np.ndarray = np.hstack([home_features, away_features])
         # predict returns an array of shape (1,); 1 = home win, 0 = away win.
         prediction: int = int(self._classifier.predict(combined)[0])
         return home if prediction == 1 else away
+
+    def _dists_for(self, team: str) -> list[FittedDistribution]:
+        """Resolve a team's fitted distributions, falling back to the pool.
+
+        Sparse teams without their own fitted distributions use the pooled
+        league-average distribution under ``POOLED_KEY`` when it exists.
+        """
+        dists = self._team_distributions.get(team)
+        if dists is not None:
+            return dists
+        pooled = self._team_distributions.get(self.POOLED_KEY)
+        if pooled is not None:
+            return pooled
+        raise KeyError(f"No fitted distributions for {team!r} and no {self.POOLED_KEY!r} fallback")

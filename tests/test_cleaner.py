@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
@@ -29,7 +31,6 @@ def _make_cleaner(
 
 def _minimal_matches_df(n: int = 5) -> pd.DataFrame:
     """Minimal matches.csv DataFrame with no feature columns (to be merged with details)."""
-    import numpy as np
 
     rows = []
     for i in range(n):
@@ -168,10 +169,16 @@ class TestDataCleanerSteps:
         cleaner = _make_cleaner(epsilon=0.001)
         df = _minimal_matches_df(1)
         df = df.assign(
-            GOALS_home=[1], SHOTS_home=[12], SHOTS_ON_TARGET_home=[4],
-            POSSESSION_home=[0.0], PASS_PCT_home=[0.0],  # zeros to be fixed
-            GOALS_away=[0], SHOTS_away=[7], SHOTS_ON_TARGET_away=[2],
-            POSSESSION_away=[0.0], PASS_PCT_away=[0.0],
+            GOALS_home=[1],
+            SHOTS_home=[12],
+            SHOTS_ON_TARGET_home=[4],
+            POSSESSION_home=[0.0],
+            PASS_PCT_home=[0.0],  # zeros to be fixed
+            GOALS_away=[0],
+            SHOTS_away=[7],
+            SHOTS_ON_TARGET_away=[2],
+            POSSESSION_away=[0.0],
+            PASS_PCT_away=[0.0],
         )
         result = cleaner._fix_zero_percentages(df)
         assert result.iloc[0]["POSSESSION_home"] == pytest.approx(0.001)
@@ -206,9 +213,18 @@ class TestDataCleanerCleanPipeline:
         matches_df, details_df = self._make_full_df()
         result = cleaner.clean(matches_df, details_df)
         expected_cols = [
-            "HOME_TEAM", "AWAY_TEAM",
-            "GOALS_home", "SHOTS_home", "SHOTS_ON_TARGET_home", "POSSESSION_home", "PASS_PCT_home",
-            "GOALS_away", "SHOTS_away", "SHOTS_ON_TARGET_away", "POSSESSION_away", "PASS_PCT_away",
+            "HOME_TEAM",
+            "AWAY_TEAM",
+            "GOALS_home",
+            "SHOTS_home",
+            "SHOTS_ON_TARGET_home",
+            "POSSESSION_home",
+            "PASS_PCT_home",
+            "GOALS_away",
+            "SHOTS_away",
+            "SHOTS_ON_TARGET_away",
+            "POSSESSION_away",
+            "PASS_PCT_away",
             "HOME_WIN",
         ]
         assert list(result.columns) == expected_cols
@@ -246,7 +262,6 @@ class TestDataCleanerCleanPipeline:
     def test_write_saves_to_csv(self, tmp_path: Path) -> None:
         import pandas as pd
 
-        cleaner = _make_cleaner()
         matches_df, details_df = self._make_full_df()
 
         # Configure output path inside tmp_path

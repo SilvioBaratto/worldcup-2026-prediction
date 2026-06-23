@@ -21,8 +21,10 @@ htmlcov/
 dataset/csv/*.csv
 dataset/csv/*.partial
 dataset/train_data.csv
+dataset/martj42/*.csv
 
 # Generated artifacts
 output/models/*.joblib
 output/distributions.json
 output/plots/*.png
+graphify-out/

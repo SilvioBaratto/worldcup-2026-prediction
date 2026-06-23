@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from worldcup_playoff.config import AppConfig, BracketConfig, Matchup, SimulationConfig
+from worldcup_playoff.config import AppConfig, BracketConfig, Matchup
 from worldcup_playoff.simulation.distributions import FittedDistribution
 
 

@@ -1,0 +1,477 @@
+2026-06-23 21:01:39,864 INFO SDK session starting (model=opus effort=high max_turns=None).
+2026-06-23 21:01:39,866 DEBUG SDK prompt (58482 chars):
+# Prompt — Analyze Coverage
+
+**Model:** `claude-opus-4-8`
+**Tools:** `Read`
+**Runtime placeholders:**
+- `# Cycle 1 — Data Foundations
+
+## Objective
+Deliver the no-key data layer: a CC0 martj42 historical loader (default training source), a live WC2026 adapter over the existing `FootballClient`, a martj42↔API team-name crosswalk, and WC2026 Round-of-32 bracket-slotting rules. Every nation gets real history and the simulator can resolve `LAST_32` from group standings.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline. It replaces the legacy SVM/RF/NB classifier with a Groll-style RF hybrid (time-weighted Dixon-Coles/Poisson abilities + Elo as covariates) and conditions on results played to date.
+
+## Preceding cycles
+None. The existing repo already provides: `data/client.py` (`FootballClient`, rate-limited football-data.org v4), `data/loader.py` (`DataLoader`), `data/cleaner.py` (`DataCleaner`), `data/builders.py`, `data/bracket_builder.py` (`BracketBuilder`), and `config.py` Pydantic models. Reuse `FootballClient` for live pulls; do not rebuild it.
+
+## Following cycles
+Elo and Dixon-Coles estimation (Cycle 2), feature assembly (Cycle 3), model training (Cycle 4), simulation/evaluation/CLI wiring (Cycle 5). Do NOT compute ratings, build features, or simulate here — only land clean, normalized data and the bracket template.
+
+## In scope
+- `data/martj42_loader.py`: fetch CC0 `results.csv` (49,477 rows: `date, home_team, away_team, home_score, away_score, tournament, city, country, neutral`), coercing `"NA"` scores → nullable Int and `"TRUE"/"FALSE"` → bool; also `shootouts.csv` (678 rows) and `goalscorers.csv` (47,741 rows). Map into internal schema `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS, TOURNAMENT, NEUTRAL`. martj42 already contains the WC2026 schedule.
+- `data/live.py`: pull WC2026 standings, played results, and remaining group fixtures via `FootballClient` (`GET /v4/competitions/WC/matches` — 104 matches/44 played; `/standings` — 12 groups). Expose "state of tournament as of today".
+- Team-name crosswalk dict (e.g. `Türkiye`/`Turkey`, `Czechia`, `South Korea`, `United States`/`USA`, `IR Iran`) joining live results to history.
+- WC2026 R32 bracket-slotting: encode top-2-per-group + 8-best-thirds template and best-third assignment rules so a simulator can resolve `LAST_32`.
+- Schema-verification tests against the exact data-contract shapes.
+
+## Out of scope
+- Elo engine (`data/elo.py`) — Cycle 2.
+- Dixon-Coles / Poisson (`simulation/poisson.py`) — Cycle 2.
+- Feature vectors (`features/build.py`) — Cycle 3.
+- Odds scraping (`data/odds.py`) — Cycle 5.
+- Running the live group→knockout simulation — Cycle 5.
+
+## Acceptance criteria
+- Loaders are no-key by default (martj42 + computed sources); the football-data.org key is optional and only for live state, read from `.env` (gitignored — never commit secrets).
+- Schemas match the data contracts exactly (49,477 martj42 rows; 104 WC2026 matches, 44 played).
+- Team names normalize so live results join historical training data.
+- New modules ship with tests; the existing ~248-test suite stays green.
+` — canonical `requirements.md` content (post-`optimize`, post-`clarify`)
+- `[
+  {
+    "body": "## Goal\nEncode the official WC2026 Round-of-32 bracket template and the best-third-place selection/assignment rules as pure data + functions, so a later-cycle simulator can deterministically resolve `LAST_32` from final group standings. This is **data and pure rules only \u2014 no simulation, no probabilities, no network.**\n\n## Context\nWC2026 has **48 teams \u2192 12 groups**; the top 2 of each group **plus the 8 best third-placed teams** advance to the Round of 32. The football-data.org API returns knockout slot teams as `null` until the groups resolve, so the bracket must be derived, not fetched.\n\nTwo pieces of canonical FIFA data are required:\n1. The **R32 template** \u2014 which group-winner (`1A`\u2026`1L`), runner-up (`2A`\u2026`2L`), and best-third placeholder (`3X`) meet in each of the 16 ties.\n2. The **best-third-place assignment table** \u2014 a lookup keyed by *which* 8 of the 12 third-placed groups qualified, mapping each third-place placeholder slot to a concrete group. (Same mechanism as the historical 24-team Euro/World Cup third-place tables, expanded for 12 groups / 8 qualifying thirds.)\n\nConsume the `GroupStanding` value object defined in the live adapter (issue #3) as the input type for the resolver. Team names arriving in standings are already canonical via the crosswalk (issue #1), so the resolved pairs need no further normalization. Keep this module a one-way consumer of the `GroupStanding` **type** only \u2014 `live.py` must never import this module (avoid cycles).\n\nConventions: module `\"\"\"docstring\"\"\"` \u2192 `from __future__ import annotations` \u2192 `logger`; pure functions < 10 lines; frozen module-level data structures. FIFA group-stage tiebreak order for ranking thirds: points, then goal difference, then goals for, then further criteria.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `R32_SLOTS` encodes exactly 16 ties referencing the 24 group-position slots (`1A`\u2013`1L`, `2A`\u2013`2L`) plus 8 third-place placeholders, as a frozen data structure\n- [ ] `THIRD_PLACE_COMBINATIONS` is the official FIFA lookup mapping each valid 8-of-12 qualifying-third combination \u2192 slot assignment (or documents the canonical subset it covers)\n- [ ] `rank_third_places(standings) -> list[str]` orders the 12 third-placed teams by FIFA tiebreak (points, GD, GF, \u2026) and returns the qualifying 8 groups, deterministically\n- [ ] `assign_thirds(qualified_third_groups: frozenset[str]) -> dict[str, str]` resolves each `3X` placeholder via the lookup table\n- [ ] `resolve_r32(standings) -> list[tuple[str, str]]` returns 16 concrete `(home, away)` pairs with 32 distinct teams and no duplicates\n- [ ] Pure: importing the module constructs no `FootballClient`, performs no network/randomness; no dependency on martj42 or live HTTP\n- [ ] New symbols exported from `worldcup_playoff/data/__init__.py` + `__all__`\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #1: feat: team-name crosswalk for martj42 \u2194 football-data.org normalization\n- #3: feat: live WC2026 adapter over FootballClient (matches, standings, tournament state)\n\n## Implementation notes\n- **Create:** `worldcup_playoff/data/wc2026_bracket.py` \u2014 `GROUPS` (`A`\u2026`L`); a small `SlotRef`/`BracketSlot` type (dataclass or Pydantic) for `1A`/`2C`/`3X` references; `R32_SLOTS` (16 ties); `THIRD_PLACE_COMBINATIONS` lookup; pure functions `rank_third_places`, `assign_thirds`, `resolve_r32`.\n- **Create:** `tests/test_wc2026_bracket.py` \u2014 construct a full synthetic 12-group standings list (`GroupStanding` objects); assert `resolve_r32` yields 16 ties / 32 distinct teams and that winners & runners-up land in their template slots; unit-test `assign_thirds` against a couple of known FIFA combination rows; assert no network/`FootballClient` import.\n- **Modify:** `worldcup_playoff/data/__init__.py` \u2014 export `resolve_r32`, `R32_SLOTS`, `rank_third_places`, `assign_thirds`; extend `__all__`.\n- Import only the `GroupStanding` type from `live.py` (one-way). Do **not** simulate, sample, or compute probabilities here \u2014 that is Cycle 5. Stop at producing `(home, away)` pairs from *given* standings.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: data",
+        "id": "LA_kwDOTBxfPc8AAAACopKxrQ",
+        "name": "area:data"
+      }
+    ],
+    "number": 4,
+    "state": "OPEN",
+    "title": "feat: WC2026 Round-of-32 bracket-slotting rules (top-2 + 8 best thirds)"
+  },
+  {
+    "body": "## Goal\nAdd a live WC2026 adapter that reuses the existing `FootballClient` to pull current standings, played results, and remaining group fixtures from football-data.org, normalizes team names through the crosswalk, and exposes a single \"state of the tournament as of today\" object. The API key is optional (live state only); everything degrades to no-key behavior already handled by `FootballClient`.\n\n## Context\n**Data contract (verified 2026-06-23, football-data.org v4, header `X-Auth-Token`, 10 req/min):**\n- `GET /v4/competitions/WC/matches` \u2192 `{... matches[]}` \u2014 currently **104 matches, 44 played** (mid group stage). Each match: `id, utcDate, status, stage, group, homeTeam{id,name}, awayTeam{id,name}, score{winner, fullTime{home,away}}`.\n  - `status` \u2208 `FINISHED | IN_PLAY | PAUSED | TIMED | SCHEDULED`.\n  - `stage` \u2208 `GROUP_STAGE | LAST_32 | LAST_16 | QUARTER_FINALS | SEMI_FINALS | THIRD_PLACE | FINAL` (counts 72/16/8/4/2/1/1). `LAST_32` = Round of 32.\n  - `group` \u2208 `GROUP_A \u2026 GROUP_L` (12 groups) or `null` for knockouts.\n  - `score.winner` \u2208 `HOME_TEAM | AWAY_TEAM | DRAW | null`; `fullTime.home/away` are `null` until played.\n  - **Knockout slot teams are `null`** (`homeTeam.name == null`) until groups resolve \u2014 do **not** expect the bracket from the API.\n- `GET /v4/competitions/WC/standings` \u2192 `{standings:[{stage,type,group,table[]}]}`, **12 groups**. Each `table[]` row: `position, team{id,name}, playedGames, won, draw, lost, points, goalsFor, goalsAgainst, goalDifference`.\n\n**Reuse, don't rebuild:** `FootballClient.get(path, params) -> dict` (in `worldcup_playoff/data/client.py`) already handles rate limiting (6 s spacing), circuit breaker, session resets, and reads `FOOTBALL_DATA_API_KEY` from env \u2014 works unauthenticated. Construct/accept it exactly like `BracketBuilder` / `generate_bracket_toml` (pass a client; the module-level factory default-constructs `FootballClient(ClientConfig())` when `client is None`).\n\nConventions: module `\"\"\"docstring\"\"\"` \u2192 `from __future__ import annotations` \u2192 `logger`; Pydantic value objects with `ConfigDict(extra=\"ignore\")`; small pure helper methods (< 10 lines). Every team name passes through `normalize_team` from the crosswalk so live results join martj42 history.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `LiveTournamentAdapter(client, competition=\"WC\")` with `fetch_matches() -> list[LiveMatch]`, `fetch_standings() -> list[GroupStanding]`, `tournament_state() -> TournamentState`\n- [ ] `tournament_state()` partitions group-stage matches into `played` vs `remaining_group_fixtures` (by `status`) and carries the 12-group `standings`\n- [ ] Knockout matches with `null` teams parse to `home_team is None` / `away_team is None` (no crash); all non-null names pass through `normalize_team`\n- [ ] Pydantic value objects `LiveMatch`, `GroupStanding`, `TournamentState` with `ConfigDict(extra=\"ignore\")`\n- [ ] Module-level `fetch_tournament_state(client=None, competition=\"WC\")` default-constructs `FootballClient` when none is passed\n- [ ] `LiveConfig` added to `config.py` and composed onto `AppConfig`; new symbols exported from `worldcup_playoff/data/__init__.py` + `__all__`\n- [ ] Tests mock the client (`MagicMock().get.side_effect = [matches_json, standings_json]`) with shape-accurate fixtures (a finished `GROUP_STAGE` match, a scheduled `GROUP_STAGE` match, a `LAST_32` match with null teams, a 12-group standings stub) \u2014 no real HTTP; the existing 250-test suite stays green\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #1: feat: team-name crosswalk for martj42 \u2194 football-data.org normalization\n\n## Implementation notes\n- **Create:** `worldcup_playoff/data/live.py` \u2014 Pydantic `LiveMatch`/`GroupStanding`/`TournamentState`; `LiveTournamentAdapter` with private `_parse_match`, `_parse_standings`, `_split_played_remaining` (partition by `status`, scope the \"remaining group fixtures\" bucket to `stage == \"GROUP_STAGE\"`); module-level `fetch_tournament_state` factory.\n- **Create:** `tests/test_live.py` \u2014 follow the `test_bracket_builder.py` `_mock_client` pattern (a `MagicMock` client whose `.get` returns the fixture dicts); assert the 104/44 partition logic on a small representative fixture, null-team handling, 12-group parse, and crosswalk normalization. Patch `time.sleep` only if a real `FootballClient` is exercised (unnecessary with a `MagicMock` client).\n- **Modify:** `worldcup_playoff/config.py` \u2014 add `LiveConfig(BaseModel)` (`competition: str = \"WC\"`) and wire `live: LiveConfig = LiveConfig()` onto `AppConfig`.\n- **Modify:** `worldcup_playoff/data/__init__.py` \u2014 export `LiveTournamentAdapter`, `fetch_tournament_state`, `TournamentState`, `LiveMatch`, `GroupStanding`; extend `__all__`.\n- Add **no** new HTTP code \u2014 all network goes through `FootballClient`. Keep `live.py` free of any import from the bracket-slotting module to avoid cycles.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: data",
+        "id": "LA_kwDOTBxfPc8AAAACopKxrQ",
+        "name": "area:data"
+      }
+    ],
+    "number": 3,
+    "state": "OPEN",
+    "title": "feat: live WC2026 adapter over FootballClient (matches, standings, tournament state)"
+  },
+  {
+    "body": "## Goal\nAdd the no-key, default training data source: a loader for the CC0 `martj42/international_results` datasets that fetches `results.csv`, `shootouts.csv`, and `goalscorers.csv`, coerces them to the internal schema, normalizes team names, and validates the exact data-contract shapes. martj42 alone provides every nation's history **and** the WC2026 schedule, so this must run with zero API key.\n\n## Context\n**Data contract (verified 2026-06-23):** base URL `https://raw.githubusercontent.com/martj42/international_results/master/`.\n- `results.csv` \u2014 **49,477 rows**, source cols `date, home_team, away_team, home_score, away_score, tournament, city, country, neutral`. `home_score`/`away_score` are the string `\"NA\"` for unplayed fixtures \u2192 coerce to nullable `Int64`. `neutral` is the string `\"TRUE\"`/`\"FALSE\"` \u2192 parse to `bool`. WC2026 fixtures are already present as `tournament == \"FIFA World Cup\"` with `NA` scores until played and `neutral == TRUE`.\n- `shootouts.csv` \u2014 **678 rows**: `date, home_team, away_team, winner, first_shooter`.\n- `goalscorers.csv` \u2014 **47,741 rows**: `date, home_team, away_team, team, scorer, minute, own_goal, penalty`.\n\n**Internal target schema for results:** `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS (Int64), AWAY_GOALS (Int64), TOURNAMENT, NEUTRAL (bool)`.\n\n**Critical integration detail:** the existing validator in `worldcup_playoff/data/loader.py` (`_validate_dataframe`, `REQUIRED_*_COLUMNS`) only treats `{int64,float64,int32,float32}` and `{object,str,string}` as compatible dtype families \u2014 it does **not** accept nullable `Int64` or `bool`. Do **not** reuse `REQUIRED_MATCHES_COLUMNS` (that is the football-data.org `MATCH_ID/COMPETITION/SEASON` shape). Define new `REQUIRED_MARTJ42_*` dicts and a martj42-local validator that extends the family logic to `Int64` and `bool`. This is the single highest-risk detail.\n\n**`FootballClient` cannot help here** \u2014 it is hardwired to the football-data.org v4 base URL, so martj42 must fetch via `pd.read_csv(url)`. Use a cache-first design (read local cache file if present, else download and write cache) so tests and no-key runs stay fully offline and deterministic.\n\nConventions: module `\"\"\"docstring\"\"\"` \u2192 `from __future__ import annotations` \u2192 `logger`; pair the loader class with thin module-level `load_martj42_*` factory functions (mirrors `build_*_csv` / `generate_bracket_toml`). Pydantic config models use `ConfigDict(extra=\"ignore\")` and compose onto `AppConfig` in `config.py`.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `Martj42Loader.load_results()` returns a DataFrame with exactly `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS, TOURNAMENT, NEUTRAL`; `\"NA\"` scores become `<NA>` in `Int64` columns; `\"TRUE\"`/`\"FALSE\"` become real `bool`\n- [ ] `load_shootouts()` and `load_goalscorers()` return their contract schemas (`WINNER/FIRST_SHOOTER`; `TEAM/SCORER/MINUTE/OWN_GOAL/PENALTY`)\n- [ ] Team-name columns (`HOME_TEAM`, `AWAY_TEAM`, and `TEAM` for goalscorers) pass through `normalize_team`/`normalize_series` from the crosswalk\n- [ ] New `REQUIRED_MARTJ42_*_COLUMNS` dicts + `validate_results_df`/`validate_shootouts_df`/`validate_goalscorers_df` wrappers; the martj42 validator accepts `Int64` and `bool` and raises `ValueError` (same \"missing column\"/\"wrong dtype\" contract as `loader.py`) on bad frames\n- [ ] Cache-first: no network read when the cache file exists; `Martj42Config` added to `config.py` and composed onto `AppConfig`; `dataset/martj42/*.csv` added to `.gitignore`\n- [ ] A `wc2026_schedule()` convenience filter returns `tournament == \"FIFA World Cup\"` rows including unplayed (`<NA>`-score) fixtures\n- [ ] Schema-verification tests assert the exact data-contract dtypes/columns; network is mocked (fixture CSV in `tmp_path` as cache, or patch `pd.read_csv`) \u2014 no real HTTP; the existing 250-test suite stays green\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #1: feat: team-name crosswalk for martj42 \u2194 football-data.org normalization\n\n## Implementation notes\n- **Create:** `worldcup_playoff/data/martj42_loader.py` \u2014 `Martj42Loader` (`__init__(config, cache_dir=None, base_url=None)`, `load_results/load_shootouts/load_goalscorers/wc2026_schedule`), private `_fetch_raw` (cache-first `pd.read_csv`), `_coerce_results` (`pd.to_numeric(..., errors=\"coerce\").astype(\"Int64\")` for scores; `{\"TRUE\":True,\"FALSE\":False}` map for `NEUTRAL`), `_apply_crosswalk`; the `REQUIRED_MARTJ42_*` dicts + `validate_*_df` wrappers + a local `_validate_martj42` extending `loader.py`'s family sets; module-level `load_martj42_results/_shootouts/_goalscorers` factories.\n- **Create:** `tests/test_martj42_loader.py` \u2014 fixture CSVs (a dozen rows incl. a `\"NA\"` score, `\"TRUE\"`/`\"FALSE\"` neutral, a `T\u00fcrkiye` row) loaded from a `tmp_path` cache; assert `df[\"HOME_GOALS\"].dtype == \"Int64\"` and `df[\"NEUTRAL\"].dtype == bool`; assert crosswalk applied and the WC2026 filter behavior.\n- **Modify:** `worldcup_playoff/config.py` \u2014 add `Martj42Config(BaseModel)` (`base_url`, `cache_dir=\"dataset/martj42\"`, `results_file/shootouts_file/goalscorers_file`) and wire `martj42: Martj42Config = Martj42Config()` onto `AppConfig`.\n- **Modify:** `worldcup_playoff/data/__init__.py` \u2014 export `Martj42Loader`, the `load_martj42_*` factories, `REQUIRED_MARTJ42_*`, validators; extend `__all__`. **Modify:** `.gitignore` \u2014 add `dataset/martj42/*.csv`.\n- Reuse `loader.py`'s `_validate_dataframe` only for the string/object columns; never hit the network in tests; do not modify `REQUIRED_MATCHES_COLUMNS`.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: data",
+        "id": "LA_kwDOTBxfPc8AAAACopKxrQ",
+        "name": "area:data"
+      }
+    ],
+    "number": 2,
+    "state": "OPEN",
+    "title": "feat: no-key martj42 historical loader (results, shootouts, goalscorers)"
+  },
+  {
+    "body": "## Goal\nAdd a pure-function team-name normalization module so live football-data.org results and martj42 historical results join on a single canonical country name. This is the shared foundation both data loaders (martj42 + live) depend on \u2014 build it first.\n\n## Context\nmartj42 and football-data.org spell several nations differently and a later cycle must inner-join live `played` results onto martj42 history on `HOME_TEAM`/`AWAY_TEAM`. Known divergences from the data contract: `T\u00fcrkiye`/`Turkey`, `Czechia`, `South Korea`/`Korea Republic`/`Republic of Korea`, `United States`/`USA`/`United States of America`, `IR Iran`/`Iran`, `China PR`/`China`.\n\nCodebase conventions to follow (from `worldcup_playoff/data/`):\n- Every module opens with a `\"\"\"docstring\"\"\"`, then `from __future__ import annotations`, then `logger = logging.getLogger(__name__)`.\n- `pandas` is available; this module needs `pandas` only \u2014 **no I/O, no network**, so it is trivially unit-testable and is a leaf dependency (avoids any import cycle between `martj42_loader.py` and `live.py`).\n- Package exports live in `worldcup_playoff/data/__init__.py` (imports + `__all__`); additions there are purely additive.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `normalize_team(name: str) -> str` strips/collapses whitespace, looks up a case-insensitive alias map, and falls back to the cleaned input for unknown names (< 10 lines)\n- [ ] `CANONICAL_NAMES: dict[str, str]` covers every alias in the data contract (`T\u00fcrkiye\u2192Turkey`, `Czechia`, `South Korea`, `United States`/`USA`, `IR Iran`, `China PR`, etc.); lookup is case- and whitespace-insensitive\n- [ ] `normalize_series(s: pd.Series) -> pd.Series` is vectorized (`.map`), preserves length and index\n- [ ] Idempotence: `normalize_team(canonical) == canonical` for every canonical value\n- [ ] New symbols exported from `worldcup_playoff/data/__init__.py` (`normalize_team`, `normalize_series`,... [truncated, 1823 bytes omitted]` — JSON array of Phase 1 issues, each with `issue_number`, `title`, `body`, `labels`
+- `(project constitution unavailable — analyze gate cannot flag constitution violations)` — project constitution / non-negotiable constraints
+- `# Cycle 1 — Data Foundations
+
+## Objective
+Deliver the no-key data layer: a CC0 martj42 historical loader (default training source), a live WC2026 adapter over the existing `FootballClient`, a martj42↔API team-name crosswalk, and WC2026 Round-of-32 bracket-slotting rules. Every nation gets real history and the simulator can resolve `LAST_32` from group standings.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline. It replaces the legacy SVM/RF/NB classifier with a Groll-style RF hybrid (time-weighted Dixon-Coles/Poisson abilities + Elo as covariates) and conditions on results played to date.
+
+## Preceding cycles
+None. The existing repo already provides: `data/client.py` (`FootballClient`, rate-limited football-data.org v4), `data/loader.py` (`DataLoader`), `data/cleaner.py` (`DataCleaner`), `data/builders.py`, `data/bracket_builder.py` (`BracketBuilder`), and `config.py` Pydantic models. Reuse `FootballClient` for live pulls; do not rebuild it.
+
+## Following cycles
+Elo and Dixon-Coles estimation (Cycle 2), feature assembly (Cycle 3), model training (Cycle 4), simulation/evaluation/CLI wiring (Cycle 5). Do NOT compute ratings, build features, or simulate here — only land clean, normalized data and the bracket template.
+
+## In scope
+- `data/martj42_loader.py`: fetch CC0 `results.csv` (49,477 rows: `date, home_team, away_team, home_score, away_score, tournament, city, country, neutral`), coercing `"NA"` scores → nullable Int and `"TRUE"/"FALSE"` → bool; also `shootouts.csv` (678 rows) and `goalscorers.csv` (47,741 rows). Map into internal schema `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS, TOURNAMENT, NEUTRAL`. martj42 already contains the WC2026 schedule.
+- `data/live.py`: pull WC2026 standings, played results, and remaining group fixtures via `FootballClient` (`GET /v4/competitions/WC/matches` — 104 matches/44 played; `/standings` — 12 groups). Expose "state of tournament as of today".
+- Team-name crosswalk dict (e.g. `Türkiye`/`Turkey`, `Czechia`, `South Korea`, `United States`/`USA`, `IR Iran`) joining live results to history.
+- WC2026 R32 bracket-slotting: encode top-2-per-group + 8-best-thirds template and best-third assignment rules so a simulator can resolve `LAST_32`.
+- Schema-verification tests against the exact data-contract shapes.
+
+## Out of scope
+- Elo engine (`data/elo.py`) — Cycle 2.
+- Dixon-Coles / Poisson (`simulation/poisson.py`) — Cycle 2.
+- Feature vectors (`features/build.py`) — Cycle 3.
+- Odds scraping (`data/odds.py`) — Cycle 5.
+- Running the live group→knockout simulation — Cycle 5.
+
+## Acceptance criteria
+- Loaders are no-key by default (martj42 + computed sources); the football-data.org key is optional and only for live state, read from `.env` (gitignored — never commit secrets).
+- Schemas match the data contracts exactly (49,477 martj42 rows; 104 WC2026 matches, 44 played).
+- Team names normalize so live results join historical training data.
+- New modules ship with tests; the existing ~248-test suite stays green.
+` — current cycle's scope (In scope / Out of scope / Acceptance criteria); empty string in single-cycle mode
+
+---
+
+## Requirements
+
+# Cycle 1 — Data Foundations
+
+## Objective
+Deliver the no-key data layer: a CC0 martj42 historical loader (default training source), a live WC2026 adapter over the existing `FootballClient`, a martj42↔API team-name crosswalk, and WC2026 Round-of-32 bracket-slotting rules. Every nation gets real history and the simulator can resolve `LAST_32` from group standings.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline. It replaces the legacy SVM/RF/NB classifier with a Groll-style RF hybrid (time-weighted Dixon-Coles/Poisson abilities + Elo as covariates) and conditions on results played to date.
+
+## Preceding cycles
+None. The existing repo already provides: `data/client.py` (`FootballClient`, rate-limited football-data.org v4), `data/loader.py` (`DataLoader`), `data/cleaner.py` (`DataCleaner`), `data/builders.py`, `data/bracket_builder.py` (`BracketBuilder`), and `config.py` Pydantic models. Reuse `FootballClient` for live pulls; do not rebuild it.
+
+## Following cycles
+Elo and Dixon-Coles estimation (Cycle 2), feature assembly (Cycle 3), model training (Cycle 4), simulation/evaluation/CLI wiring (Cycle 5). Do NOT compute ratings, build features, or simulate here — only land clean, normalized data and the bracket template.
+
+## In scope
+- `data/martj42_loader.py`: fetch CC0 `results.csv` (49,477 rows: `date, home_team, away_team, home_score, away_score, tournament, city, country, neutral`), coercing `"NA"` scores → nullable Int and `"TRUE"/"FALSE"` → bool; also `shootouts.csv` (678 rows) and `goalscorers.csv` (47,741 rows). Map into internal schema `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS, TOURNAMENT, NEUTRAL`. martj42 already contains the WC2026 schedule.
+- `data/live.py`: pull WC2026 standings, played results, and remaining group fixtures via `FootballClient` (`GET /v4/competitions/WC/matches` — 104 matches/44 played; `/standings` — 12 groups). Expose "state of tournament as of today".
+- Team-name crosswalk dict (e.g. `Türkiye`/`Turkey`, `Czechia`, `South Korea`, `United States`/`USA`, `IR Iran`) joining live results to history.
+- WC2026 R32 bracket-slotting: encode top-2-per-group + 8-best-thirds template and best-third assignment rules so a simulator can resolve `LAST_32`.
+- Schema-verification tests against the exact data-contract shapes.
+
+## Out of scope
+- Elo engine (`data/elo.py`) — Cycle 2.
+- Dixon-Coles / Poisson (`simulation/poisson.py`) — Cycle 2.
+- Feature vectors (`features/build.py`) — Cycle 3.
+- Odds scraping (`data/odds.py`) — Cycle 5.
+- Running the live group→knockout simulation — Cycle 5.
+
+## Acceptance criteria
+- Loaders are no-key by default (martj42 + computed sources); the football-data.org key is optional and only for live state, read from `.env` (gitignored — never commit secrets).
+- Schemas match the data contracts exactly (49,477 martj42 rows; 104 WC2026 matches, 44 played).
+- Team names normalize so live results join historical training data.
+- New modules ship with tests; the existing ~248-test suite stays green.
+
+
+---
+
+## Issues
+
+[
+  {
+    "body": "## Goal\nEncode the official WC2026 Round-of-32 bracket template and the best-third-place selection/assignment rules as pure data + functions, so a later-cycle simulator can deterministically resolve `LAST_32` from final group standings. This is **data and pure rules only \u2014 no simulation, no probabilities, no network.**\n\n## Context\nWC2026 has **48 teams \u2192 12 groups**; the top 2 of each group **plus the 8 best third-placed teams** advance to the Round of 32. The football-data.org API returns knockout slot teams as `null` until the groups resolve, so the bracket must be derived, not fetched.\n\nTwo pieces of canonical FIFA data are required:\n1. The **R32 template** \u2014 which group-winner (`1A`\u2026`1L`), runner-up (`2A`\u2026`2L`), and best-third placeholder (`3X`) meet in each of the 16 ties.\n2. The **best-third-place assignment table** \u2014 a lookup keyed by *which* 8 of the 12 third-placed groups qualified, mapping each third-place placeholder slot to a concrete group. (Same mechanism as the historical 24-team Euro/World Cup third-place tables, expanded for 12 groups / 8 qualifying thirds.)\n\nConsume the `GroupStanding` value object defined in the live adapter (issue #3) as the input type for the resolver. Team names arriving in standings are already canonical via the crosswalk (issue #1), so the resolved pairs need no further normalization. Keep this module a one-way consumer of the `GroupStanding` **type** only \u2014 `live.py` must never import this module (avoid cycles).\n\nConventions: module `\"\"\"docstring\"\"\"` \u2192 `from __future__ import annotations` \u2192 `logger`; pure functions < 10 lines; frozen module-level data structures. FIFA group-stage tiebreak order for ranking thirds: points, then goal difference, then goals for, then further criteria.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `R32_SLOTS` encodes exactly 16 ties referencing the 24 group-position slots (`1A`\u2013`1L`, `2A`\u2013`2L`) plus 8 third-place placeholders, as a frozen data structure\n- [ ] `THIRD_PLACE_COMBINATIONS` is the official FIFA lookup mapping each valid 8-of-12 qualifying-third combination \u2192 slot assignment (or documents the canonical subset it covers)\n- [ ] `rank_third_places(standings) -> list[str]` orders the 12 third-placed teams by FIFA tiebreak (points, GD, GF, \u2026) and returns the qualifying 8 groups, deterministically\n- [ ] `assign_thirds(qualified_third_groups: frozenset[str]) -> dict[str, str]` resolves each `3X` placeholder via the lookup table\n- [ ] `resolve_r32(standings) -> list[tuple[str, str]]` returns 16 concrete `(home, away)` pairs with 32 distinct teams and no duplicates\n- [ ] Pure: importing the module constructs no `FootballClient`, performs no network/randomness; no dependency on martj42 or live HTTP\n- [ ] New symbols exported from `worldcup_playoff/data/__init__.py` + `__all__`\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #1: feat: team-name crosswalk for martj42 \u2194 football-data.org normalization\n- #3: feat: live WC2026 adapter over FootballClient (matches, standings, tournament state)\n\n## Implementation notes\n- **Create:** `worldcup_playoff/data/wc2026_bracket.py` \u2014 `GROUPS` (`A`\u2026`L`); a small `SlotRef`/`BracketSlot` type (dataclass or Pydantic) for `1A`/`2C`/`3X` references; `R32_SLOTS` (16 ties); `THIRD_PLACE_COMBINATIONS` lookup; pure functions `rank_third_places`, `assign_thirds`, `resolve_r32`.\n- **Create:** `tests/test_wc2026_bracket.py` \u2014 construct a full synthetic 12-group standings list (`GroupStanding` objects); assert `resolve_r32` yields 16 ties / 32 distinct teams and that winners & runners-up land in their template slots; unit-test `assign_thirds` against a couple of known FIFA combination rows; assert no network/`FootballClient` import.\n- **Modify:** `worldcup_playoff/data/__init__.py` \u2014 export `resolve_r32`, `R32_SLOTS`, `rank_third_places`, `assign_thirds`; extend `__all__`.\n- Import only the `GroupStanding` type from `live.py` (one-way). Do **not** simulate, sample, or compute probabilities here \u2014 that is Cycle 5. Stop at producing `(home, away)` pairs from *given* standings.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: data",
+        "id": "LA_kwDOTBxfPc8AAAACopKxrQ",
+        "name": "area:data"
+      }
+    ],
+    "number": 4,
+    "state": "OPEN",
+    "title": "feat: WC2026 Round-of-32 bracket-slotting rules (top-2 + 8 best thirds)"
+  },
+  {
+    "body": "## Goal\nAdd a live WC2026 adapter that reuses the existing `FootballClient` to pull current standings, played results, and remaining group fixtures from football-data.org, normalizes team names through the crosswalk, and exposes a single \"state of the tournament as of today\" object. The API key is optional (live state only); everything degrades to no-key behavior already handled by `FootballClient`.\n\n## Context\n**Data contract (verified 2026-06-23, football-data.org v4, header `X-Auth-Token`, 10 req/min):**\n- `GET /v4/competitions/WC/matches` \u2192 `{... matches[]}` \u2014 currently **104 matches, 44 played** (mid group stage). Each match: `id, utcDate, status, stage, group, homeTeam{id,name}, awayTeam{id,name}, score{winner, fullTime{home,away}}`.\n  - `status` \u2208 `FINISHED | IN_PLAY | PAUSED | TIMED | SCHEDULED`.\n  - `stage` \u2208 `GROUP_STAGE | LAST_32 | LAST_16 | QUARTER_FINALS | SEMI_FINALS | THIRD_PLACE | FINAL` (counts 72/16/8/4/2/1/1). `LAST_32` = Round of 32.\n  - `group` \u2208 `GROUP_A \u2026 GROUP_L` (12 groups) or `null` for knockouts.\n  - `score.winner` \u2208 `HOME_TEAM | AWAY_TEAM | DRAW | null`; `fullTime.home/away` are `null` until played.\n  - **Knockout slot teams are `null`** (`homeTeam.name == null`) until groups resolve \u2014 do **not** expect the bracket from the API.\n- `GET /v4/competitions/WC/standings` \u2192 `{standings:[{stage,type,group,table[]}]}`, **12 groups**. Each `table[]` row: `position, team{id,name}, playedGames, won, draw, lost, points, goalsFor, goalsAgainst, goalDifference`.\n\n**Reuse, don't rebuild:** `FootballClient.get(path, params) -> dict` (in `worldcup_playoff/data/client.py`) already handles rate limiting (6 s spacing), circuit breaker, session resets, and reads `FOOTBALL_DATA_API_KEY` from env \u2014 works unauthenticated. Construct/accept it exactly like `BracketBuilder` / `generate_bracket_toml` (pass a client; the module-level factory default-constructs `FootballClient(ClientConfig())` when `client is None`).\n\nConventions: module `\"\"\"docstring\"\"\"` \u2192 `from __future__ import annotations` \u2192 `logger`; Pydantic value objects with `ConfigDict(extra=\"ignore\")`; small pure helper methods (< 10 lines). Every team name passes through `normalize_team` from the crosswalk so live results join martj42 history.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `LiveTournamentAdapter(client, competition=\"WC\")` with `fetch_matches() -> list[LiveMatch]`, `fetch_standings() -> list[GroupStanding]`, `tournament_state() -> TournamentState`\n- [ ] `tournament_state()` partitions group-stage matches into `played` vs `remaining_group_fixtures` (by `status`) and carries the 12-group `standings`\n- [ ] Knockout matches with `null` teams parse to `home_team is None` / `away_team is None` (no crash); all non-null names pass through `normalize_team`\n- [ ] Pydantic value objects `LiveMatch`, `GroupStanding`, `TournamentState` with `ConfigDict(extra=\"ignore\")`\n- [ ] Module-level `fetch_tournament_state(client=None, competition=\"WC\")` default-constructs `FootballClient` when none is passed\n- [ ] `LiveConfig` added to `config.py` and composed onto `AppConfig`; new symbols exported from `worldcup_playoff/data/__init__.py` + `__all__`\n- [ ] Tests mock the client (`MagicMock().get.side_effect = [matches_json, standings_json]`) with shape-accurate fixtures (a finished `GROUP_STAGE` match, a scheduled `GROUP_STAGE` match, a `LAST_32` match with null teams, a 12-group standings stub) \u2014 no real HTTP; the existing 250-test suite stays green\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #1: feat: team-name crosswalk for martj42 \u2194 football-data.org normalization\n\n## Implementation notes\n- **Create:** `worldcup_playoff/data/live.py` \u2014 Pydantic `LiveMatch`/`GroupStanding`/`TournamentState`; `LiveTournamentAdapter` with private `_parse_match`, `_parse_standings`, `_split_played_remaining` (partition by `status`, scope the \"remaining group fixtures\" bucket to `stage == \"GROUP_STAGE\"`); module-level `fetch_tournament_state` factory.\n- **Create:** `tests/test_live.py` \u2014 follow the `test_bracket_builder.py` `_mock_client` pattern (a `MagicMock` client whose `.get` returns the fixture dicts); assert the 104/44 partition logic on a small representative fixture, null-team handling, 12-group parse, and crosswalk normalization. Patch `time.sleep` only if a real `FootballClient` is exercised (unnecessary with a `MagicMock` client).\n- **Modify:** `worldcup_playoff/config.py` \u2014 add `LiveConfig(BaseModel)` (`competition: str = \"WC\"`) and wire `live: LiveConfig = LiveConfig()` onto `AppConfig`.\n- **Modify:** `worldcup_playoff/data/__init__.py` \u2014 export `LiveTournamentAdapter`, `fetch_tournament_state`, `TournamentState`, `LiveMatch`, `GroupStanding`; extend `__all__`.\n- Add **no** new HTTP code \u2014 all network goes through `FootballClient`. Keep `live.py` free of any import from the bracket-slotting module to avoid cycles.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: data",
+        "id": "LA_kwDOTBxfPc8AAAACopKxrQ",
+        "name": "area:data"
+      }
+    ],
+    "number": 3,
+    "state": "OPEN",
+    "title": "feat: live WC2026 adapter over FootballClient (matches, standings, tournament state)"
+  },
+  {
+    "body": "## Goal\nAdd the no-key, default training data source: a loader for the CC0 `martj42/international_results` datasets that fetches `results.csv`, `shootouts.csv`, and `goalscorers.csv`, coerces them to the internal schema, normalizes team names, and validates the exact data-contract shapes. martj42 alone provides every nation's history **and** the WC2026 schedule, so this must run with zero API key.\n\n## Context\n**Data contract (verified 2026-06-23):** base URL `https://raw.githubusercontent.com/martj42/international_results/master/`.\n- `results.csv` \u2014 **49,477 rows**, source cols `date, home_team, away_team, home_score, away_score, tournament, city, country, neutral`. `home_score`/`away_score` are the string `\"NA\"` for unplayed fixtures \u2192 coerce to nullable `Int64`. `neutral` is the string `\"TRUE\"`/`\"FALSE\"` \u2192 parse to `bool`. WC2026 fixtures are already present as `tournament == \"FIFA World Cup\"` with `NA` scores until played and `neutral == TRUE`.\n- `shootouts.csv` \u2014 **678 rows**: `date, home_team, away_team, winner, first_shooter`.\n- `goalscorers.csv` \u2014 **47,741 rows**: `date, home_team, away_team, team, scorer, minute, own_goal, penalty`.\n\n**Internal target schema for results:** `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS (Int64), AWAY_GOALS (Int64), TOURNAMENT, NEUTRAL (bool)`.\n\n**Critical integration detail:** the existing validator in `worldcup_playoff/data/loader.py` (`_validate_dataframe`, `REQUIRED_*_COLUMNS`) only treats `{int64,float64,int32,float32}` and `{object,str,string}` as compatible dtype families \u2014 it does **not** accept nullable `Int64` or `bool`. Do **not** reuse `REQUIRED_MATCHES_COLUMNS` (that is the football-data.org `MATCH_ID/COMPETITION/SEASON` shape). Define new `REQUIRED_MARTJ42_*` dicts and a martj42-local validator that extends the family logic to `Int64` and `bool`. This is the single highest-risk detail.\n\n**`FootballClient` cannot help here** \u2014 it is hardwired to the football-data.org v4 base URL, so martj42 must fetch via `pd.read_csv(url)`. Use a cache-first design (read local cache file if present, else download and write cache) so tests and no-key runs stay fully offline and deterministic.\n\nConventions: module `\"\"\"docstring\"\"\"` \u2192 `from __future__ import annotations` \u2192 `logger`; pair the loader class with thin module-level `load_martj42_*` factory functions (mirrors `build_*_csv` / `generate_bracket_toml`). Pydantic config models use `ConfigDict(extra=\"ignore\")` and compose onto `AppConfig` in `config.py`.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `Martj42Loader.load_results()` returns a DataFrame with exactly `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS, TOURNAMENT, NEUTRAL`; `\"NA\"` scores become `<NA>` in `Int64` columns; `\"TRUE\"`/`\"FALSE\"` become real `bool`\n- [ ] `load_shootouts()` and `load_goalscorers()` return their contract schemas (`WINNER/FIRST_SHOOTER`; `TEAM/SCORER/MINUTE/OWN_GOAL/PENALTY`)\n- [ ] Team-name columns (`HOME_TEAM`, `AWAY_TEAM`, and `TEAM` for goalscorers) pass through `normalize_team`/`normalize_series` from the crosswalk\n- [ ] New `REQUIRED_MARTJ42_*_COLUMNS` dicts + `validate_results_df`/`validate_shootouts_df`/`validate_goalscorers_df` wrappers; the martj42 validator accepts `Int64` and `bool` and raises `ValueError` (same \"missing column\"/\"wrong dtype\" contract as `loader.py`) on bad frames\n- [ ] Cache-first: no network read when the cache file exists; `Martj42Config` added to `config.py` and composed onto `AppConfig`; `dataset/martj42/*.csv` added to `.gitignore`\n- [ ] A `wc2026_schedule()` convenience filter returns `tournament == \"FIFA World Cup\"` rows including unplayed (`<NA>`-score) fixtures\n- [ ] Schema-verification tests assert the exact data-contract dtypes/columns; network is mocked (fixture CSV in `tmp_path` as cache, or patch `pd.read_csv`) \u2014 no real HTTP; the existing 250-test suite stays green\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #1: feat: team-name crosswalk for martj42 \u2194 football-data.org normalization\n\n## Implementation notes\n- **Create:** `worldcup_playoff/data/martj42_loader.py` \u2014 `Martj42Loader` (`__init__(config, cache_dir=None, base_url=None)`, `load_results/load_shootouts/load_goalscorers/wc2026_schedule`), private `_fetch_raw` (cache-first `pd.read_csv`), `_coerce_results` (`pd.to_numeric(..., errors=\"coerce\").astype(\"Int64\")` for scores; `{\"TRUE\":True,\"FALSE\":False}` map for `NEUTRAL`), `_apply_crosswalk`; the `REQUIRED_MARTJ42_*` dicts + `validate_*_df` wrappers + a local `_validate_martj42` extending `loader.py`'s family sets; module-level `load_martj42_results/_shootouts/_goalscorers` factories.\n- **Create:** `tests/test_martj42_loader.py` \u2014 fixture CSVs (a dozen rows incl. a `\"NA\"` score, `\"TRUE\"`/`\"FALSE\"` neutral, a `T\u00fcrkiye` row) loaded from a `tmp_path` cache; assert `df[\"HOME_GOALS\"].dtype == \"Int64\"` and `df[\"NEUTRAL\"].dtype == bool`; assert crosswalk applied and the WC2026 filter behavior.\n- **Modify:** `worldcup_playoff/config.py` \u2014 add `Martj42Config(BaseModel)` (`base_url`, `cache_dir=\"dataset/martj42\"`, `results_file/shootouts_file/goalscorers_file`) and wire `martj42: Martj42Config = Martj42Config()` onto `AppConfig`.\n- **Modify:** `worldcup_playoff/data/__init__.py` \u2014 export `Martj42Loader`, the `load_martj42_*` factories, `REQUIRED_MARTJ42_*`, validators; extend `__all__`. **Modify:** `.gitignore` \u2014 add `dataset/martj42/*.csv`.\n- Reuse `loader.py`'s `_validate_dataframe` only for the string/object columns; never hit the network in tests; do not modify `REQUIRED_MATCHES_COLUMNS`.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: data",
+        "id": "LA_kwDOTBxfPc8AAAACopKxrQ",
+        "name": "area:data"
+      }
+    ],
+    "number": 2,
+    "state": "OPEN",
+    "title": "feat: no-key martj42 historical loader (results, shootouts, goalscorers)"
+  },
+  {
+    "body": "## Goal\nAdd a pure-function team-name normalization module so live football-data.org results and martj42 historical results join on a single canonical country name. This is the shared foundation both data loaders (martj42 + live) depend on \u2014 build it first.\n\n## Context\nmartj42 and football-data.org spell several nations differently and a later cycle must inner-join live `played` results onto martj42 history on `HOME_TEAM`/`AWAY_TEAM`. Known divergences from the data contract: `T\u00fcrkiye`/`Turkey`, `Czechia`, `South Korea`/`Korea Republic`/`Republic of Korea`, `United States`/`USA`/`United States of America`, `IR Iran`/`Iran`, `China PR`/`China`.\n\nCodebase conventions to follow (from `worldcup_playoff/data/`):\n- Every module opens with a `\"\"\"docstring\"\"\"`, then `from __future__ import annotations`, then `logger = logging.getLogger(__name__)`.\n- `pandas` is available; this module needs `pandas` only \u2014 **no I/O, no network**, so it is trivially unit-testable and is a leaf dependency (avoids any import cycle between `martj42_loader.py` and `live.py`).\n- Package exports live in `worldcup_playoff/data/__init__.py` (imports + `__all__`); additions there are purely additive.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `normalize_team(name: str) -> str` strips/collapses whitespace, looks up a case-insensitive alias map, and falls back to the cleaned input for unknown names (< 10 lines)\n- [ ] `CANONICAL_NAMES: dict[str, str]` covers every alias in the data contract (`T\u00fcrkiye\u2192Turkey`, `Czechia`, `South Korea`, `United States`/`USA`, `IR Iran`, `China PR`, etc.); lookup is case- and whitespace-insensitive\n- [ ] `normalize_series(s: pd.Series) -> pd.Series` is vectorized (`.map`), preserves length and index\n- [ ] Idempotence: `normalize_team(canonical) == canonical` for every canonical value\n- [ ] New symbols exported from `worldcup_playoff/data/__init__.py` (`normalize_team`, `normalize_series`,... [truncated, 1823 bytes omitted]
+
+---
+
+## Constitution
+
+(project constitution unavailable — analyze gate cannot flag constitution violations)
+
+---
+
+## Cycle Scope (current cycle only)
+
+# Cycle 1 — Data Foundations
+
+## Objective
+Deliver the no-key data layer: a CC0 martj42 historical loader (default training source), a live WC2026 adapter over the existing `FootballClient`, a martj42↔API team-name crosswalk, and WC2026 Round-of-32 bracket-slotting rules. Every nation gets real history and the simulator can resolve `LAST_32` from group standings.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline. It replaces the legacy SVM/RF/NB classifier with a Groll-style RF hybrid (time-weighted Dixon-Coles/Poisson abilities + Elo as covariates) and conditions on results played to date.
+
+## Preceding cycles
+None. The existing repo already provides: `data/client.py` (`FootballClient`, rate-limited football-data.org v4), `data/loader.py` (`DataLoader`), `data/cleaner.py` (`DataCleaner`), `data/builders.py`, `data/bracket_builder.py` (`BracketBuilder`), and `config.py` Pydantic models. Reuse `FootballClient` for live pulls; do not rebuild it.
+
+## Following cycles
+Elo and Dixon-Coles estimation (Cycle 2), feature assembly (Cycle 3), model training (Cycle 4), simulation/evaluation/CLI wiring (Cycle 5). Do NOT compute ratings, build features, or simulate here — only land clean, normalized data and the bracket template.
+
+## In scope
+- `data/martj42_loader.py`: fetch CC0 `results.csv` (49,477 rows: `date, home_team, away_team, home_score, away_score, tournament, city, country, neutral`), coercing `"NA"` scores → nullable Int and `"TRUE"/"FALSE"` → bool; also `shootouts.csv` (678 rows) and `goalscorers.csv` (47,741 rows). Map into internal schema `DATE, HOME_TEAM, AWAY_TEAM, HOME_GOALS, AWAY_GOALS, TOURNAMENT, NEUTRAL`. martj42 already contains the WC2026 schedule.
+- `data/live.py`: pull WC2026 standings, played results, and remaining group fixtures via `FootballClient` (`GET /v4/competitions/WC/matches` — 104 matches/44 played; `/standings` — 12 groups). Expose "state of tournament as of today".
+- Team-name crosswalk dict (e.g. `Türkiye`/`Turkey`, `Czechia`, `South Korea`, `United States`/`USA`, `IR Iran`) joining live results to history.
+- WC2026 R32 bracket-slotting: encode top-2-per-group + 8-best-thirds template and best-third assignment rules so a simulator can resolve `LAST_32`.
+- Schema-verification tests against the exact data-contract shapes.
+
+## Out of scope
+- Elo engine (`data/elo.py`) — Cycle 2.
+- Dixon-Coles / Poisson (`simulation/poisson.py`) — Cycle 2.
+- Feature vectors (`features/build.py`) — Cycle 3.
+- Odds scraping (`data/odds.py`) — Cycle 5.
+- Running the live group→knockout simulation — Cycle 5.
+
+## Acceptance criteria
+- Loaders are no-key by default (martj42 + computed sources); the football-data.org key is optional and only for live state, read from `.env` (gitignored — never commit secrets).
+- Schemas match the data contracts exactly (49,477 martj42 rows; 104 WC2026 matches, 44 played).
+- Team names normalize so live results join historical training data.
+- New modules ship with tests; the existing ~248-test suite stays green.
+
+
+---
+
+## Prompt
+
+You are a senior reviewer running the Analyze gate. Emit a deterministic, machine-parseable JSON report. The orchestrator parses your output as JSON without an LLM round-trip, so the schema is non-negotiable.
+
+This gate runs after Phase 1 (issue creation) and before any Phase 3/4 implementation spend.
+
+### What requirements to check
+
+**When `Cycle Scope` section is non-empty** (multi-cycle mode):
+- Check the **Issues** against the `## Acceptance criteria` section inside **Cycle Scope only**. This is the authoritative checklist for this cycle.
+- The full **Requirements** document is background context for constitution checks — do NOT generate coverage-gap findings against the full `## Scope`, `### N.` subsections, or `## Global acceptance criteria` from it. Those belong to future cycles.
+- Only flag gaps for acceptance criteria explicitly listed in the Cycle Scope's `## Acceptance criteria` section.
+
+**When `Cycle Scope` section is empty** (single-cycle mode):
+- Check the **Issues** against the full **Requirements** document as normal, including all `## Global acceptance criteria` rows.
+
+### What to detect
+
+1. **Coverage gaps** (`coverage-gap`) — acceptance criteria in the **active checklist** (see above) with no covering issue.
+2. **Duplications** (`duplication`) — two or more issues whose scope substantially overlaps.
+3. **Ambiguities** (`ambiguity`) — issues whose acceptance criteria are missing, vague, or untestable.
+4. **Constitution violations** (`constitution-violation`) — any issue that would violate the **Constitution**.
+
+### Severity and verdict rules
+
+- `critical` — blocks the pipeline. Any `constitution-violation` MUST be `critical`. Coverage gaps for items in the **active checklist** that are squarely in scope for this cycle are `critical`.
+- `warning` — non-blocking. Coverage gaps for items outside this cycle's active checklist, most duplications.
+- `info` — observational; safe to ignore.
+- `verdict` is `blocked` when **any** finding has severity `critical`; otherwise `pass`.
+
+A constitution / non-negotiable violation MUST be severity `critical` and MUST force `verdict=blocked` — this rule cannot be relaxed.
+
+### Output format — strict JSON, machine-parseable
+
+Emit a single JSON object. No prose, no code fences outside this block, nothing before or after the object except the trailing fix hint described below.
+
+```json
+{
+  "verdict": "pass | blocked",
+  "findings": [
+    {
+      "category": "coverage-gap | duplication | ambiguity | constitution-violation",
+      "severity": "critical | warning | info",
+      "issues": [123, 124],
+      "anchor": "Goal 3 / ### 2. Auth / Global acceptance criteria #4",
+      "summary": "One-line description of the problem."
+    }
+  ],
+  "fix_hint": "Human-readable next step (one or two sentences)."
+}
+```
+
+- `verdict` is exactly `pass` or `blocked` — no other strings.
+- `findings` is an empty list (`[]`) when the cycle is clean. Do **not** omit the key.
+- `issues` is a list of integer issue numbers; use `[]` for findings not tied to a specific issue (e.g. a missing-coverage gap).
+- `anchor` references a section/bullet/line from `Requirements` or `Constitution` so the operator can locate the problem without re-reading everything.
+- `summary` is one short sentence.
+- `fix_hint` is the **human-readable fix hint** that closes the report. Place it inside the JSON object as the final key. Do not emit it as free prose outside the object — the parser will reject mixed output.
+
+### Wrong vs Right
+
+Wrong (free prose, ambiguous verdict, unparseable):
+- ~~"There seem to be some coverage gaps. I'd suggest looking at issues 4 and 5."~~
+
+Right (strict JSON, deterministic, machine-parseable):
+- `{"verdict": "blocked", "findings": [{"category": "constitution-violation", "severity": "critical", "issues": [12], "anchor": "Non-negotiable #1 (Max subscription only)", "summary": "Issue 12 adds ANTHROPIC_API_KEY env var, violating the Max-only constraint."}], "fix_hint": "Remove the API key path from issue 12 and rely on the Max subscription only."}`
+
+### Constraints
+
+- **YOLO mode**: act without asking for confirmation.
+- **Strict JSON only** — any prose outside the single JSON object breaks the downstream parser.
+- **Constitution violations are always `critical`** and **always force `verdict=blocked`** — this rule cannot be relaxed under any condition.
+- **Schema is rigid**: keys, types, and enum values are exactly as documented above. Do not add fields.
+- **The report ends with `fix_hint`** inside the JSON object — a human-readable, one- or two-sentence next step the operator can act on.
+- **Read-only**: this prompt has no write tools. Do not propose code edits inline — only summaries + anchors.
+- **Be conservative**: when a finding is borderline, prefer `warning` over `critical`. Reserve `critical` for true blockers (constitution violations + active-checklist coverage gaps for in-scope items).
+
+2026-06-23 21:01:40,291 INFO msg #1: session bound to model claude-opus-4-8 (SystemMessage ground truth)
+2026-06-23 21:01:40,292 DEBUG msg #1: SystemMessage subtype=init type='system' subtype='init' cwd='/Volumes/External SSD/worldcup-2026-prediction' session_id='7c4bf814-4859-41d5-bbf2-a6246c2c7786' tools=['Task', 'AskUserQuestion', 'Bash', 'CronCreate', 'CronDelete', 'CronList', 'DesignSync', 'Edit', 'EnterPlanMode', 'EnterWorktree', 'ExitPlanMode', 'ExitWorktree', 'Glob', 'Grep', 'Monitor', 'NotebookEdit', 'PushNotification', 'Read', 'RemoteTrigger', 'ScheduleWakeup', 'Skill', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskOutput', 'TaskStop', 'TaskUpdate', 'ToolSearch', 'WebFetch', 'WebSearch', 'Workflow', 'Write'] mcp_servers=[] model='claude-opus-4-8' permissionMode='bypassPermissions' slash_commands=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator', 'clear', 'compact', 'context', 'heapdump', 'init', 'reload-skills', 'review', 'security-review', 'usage-credits', 'extra-usage', 'usage', 'insights', 'goal', 'team-onboarding'] apiKeySource='none' claude_code_version='2.1.175' output_style='default' agents=['claude', 'Explore', 'general-purpose', 'Plan', 'statusline-setup'] skills=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator'] plugins=[] analytics_disabled=False product_feedback_disabled=False uuid='72fbffe3-50c2-4952-a8ee-2c24cd1daff5' fast_mode_state='off'
+2026-06-23 21:01:41,987 INFO msg #2: RateLimitEvent
+2026-06-23 21:01:41,988 INFO RateLimitEvent: overage_status=rejected status=allowed rate_limit_type=five_hour utilization=None decision=continue
+2026-06-23 21:01:48,350 DEBUG msg #3: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=50 estimated_tokens_delta=50 uuid='de06d9a3-c033-4f95-8806-bd380f5683dc' session_id='7c4bf814-4859-41d5-bbf2-a6246c2c7786'
+2026-06-23 21:01:49,540 DEBUG msg #4: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=150 estimated_tokens_delta=100 uuid='72550106-52eb-43ee-bd11-aab621d54873' session_id='7c4bf814-4859-41d5-bbf2-a6246c2c7786'
+2026-06-23 21:01:51,116 DEBUG msg #5: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=300 estimated_tokens_delta=150 uuid='4ebeb214-bed1-455c-b201-da71b2c56b87' session_id='7c4bf814-4859-41d5-bbf2-a6246c2c7786'
+2026-06-23 21:01:52,432 DEBUG msg #6: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=450 estimated_tokens_delta=150 uuid='2478f052-9c21-4d46-ad1d-b204c7893b21' session_id='7c4bf814-4859-41d5-bbf2-a6246c2c7786'
+2026-06-23 21:01:52,962 DEBUG msg #7: assistant (tool_use) thinking: 
+2026-06-23 21:01:55,632 INFO msg #8: assistant (703 chars)
+```json
+{
+  "verdict": "pass",
+  "findings": [
+    {
+      "category": "coverage-gap",
+      "severity": "info",
+      "issues": [1],
+      "anchor": "Cycle Scope / Acceptance criteria #3 (team names normalize)",
+      "summary": "Issue #1 (crosswalk) is truncated in the provided payload but its visible criteria (normalize_team, normalize_series, CANONICAL_NAMES, idempotence) fully cover the normalization requirement."
+    }
+  ],
+  "fix_hint": "No blocking issues: all four Cycle 1 in-scope items (martj42 loader #2, live adapter #3, crosswalk #1, R32 bracket-slotting #4) map cleanly to the cycle's acceptance criteria. Constitution was unavailable, so no constitution checks were performed."
+}
+```
+2026-06-23 21:01:55,817 INFO msg #9: ResultMessage (tokens_in=2487 tokens_out=811 cache_read=16890 cache_write=31334 is_error=False subtype=success stop_reason=end_turn num_turns=1)
+2026-06-23 21:01:56,053 INFO SDK session complete.
+2026-06-23 21:01:56,056 INFO Phase analyze-gate complete: in=2487 cache_read=16890 cache_write=31334 out=811 total=51522

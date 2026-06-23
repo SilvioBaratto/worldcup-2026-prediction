@@ -1,0 +1,82 @@
+# Auto-generated from WC 2026 standings
+name = "FIFA World Cup 2026 Bracket"
+
+[[matchups]]
+home = "Uruguay"
+away = "Egypt"
+group = ""
+
+[[matchups]]
+home = "Germany"
+away = "Colombia"
+group = ""
+
+[[matchups]]
+home = "Spain"
+away = "Austria"
+group = ""
+
+[[matchups]]
+home = "Paraguay"
+away = "Morocco"
+group = ""
+
+[[matchups]]
+home = "Argentina"
+away = "Belgium"
+group = ""
+
+[[matchups]]
+home = "Ghana"
+away = "Senegal"
+group = ""
+
+[[matchups]]
+home = "Brazil"
+away = "Turkey"
+group = ""
+
+[[matchups]]
+home = "Portugal"
+away = "Tunisia"
+group = ""
+
+[[matchups]]
+home = "Japan"
+away = "Saudi Arabia"
+group = ""
+
+[[matchups]]
+home = "Mexico"
+away = "Croatia"
+group = ""
+
+[[matchups]]
+home = "England"
+away = "Czechia"
+group = ""
+
+[[matchups]]
+home = "United States"
+away = "Sweden"
+group = ""
+
+[[matchups]]
+home = "South Korea"
+away = "Ecuador"
+group = ""
+
+[[matchups]]
+home = "France"
+away = "Switzerland"
+group = ""
+
+[[matchups]]
+home = "South Africa"
+away = "New Zealand"
+group = ""
+
+[[matchups]]
+home = "Algeria"
+away = "Australia"
+group = ""

@@ -1,0 +1,6 @@
+2026-06-23 20:42:45,243 INFO graph-report: graph.json absent — attempting headless extraction
+2026-06-23 20:42:45,245 INFO graph-report: running graphify extract .
+2026-06-23 20:47:00,381 WARNING graph-report: graphify exited 0 but GRAPH_REPORT.md is missing ([Errno 2] No such file or directory: '/Volumes/External SSD/worldcup-2026-prediction/graphify-out/GRAPH_REPORT.md'); using fallback
+2026-06-23 22:32:29,740 INFO graph-report: graph predates node-id format 0.7.18 — running one-time `graphify update . --force` reseed
+2026-06-23 22:32:29,743 INFO graph-report: running graphify update . --force
+2026-06-23 22:32:30,608 INFO graph-report: built (31882 chars / ~7970 tokens)

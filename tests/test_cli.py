@@ -9,7 +9,6 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pandas as pd
 import pytest
 from typer.testing import CliRunner
 
@@ -162,24 +161,32 @@ class TestSimulateCommand:
 
         rounds = _make_minimal_rounds()
 
-        with patch("worldcup_playoff.cli.load_config") as mock_load_cfg, \
-             patch("worldcup_playoff.cli.load_bracket") as mock_load_bracket, \
-             patch("worldcup_playoff.cli.Pipeline") as MockPipeline:
-
+        with (
+            patch("worldcup_playoff.cli.load_config") as mock_load_cfg,
+            patch("worldcup_playoff.cli.load_bracket") as mock_load_bracket,
+            patch("worldcup_playoff.cli.Pipeline") as MockPipeline,
+        ):
             mock_load_cfg.return_value = AppConfig()
             from worldcup_playoff.config import BracketConfig, Matchup
+
             mock_load_bracket.return_value = BracketConfig(
                 matchups=[Matchup(home="Brazil", away="France")]
             )
             instance = MockPipeline.return_value
             instance.run_simulate.return_value = rounds
 
-            result = runner.invoke(app, [
-                "simulate",
-                "--config", str(cfg_path),
-                "--bracket", str(bracket_path),
-                "--n-simulations", "10",
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "simulate",
+                    "--config",
+                    str(cfg_path),
+                    "--bracket",
+                    str(bracket_path),
+                    "--n-simulations",
+                    "10",
+                ],
+            )
 
         assert result.exit_code == 0
 
@@ -197,20 +204,24 @@ class TestTrainCommand:
         }
         fake_clf = MagicMock()
 
-        with patch("worldcup_playoff.cli.load_config") as mock_load_cfg, \
-             patch("worldcup_playoff.cli.Pipeline") as MockPipeline:
-
+        with (
+            patch("worldcup_playoff.cli.load_config") as mock_load_cfg,
+            patch("worldcup_playoff.cli.Pipeline") as MockPipeline,
+        ):
             mock_load_cfg.return_value = AppConfig()
             instance = MockPipeline.return_value
-            instance.run_train.return_value = {
-                "naive_bayes": (fake_clf, fake_metrics)
-            }
+            instance.run_train.return_value = {"naive_bayes": (fake_clf, fake_metrics)}
 
-            result = runner.invoke(app, [
-                "train",
-                "--config", str(cfg_path),
-                "--classifier", "naive-bayes",
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "train",
+                    "--config",
+                    str(cfg_path),
+                    "--classifier",
+                    "naive-bayes",
+                ],
+            )
 
         assert result.exit_code == 0
 
@@ -222,7 +233,6 @@ class TestTrainCommand:
 
 class TestSimulateConfigMutation:
     def _apply_n_simulations(self, cfg: AppConfig, n_simulations: int) -> AppConfig:
-        from pydantic import ValidationError
 
         return cfg.model_copy(
             update={

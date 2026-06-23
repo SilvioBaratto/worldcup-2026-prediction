@@ -150,9 +150,7 @@ def _make_fitter(min_season: int = 2019, candidates: list[str] | None = None) ->
 
 def _stub_fit_team(fitter: DistributionFitter) -> MagicMock:
     """Stub _fit_team to avoid the slow Fitter library in unit tests."""
-    stub = MagicMock(
-        return_value=[FittedDistribution(name="norm", params=(0.0, 1.0))] * 5
-    )
+    stub = MagicMock(return_value=[FittedDistribution(name="norm", params=(0.0, 1.0))] * 5)
     fitter._fit_team = stub  # type: ignore[method-assign]
     return stub
 
@@ -270,15 +268,11 @@ class TestDistributionFitterSaveLoad:
 
     def test_save_creates_parent_directories(self, tmp_path: Path) -> None:
         path = tmp_path / "output" / "distributions.json"
-        DistributionFitter.save(
-            {"T": [FittedDistribution("norm", (0.0, 1.0))]}, path
-        )
+        DistributionFitter.save({"T": [FittedDistribution("norm", (0.0, 1.0))]}, path)
         assert path.exists()
 
     def test_load_preserves_param_tuple_type(self, tmp_path: Path) -> None:
-        distributions = {
-            "X": [FittedDistribution(name="norm", params=(3.14, 2.72))]
-        }
+        distributions = {"X": [FittedDistribution(name="norm", params=(3.14, 2.72))]}
         path = tmp_path / "dists.json"
         DistributionFitter.save(distributions, path)
         loaded = DistributionFitter.load(path)

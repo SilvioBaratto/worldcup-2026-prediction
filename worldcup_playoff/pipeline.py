@@ -22,7 +22,6 @@ import pandas as pd
 
 from worldcup_playoff.config import AppConfig, BracketConfig
 from worldcup_playoff.data.builders import (
-    MatchDetailsBuilder,
     MatchesBuilder,
     TeamsBuilder,
     build_match_details_csv,

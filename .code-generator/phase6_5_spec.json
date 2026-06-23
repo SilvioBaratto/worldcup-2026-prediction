@@ -1,0 +1,63 @@
+{
+  "base_url": "http://127.0.0.1:54795",
+  "entry_cmd": [],
+  "requirements_hash": "230cb629cd0c0a4e9a0adf03eb17a5c817e879bc0450b4a4de4b67b1d89629fd",
+  "scenarios": [],
+  "tiers": [
+    {
+      "boot_window_s": 10.0,
+      "enabled": true,
+      "health_path": "/health",
+      "pass_rate_threshold": 1.0,
+      "port": null,
+      "runs": 1,
+      "skip_reason": null,
+      "tier_id": "T0",
+      "timeout_s": 120.0
+    },
+    {
+      "boot_window_s": 10.0,
+      "enabled": false,
+      "health_path": "/health",
+      "pass_rate_threshold": 1.0,
+      "port": 54795,
+      "runs": 1,
+      "skip_reason": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+      "tier_id": "T1",
+      "timeout_s": 5.0
+    },
+    {
+      "boot_window_s": 10.0,
+      "enabled": false,
+      "health_path": "/health",
+      "pass_rate_threshold": 1.0,
+      "port": null,
+      "runs": 1,
+      "skip_reason": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+      "tier_id": "T2",
+      "timeout_s": 5.0
+    },
+    {
+      "boot_window_s": 10.0,
+      "enabled": false,
+      "health_path": "/health",
+      "pass_rate_threshold": 1.0,
+      "port": null,
+      "runs": 3,
+      "skip_reason": "no frontend",
+      "tier_id": "T3",
+      "timeout_s": 5.0
+    },
+    {
+      "boot_window_s": 10.0,
+      "enabled": false,
+      "health_path": "/health",
+      "pass_rate_threshold": 1.0,
+      "port": null,
+      "runs": 1,
+      "skip_reason": "no docker",
+      "tier_id": "T4",
+      "timeout_s": 5.0
+    }
+  ]
+}

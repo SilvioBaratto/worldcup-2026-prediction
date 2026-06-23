@@ -181,7 +181,6 @@ class TestTournamentSimulator:
         self, sample_distributions: dict[str, list[FittedDistribution]]
     ) -> None:
         """Bracket length must be a power of 2 — 3 matchups must raise."""
-        sim = _make_simulator(sample_distributions)
         extended = {
             **sample_distributions,
             "Spain": sample_distributions["Brazil"],
@@ -235,7 +234,7 @@ class TestBuildBracketTree:
             build_bracket_tree(matchups)
 
     def test_raises_for_five_matchups(self) -> None:
-        matchups = [Matchup(home=f"T{i}", away=f"T{i+10}") for i in range(5)]
+        matchups = [Matchup(home=f"T{i}", away=f"T{i + 10}") for i in range(5)]
         with pytest.raises(ValueError, match="non-empty power-of-2 length, got 5"):
             build_bracket_tree(matchups)
 
@@ -258,9 +257,7 @@ class TestBuildBracketTree:
         assert set(right.teams) == {"Germany", "Argentina"}
 
     def test_four_matchups_returns_three_levels(self) -> None:
-        matchups = [
-            Matchup(home=f"Team{i}", away=f"Team{i+4}") for i in range(4)
-        ]
+        matchups = [Matchup(home=f"Team{i}", away=f"Team{i + 4}") for i in range(4)]
         root = build_bracket_tree(matchups)
         all_teams = {f"Team{i}" for i in range(8)}
         assert set(root.teams) == all_teams

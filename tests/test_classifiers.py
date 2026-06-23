@@ -59,6 +59,7 @@ class TestClassifierFactory:
 
     def test_create_random_forest_with_custom_config(self) -> None:
         from worldcup_playoff.config import RandomForestConfig
+
         cfg = TrainingConfig(random_forest=RandomForestConfig(n_estimators=100, max_depth=10))
         clf = ClassifierFactory.create("random_forest", cfg)
         assert clf.n_estimators == 100
@@ -81,9 +82,7 @@ class TestClassifierFactory:
 def _make_chronological_df(n: int = 100) -> pd.DataFrame:
     """DataFrame with monotonically increasing feature values (simulates time ordering)."""
     features = FeaturesConfig()
-    data: dict[str, object] = {
-        col: np.arange(n, dtype=float) for col in features.selected
-    }
+    data: dict[str, object] = {col: np.arange(n, dtype=float) for col in features.selected}
     data["HOME_WIN"] = (np.arange(n) % 2).astype(int)
     return pd.DataFrame(data)
 

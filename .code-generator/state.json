@@ -1,0 +1,628 @@
+{
+  "mode": "multi-cycle",
+  "started_at": "2026-06-23T18:24:44Z",
+  "updated_at": "2026-06-23T20:52:26Z",
+  "state_version": 2,
+  "current_cycle": 1,
+  "cycles": [
+    {
+      "id": 1,
+      "name": "Data Foundations",
+      "milestone_number": 1,
+      "milestone_title": "Cycle 1 \u2014 Data Loaders & Normalization",
+      "status": "open",
+      "phase": 65,
+      "issues": [
+        {
+          "number": 1,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:data"
+          ],
+          "reviewed": false,
+          "comments": "",
+          "title": "feat: team-name crosswalk for martj42 \u2194 football-data.org normalization"
+        },
+        {
+          "number": 2,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:data"
+          ],
+          "reviewed": false,
+          "comments": "",
+          "title": "feat: no-key martj42 historical loader (results, shootouts, goalscorers)"
+        },
+        {
+          "number": 3,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:medium",
+            "phase:implement",
+            "agent:python-pro",
+            "area:data"
+          ],
+          "reviewed": false,
+          "comments": "",
+          "title": "feat: live WC2026 adapter over FootballClient (matches, standings, tournament state)"
+        },
+        {
+          "number": 4,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:medium",
+            "phase:implement",
+            "agent:python-pro",
+            "area:data"
+          ],
+          "reviewed": false,
+          "comments": "",
+          "title": "feat: WC2026 Round-of-32 bracket-slotting rules (top-2 + 8 best thirds)"
+        }
+      ],
+      "commit_sha": null,
+      "depends_on": [],
+      "scope": "Load martj42 CC0 international results (no-key primary source); live WC2026 adapter for football-data.org standings/results/fixtures; team-name normalization crosswalk (martj42 \u2194 API); WC2026 Round-of-32 bracket-slotting rules (top 2 per group + 8 best 3rds \u2192 knockout template). Verify exact schemas match the data contracts (49,477 martj42 rows, 104 WC2026 matches). All loaders must be no-key by default (key optional for live state only).",
+      "effort_hints": [
+        {
+          "scope_keyword": "martj42_loader",
+          "effort": "low"
+        },
+        {
+          "scope_keyword": "live_adapter",
+          "effort": "low"
+        },
+        {
+          "scope_keyword": "normalization",
+          "effort": "medium"
+        },
+        {
+          "scope_keyword": "bracket_slotting",
+          "effort": "high"
+        }
+      ],
+      "base_commit": "441f4dc30678f66f3890531a9d24eb78d90588c1",
+      "token_usage": {
+        "phase1": {
+          "input": 2990,
+          "output": 23873,
+          "cache_read": 921304,
+          "cache_write": 84875,
+          "num_turns": 22,
+          "cache_write_5m": 0,
+          "cache_write_1h": 84875,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase2": {
+          "input": 134,
+          "output": 7995,
+          "cache_read": 89107,
+          "cache_write": 31605,
+          "num_turns": 8,
+          "cache_write_5m": 0,
+          "cache_write_1h": 31605,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase3_4": {
+          "input": 23,
+          "output": 33450,
+          "cache_read": 1071776,
+          "cache_write": 69592,
+          "num_turns": 20,
+          "cache_write_5m": 69592,
+          "cache_write_1h": 0,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase5": {
+          "input": 3116,
+          "output": 37417,
+          "cache_read": 776592,
+          "cache_write": 80843,
+          "num_turns": 25,
+          "cache_write_5m": 0,
+          "cache_write_1h": 80843,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase6": {
+          "input": 121,
+          "output": 4418,
+          "cache_read": 614439,
+          "cache_write": 26499,
+          "num_turns": 17,
+          "cache_write_5m": 0,
+          "cache_write_1h": 26499,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "mav": {
+          "input": 82,
+          "output": 7009,
+          "cache_read": 800390,
+          "cache_write": 76880,
+          "num_turns": 14,
+          "cache_write_5m": 0,
+          "cache_write_1h": 76880,
+          "compaction_events": 0,
+          "clear_events": 0
+        }
+      },
+      "started_at": "2026-06-23T18:53:12Z",
+      "finished_at": "2026-06-23T20:15:37Z",
+      "cache_telemetry": {
+        "input": 19400,
+        "output": 407476,
+        "cache_read": 14832473,
+        "cache_write": 869109,
+        "cache_write_1h": 436621,
+        "cache_write_5m": 432488,
+        "cache_hit_pct": 94.3,
+        "wall_seconds": 4384.020957290835
+      },
+      "phase2_batch_id": null,
+      "ollama_model": null,
+      "gemini_model": null,
+      "codex_model": null,
+      "cache_prewarmed": true,
+      "cache_ttl_probe": "1h",
+      "phase6_5": {
+        "attempt": 0,
+        "last_tier": "DONE",
+        "tiers_passed": [
+          "T0"
+        ],
+        "tiers_failed": [],
+        "tiers_skipped": [
+          "T1",
+          "T2",
+          "T3",
+          "T4"
+        ],
+        "skip_reasons": {
+          "T1": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+          "T2": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+          "T3": "no frontend",
+          "T4": "no docker"
+        }
+      },
+      "vigil_triggered": false,
+      "phase8": null,
+      "phase4_bon": [],
+      "phase6_mav": {
+        "aspects_passed": [
+          "acceptance_criteria",
+          "security"
+        ],
+        "aspects_failed": [],
+        "overall_pass": true
+      },
+      "vg_config": null,
+      "cycle5_decisions": [],
+      "tool_search_enabled": false,
+      "session_store_enabled": false,
+      "precompact_hook_enabled": false,
+      "ptc_enabled": false,
+      "zdr_required": false,
+      "subagent_fanout": false,
+      "github_mode": true,
+      "commit_enabled": true,
+      "static_blocker": false,
+      "static_status": "scanned",
+      "mutation_score": null,
+      "pbt_result": {
+        "passed": 9,
+        "failed": 0
+      },
+      "model_cost": {
+        "phase3_4": {
+          "claude-haiku-4-5-20251001": {
+            "cost_usd": 0.002981,
+            "input_tokens": 2846,
+            "output_tokens": 27,
+            "cache_read": 0,
+            "cache_write": 0
+          },
+          "claude-sonnet-4-6": {
+            "cost_usd": 1.2409038,
+            "input_tokens": 23,
+            "output_tokens": 33450,
+            "cache_read": 1071776,
+            "cache_write": 69592
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Statistical Abilities",
+      "milestone_number": null,
+      "milestone_title": "Cycle 2 \u2014 Elo & Dixon-Coles Estimation",
+      "status": "open",
+      "phase": 0,
+      "issues": [],
+      "commit_sha": null,
+      "depends_on": [
+        1
+      ],
+      "scope": "Elo engine: compute World Football Elo chronologically from martj42 (K by match importance, G margin multiplier, home_adv = 0 for neutral). Dixon-Coles bivariate Poisson with attack/defence strengths, home advantage, rho low-score correction, exponential time-decay. Both fit on historical data \u2192 emit per-team, per-date ratings + features for downstream models. Seed WC2026 live state from history.",
+      "effort_hints": [
+        {
+          "scope_keyword": "elo_engine",
+          "effort": "medium"
+        },
+        {
+          "scope_keyword": "dixon_coles",
+          "effort": "high"
+        },
+        {
+          "scope_keyword": "time_decay",
+          "effort": "high"
+        }
+      ],
+      "base_commit": null,
+      "token_usage": {},
+      "started_at": null,
+      "finished_at": null,
+      "cache_telemetry": {
+        "input": 0,
+        "output": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cache_write_1h": 0,
+        "cache_write_5m": 0,
+        "cache_hit_pct": 0.0,
+        "wall_seconds": 0
+      },
+      "phase2_batch_id": null,
+      "ollama_model": null,
+      "gemini_model": null,
+      "codex_model": null,
+      "cache_prewarmed": false,
+      "cache_ttl_probe": null,
+      "phase6_5": null,
+      "vigil_triggered": false,
+      "phase8": null,
+      "phase4_bon": [],
+      "phase6_mav": null,
+      "vg_config": null,
+      "cycle5_decisions": [],
+      "tool_search_enabled": false,
+      "session_store_enabled": false,
+      "precompact_hook_enabled": false,
+      "ptc_enabled": false,
+      "zdr_required": false,
+      "subagent_fanout": false,
+      "github_mode": true,
+      "commit_enabled": true,
+      "static_blocker": false,
+      "static_status": null,
+      "mutation_score": null,
+      "pbt_result": null,
+      "model_cost": {}
+    },
+    {
+      "id": 3,
+      "name": "Feature Assembly",
+      "milestone_number": null,
+      "milestone_title": "Cycle 3 \u2014 Football-Only Covariates",
+      "status": "open",
+      "phase": 0,
+      "issues": [],
+      "commit_sha": null,
+      "depends_on": [
+        1,
+        2
+      ],
+      "scope": "Build per-match feature vectors: Elo, Elo-difference, FIFA ranking (confederation as fallback), time-weighted recent form, goal difference, Dixon-Coles attack/defence abilities, rest days, confederation, neutral-venue flag. All football-only (no socio-economic/market-value). Assemble from martj42 (historical) + live WC2026 adapter (current state).",
+      "effort_hints": [
+        {
+          "scope_keyword": "feature_builder",
+          "effort": "medium"
+        },
+        {
+          "scope_keyword": "covariate_assembly",
+          "effort": "low"
+        }
+      ],
+      "base_commit": null,
+      "token_usage": {},
+      "started_at": null,
+      "finished_at": null,
+      "cache_telemetry": {
+        "input": 0,
+        "output": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cache_write_1h": 0,
+        "cache_write_5m": 0,
+        "cache_hit_pct": 0.0,
+        "wall_seconds": 0
+      },
+      "phase2_batch_id": null,
+      "ollama_model": null,
+      "gemini_model": null,
+      "codex_model": null,
+      "cache_prewarmed": false,
+      "cache_ttl_probe": null,
+      "phase6_5": null,
+      "vigil_triggered": false,
+      "phase8": null,
+      "phase4_bon": [],
+      "phase6_mav": null,
+      "vg_config": null,
+      "cycle5_decisions": [],
+      "tool_search_enabled": false,
+      "session_store_enabled": false,
+      "precompact_hook_enabled": false,
+      "ptc_enabled": false,
+      "zdr_required": false,
+      "subagent_fanout": false,
+      "github_mode": true,
+      "commit_enabled": true,
+      "static_blocker": false,
+      "static_status": null,
+      "mutation_score": null,
+      "pbt_result": null,
+      "model_cost": {}
+    },
+    {
+      "id": 4,
+      "name": "Model Training & Comparison",
+      "milestone_number": null,
+      "milestone_title": "Cycle 4 \u2014 Groll Hybrid & Baselines",
+      "status": "open",
+      "phase": 0,
+      "issues": [],
+      "commit_sha": null,
+      "depends_on": [
+        3
+      ],
+      "scope": "Groll-style RF/GBM hybrid: random forest or gradient boosting on Poisson abilities + Elo + covariates (arXiv 1806.03208). Elo-diff ordered-logit (secondary/fallback from statsmodels). Keep legacy SVM/RF/NB classifiers for backtest baseline comparison. Train with time-aware splits (no shuffle). All models must pass 250 existing tests; add new tests for hybrid + ordered-logit.",
+      "effort_hints": [
+        {
+          "scope_keyword": "hybrid_model",
+          "effort": "high"
+        },
+        {
+          "scope_keyword": "ordered_logit",
+          "effort": "medium"
+        },
+        {
+          "scope_keyword": "model_comparison",
+          "effort": "medium"
+        }
+      ],
+      "base_commit": null,
+      "token_usage": {},
+      "started_at": null,
+      "finished_at": null,
+      "cache_telemetry": {
+        "input": 0,
+        "output": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cache_write_1h": 0,
+        "cache_write_5m": 0,
+        "cache_hit_pct": 0.0,
+        "wall_seconds": 0
+      },
+      "phase2_batch_id": null,
+      "ollama_model": null,
+      "gemini_model": null,
+      "codex_model": null,
+      "cache_prewarmed": false,
+      "cache_ttl_probe": null,
+      "phase6_5": null,
+      "vigil_triggered": false,
+      "phase8": null,
+      "phase4_bon": [],
+      "phase6_mav": null,
+      "vg_config": null,
+      "cycle5_decisions": [],
+      "tool_search_enabled": false,
+      "session_store_enabled": false,
+      "precompact_hook_enabled": false,
+      "ptc_enabled": false,
+      "zdr_required": false,
+      "subagent_fanout": false,
+      "github_mode": true,
+      "commit_enabled": true,
+      "static_blocker": false,
+      "static_status": null,
+      "mutation_score": null,
+      "pbt_result": null,
+      "model_cost": {}
+    },
+    {
+      "id": 5,
+      "name": "Evaluation, Simulation & Integration",
+      "milestone_number": null,
+      "milestone_title": "Cycle 5 \u2014 Tournament Simulation & Full Pipeline",
+      "status": "open",
+      "phase": 0,
+      "issues": [],
+      "commit_sha": null,
+      "depends_on": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "scope": "Extend tournament simulator: ingest played WC2026 results as fixed, simulate remaining group matches (correct tiebreak rules: goal-diff, goals-for, head-to-head, coin-flip), resolve Round of 32 from standings, simulate knockout (extra time \u03bb\u00d70.33 \u2192 penalty coin-flip), run ~100k Monte Carlo \u2192 full title odds + per-round advancement for all 48 teams. Historical odds scraper (backtest baseline: de-vig WC2014/18/22 from archived sources, cache to CSV). Evaluation metrics: RPS (primary), log-loss, Brier on time-aware splits. Config: add [poisson], [elo], [rf], [odds], [live] sections (Pydantic + TOML). CLI: new commands fetch-live, build-features, train-hybrid, backtest, forecast (live title odds) + existing bracket/PNG.",
+      "effort_hints": [
+        {
+          "scope_keyword": "tournament_simulator",
+          "effort": "high"
+        },
+        {
+          "scope_keyword": "odds_scraper",
+          "effort": "medium"
+        },
+        {
+          "scope_keyword": "evaluation_metrics",
+          "effort": "medium"
+        },
+        {
+          "scope_keyword": "cli_integration",
+          "effort": "medium"
+        }
+      ],
+      "base_commit": null,
+      "token_usage": {},
+      "started_at": null,
+      "finished_at": null,
+      "cache_telemetry": {
+        "input": 0,
+        "output": 0,
+        "cache_read": 0,
+        "cache_write": 0,
+        "cache_write_1h": 0,
+        "cache_write_5m": 0,
+        "cache_hit_pct": 0.0,
+        "wall_seconds": 0
+      },
+      "phase2_batch_id": null,
+      "ollama_model": null,
+      "gemini_model": null,
+      "codex_model": null,
+      "cache_prewarmed": false,
+      "cache_ttl_probe": null,
+      "phase6_5": null,
+      "vigil_triggered": false,
+      "phase8": null,
+      "phase4_bon": [],
+      "phase6_mav": null,
+      "vg_config": null,
+      "cycle5_decisions": [],
+      "tool_search_enabled": false,
+      "session_store_enabled": false,
+      "precompact_hook_enabled": false,
+      "ptc_enabled": false,
+      "zdr_required": false,
+      "subagent_fanout": false,
+      "github_mode": true,
+      "commit_enabled": true,
+      "static_blocker": false,
+      "static_status": null,
+      "mutation_score": null,
+      "pbt_result": null,
+      "model_cost": {}
+    }
+  ],
+  "phase": null,
+  "issues": [],
+  "session_id": null,
+  "paused_until": null,
+  "rate_limit_type": null,
+  "last_error": null,
+  "effort_hints": [],
+  "requirements_hash": "230cb629cd0c0a4e9a0adf03eb17a5c817e879bc0450b4a4de4b67b1d89629fd",
+  "base_commit": null,
+  "token_usage": {
+    "phase0": {
+      "input": 23,
+      "output": 5211,
+      "cache_read": 62323,
+      "cache_write": 39737,
+      "num_turns": 4,
+      "cache_write_5m": 0,
+      "cache_write_1h": 39737,
+      "compaction_events": 0,
+      "clear_events": 0
+    }
+  },
+  "session_mode": "shared",
+  "client_alive_at": "2026-06-23T20:32:31+00:00",
+  "phase2_batch_id": null,
+  "repo": {
+    "host": "github.com",
+    "owner": "SilvioBaratto",
+    "name": "worldcup-2026-prediction",
+    "full": "SilvioBaratto/worldcup-2026-prediction"
+  },
+  "prompt_hashes": {
+    "prompt-phase-5-final-review-local.md": "c9a9df319447930bfd967676a8e948e203359e039f4db3f00160e79d3203fa33",
+    "prompt-phase-8-finalization.md": "5ac560f6f006b0b689e528ee31d355176b825a97ba013ed2e2b43be421f1e0ae",
+    "prompt-phase-3-implementation-local.md": "424539391ddbafccf48bcf14d2393d76462fc89e278d2f39e493803b678191ed",
+    "prompt-phase-7-commit.md": "d24c28ebd5357606845ee0ac735c3f1dfd8aca559b6f9a60af5d983fb9c33338",
+    "prompt-static-repair.md": "587811ec451cebb425ea6fd3671840c6ad516830cfa2f98efe52999791bc5c20",
+    "prompt-phase-6-test.md": "7102de7604a3a94d3be2dcfc1a2c5b530e49fd595b4f300375328c8a18febfe0",
+    "prompt-mav-style.md": "36a2931cdfd45586743949078ead15a4e152da026ed37f200de3764a2ac8fe0f",
+    "prompt-clarify-requirements.md": "0162e41283ca22478ed1a7871e4e6b32a36b2e0186c2a836f386a427f7d7e1a1",
+    "prompt-optimize-requirements.md": "99830c4de4023c6249245492052814335a58119cb6fe4cd1ac2534e0c6ba1c48",
+    "prompt-mav-runtime.md": "ee725416517359fe53bdfd1ecde727882aef5534f53ced55a011c17f08ce6119",
+    "prompt-phase-0-complexity.md": "200c7799c008e01c635d40e0456f71467a317138a26d50f7ef5b1ff6059c6630",
+    "prompt-phase-1-planning-local.md": "40fe40f6e2da0064210543b0da3544cf75ccecc44473763c9e4b144128f49a62",
+    "prompt-phase-1-planning.md": "e3a3da480093df0008470ddb0a581a42554c28ad4c32543cddb0fe4241da0a21",
+    "prompt-phase-5-final-review.md": "49ae4d9eadab36f14d3015f3b54946bd1ad26a728e370f2672284646b0b1c2c7",
+    "prompt-phase-3-implementation.md": "58db0b7665ee9949341a8bc409445c17412f55ca54d01af701562b4eb5ede556",
+    "prompt-surrogate-ranker.md": "22a377f26a2bcabedd43868ef0b470d52d29154dbaced8bb30fe4e383a367f11",
+    "prompt-review.md": "7a3cf18bc063f0c0f7b442b42de5ff0e677bf4a84d1f357a8a3142df77dc1ad1",
+    "prompt-mav-security.md": "bc8441cd96e8dacf34242900bc7a916ae386946a9abd6a386a58d1539a6833c8",
+    "prompt-ldb-debug.md": "feeb87b0533beefc212e571d71ec25e83d0898cd48918a8eb650a6350be653d8",
+    "prompt-judge.md": "704913788f79f3b7cf73d7ae9b86f05e5f669a72a70eb85d1c5021b2dd0b1622",
+    "prompt-mav-acceptance-criteria.md": "c05391386d3f1ad718c870b1c192a296b1b12cc9123022e688678aa3afefe6e1",
+    "prompt-analyze-coverage.md": "b0e7f5804cfceaf1d34464df137d2c816761b26c49afda38fef2ec49b86b6696",
+    "prompt-phase-6-5-verify.md": "656b4ccba4e5366a87db7621fce3fea9ec923805d27aae4122a64012001c4a0e",
+    "prompt-phase-8-repair.md": "415168265da0c210eda39998f26655d62421f25c928a5ffc73e3c5311eb85ec2",
+    "prompt-cycle-specializer.md": "45ceab350755786cccf542cac7347ef5b936039accc497671dc0dbde254202dc",
+    "prompt-phase-2-batch-review.md": "06e35624311d92237e1032f42dc834e4f4f1bde756e749763a4f21d4851571e1",
+    "prompt-test-designer.md": "5309b941586ffa791343ed53beaf67f339a2cb1b0bfb27a1f1f395324d432214"
+  },
+  "prompt_drift": [
+    "prompt-phase-5-final-review.md"
+  ],
+  "sdk_version": "0.2.99",
+  "gemini_model": null,
+  "codex_model": null,
+  "cache_prewarmed": false,
+  "cache_ttl_probe": null,
+  "phase6_5": null,
+  "vigil_triggered": false,
+  "phase8": null,
+  "phase4_bon": [],
+  "phase6_mav": null,
+  "vg_config": {
+    "bon_n": 1,
+    "judge_enabled": true,
+    "mav_aspects": [
+      "acceptance_criteria",
+      "security"
+    ],
+    "vg_tuning": "budget",
+    "rex_scheduler": false,
+    "surrogate_ranker": false,
+    "dars_branching": false,
+    "orps_scoring": false,
+    "gvr_enabled": false,
+    "swe_debate": false
+  },
+  "cycle5_decisions": [],
+  "tool_search_enabled": false,
+  "session_store_enabled": false,
+  "precompact_hook_enabled": false,
+  "ptc_enabled": false,
+  "zdr_required": false,
+  "subagent_fanout": false,
+  "github_mode": true,
+  "commit_enabled": true,
+  "static_blocker": false,
+  "static_status": null,
+  "mutation_score": null,
+  "pbt_result": null,
+  "model_cost": {},
+  "cycle_prompts_failed": false
+}

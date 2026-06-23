@@ -22,7 +22,6 @@ from worldcup_playoff.data.loader import (
 
 
 def _minimal_valid_matches_df() -> pd.DataFrame:
-    import numpy as np
 
     return pd.DataFrame(
         {

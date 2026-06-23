@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pandas as pd
-import pytest
 
 from worldcup_playoff.config import AppConfig
 from worldcup_playoff.pipeline import Pipeline
@@ -53,9 +52,7 @@ def _write_minimal_matches_csv(path: Path) -> None:
 def _write_minimal_details_csv(path: Path, match_ids: list[int]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     header = "MATCH_ID,GOALS_home,SHOTS_home,SHOTS_ON_TARGET_home,POSSESSION_home,PASS_PCT_home,GOALS_away,SHOTS_away,SHOTS_ON_TARGET_away,POSSESSION_away,PASS_PCT_away\n"
-    rows = "\n".join(
-        f"{mid},1,12,4,55.0,78.0,0,7,2,45.0,72.0" for mid in match_ids
-    )
+    rows = "\n".join(f"{mid},1,12,4,55.0,78.0,0,7,2,45.0,72.0" for mid in match_ids)
     path.write_text(header + rows + "\n")
 
 

@@ -6,11 +6,11 @@ Uses the Agg non-interactive backend so tests run headlessly.
 from __future__ import annotations
 
 import matplotlib
+
 matplotlib.use("Agg")  # Must be set before importing pyplot
 
 from pathlib import Path
 
-import pytest
 
 from worldcup_playoff.config import BracketConfig, Matchup, VisualizationConfig
 from worldcup_playoff.simulation.tournament import (
@@ -36,12 +36,20 @@ def _make_4_matchup_bracket() -> list[Matchup]:
 
 
 ALL_TEAMS = [
-    "Brazil", "France", "Germany", "Argentina",
-    "Spain", "England", "Portugal", "Netherlands",
+    "Brazil",
+    "France",
+    "Germany",
+    "Argentina",
+    "Spain",
+    "England",
+    "Portugal",
+    "Netherlands",
 ]
 
 
-def _make_round_results(teams: list[str], n_rounds: int, n_sim: int = 100) -> dict[int, RoundResult]:
+def _make_round_results(
+    teams: list[str], n_rounds: int, n_sim: int = 100
+) -> dict[int, RoundResult]:
     """Build realistic RoundResult objects for each round."""
     rounds: dict[int, RoundResult] = {}
     for rnd in range(n_rounds):
@@ -151,8 +159,12 @@ class TestPlotBracket:
         viz_cfg = VisualizationConfig(dpi=50)
 
         rounds: dict[int, RoundResult] = {
-            0: RoundResult(counts={"Brazil": 5, "France": 5, "Germany": 7, "Argentina": 3}, n_simulations=10),
-            1: RoundResult(counts={"Brazil": 6, "France": 4, "Germany": 6, "Argentina": 4}, n_simulations=10),
+            0: RoundResult(
+                counts={"Brazil": 5, "France": 5, "Germany": 7, "Argentina": 3}, n_simulations=10
+            ),
+            1: RoundResult(
+                counts={"Brazil": 6, "France": 4, "Germany": 6, "Argentina": 4}, n_simulations=10
+            ),
         }
         plotter = ResultPlotter(viz_cfg)
         out = tmp_path / "mini_bracket.png"

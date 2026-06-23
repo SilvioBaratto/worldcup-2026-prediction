@@ -9,7 +9,6 @@ from pydantic import ValidationError
 
 from worldcup_playoff.config import (
     AppConfig,
-    BracketConfig,
     ClientConfig,
     DataConfig,
     DistributionConfig,

@@ -8,6 +8,18 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, field_validator
 
 
+class Martj42Config(BaseModel):
+    """Configuration for the no-key martj42 CC0 historical results loader."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    base_url: str = "https://raw.githubusercontent.com/martj42/international_results/master/"
+    cache_dir: Path = Path("dataset/martj42")
+    results_file: str = "results.csv"
+    shootouts_file: str = "shootouts.csv"
+    goalscorers_file: str = "goalscorers.csv"
+
+
 class DataConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -150,6 +162,14 @@ class ClientConfig(BaseModel):
         return v
 
 
+class LiveConfig(BaseModel):
+    """Configuration for the live WC2026 football-data.org adapter."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    competition: str = "WC"
+
+
 class AppConfig(BaseModel):
     data: DataConfig = DataConfig()
     features: FeaturesConfig = FeaturesConfig()
@@ -158,6 +178,8 @@ class AppConfig(BaseModel):
     simulation: SimulationConfig = SimulationConfig()
     visualization: VisualizationConfig = VisualizationConfig()
     client: ClientConfig = ClientConfig()
+    martj42: Martj42Config = Martj42Config()
+    live: LiveConfig = LiveConfig()
 
 
 class Matchup(BaseModel):

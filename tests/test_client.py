@@ -155,9 +155,7 @@ class TestFootballClientRetry:
         client._session = MagicMock()
 
         error = _make_http_error(400)
-        client._session.get.return_value = MagicMock(
-            raise_for_status=MagicMock(side_effect=error)
-        )
+        client._session.get.return_value = MagicMock(raise_for_status=MagicMock(side_effect=error))
 
         with pytest.raises(requests.exceptions.HTTPError):
             client.get("/competitions/WC/matches")
@@ -171,9 +169,7 @@ class TestFootballClientRetry:
         client._session = MagicMock()
 
         error = _make_http_error(503)
-        client._session.get.return_value = MagicMock(
-            raise_for_status=MagicMock(side_effect=error)
-        )
+        client._session.get.return_value = MagicMock(raise_for_status=MagicMock(side_effect=error))
 
         with pytest.raises(RuntimeError, match="All .* attempts failed"):
             client.get("/competitions/WC/matches")
@@ -182,15 +178,11 @@ class TestFootballClientRetry:
     def test_retry_count_matches_max_retries(self, _mock_sleep: MagicMock) -> None:
         """Session.get should be called max_retries + 1 times before giving up."""
         max_retries = 3
-        client = FootballClient(
-            ClientConfig(delay=1e-9, max_retries=max_retries, backoff_base=1.0)
-        )
+        client = FootballClient(ClientConfig(delay=1e-9, max_retries=max_retries, backoff_base=1.0))
         client._session = MagicMock()
 
         error = _make_http_error(500)
-        client._session.get.return_value = MagicMock(
-            raise_for_status=MagicMock(side_effect=error)
-        )
+        client._session.get.return_value = MagicMock(raise_for_status=MagicMock(side_effect=error))
 
         with pytest.raises(RuntimeError):
             client.get("/matches/1")
@@ -273,9 +265,7 @@ class TestBackoff:
         """Backoff sleep time grows as backoff_base^attempt."""
         # Use a tiny delay so the "final success delay" is < 0.1 and distinguishable
         # from backoff sleeps (1.0 and 2.0) without relying on exact zero comparison.
-        client = FootballClient(
-            ClientConfig(delay=1e-9, max_retries=3, backoff_base=2.0)
-        )
+        client = FootballClient(ClientConfig(delay=1e-9, max_retries=3, backoff_base=2.0))
         client._session = MagicMock()
 
         error = _make_http_error(503)
@@ -357,9 +347,7 @@ class TestCircuitBreaker:
 class TestSessionReset:
     @patch("worldcup_playoff.data.client.FootballClient._reset_session")
     @patch("worldcup_playoff.data.client.time.sleep")
-    def test_session_reset_at_interval(
-        self, _mock_sleep: MagicMock, mock_reset: MagicMock
-    ) -> None:
+    def test_session_reset_at_interval(self, _mock_sleep: MagicMock, mock_reset: MagicMock) -> None:
         """Session is reset when call_count reaches the reset interval."""
         client = FootballClient(ClientConfig(delay=1e-9, max_retries=0, backoff_base=1.0))
         client._call_count = FootballClient._SESSION_RESET_INTERVAL - 1
@@ -382,9 +370,7 @@ class TestApiKeyHeader:
         client = FootballClient(ClientConfig())
         assert client._session.headers.get("X-Auth-Token") == "test-token-123"
 
-    def test_no_auth_header_when_env_var_absent(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_no_auth_header_when_env_var_absent(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """When the env var is absent, X-Auth-Token must not be set."""
         monkeypatch.delenv("FOOTBALL_DATA_API_KEY", raising=False)
         client = FootballClient(ClientConfig())
