@@ -297,6 +297,7 @@ def download(
                 end_year=end_year,
             )
             progress.update(task, completed=1)
+            assert matches_df is not None
             results["matches"] = (output / "matches.csv", len(matches_df))
 
         # Stage 3: ranking.csv — independent
@@ -337,6 +338,7 @@ def download(
                     raise typer.Exit(code=1)
                 matches_df = pd.read_csv(matches_path)
 
+            assert matches_df is not None
             match_ids = [int(mid) for mid in matches_df["MATCH_ID"].unique()]
             task = progress.add_task(
                 f"Building match_details.csv ({len(match_ids)} matches)...",

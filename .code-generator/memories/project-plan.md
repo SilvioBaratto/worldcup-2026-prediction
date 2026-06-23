@@ -1,2 +1,5 @@
-- #5 [priority:high] feat: World Football Elo engine (chronological ratings + pre-match Elo-diff from martj42) — agent: python-pro
-- #6 [priority:high] feat: Dixon-Coles bivariate-Poisson estimator (attack/defence abilities + scoreline sampler) — agent: python-pro
+- #7 [priority:high] feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config — agent: python-pro
+- #8 [priority:high] feat: time-aware recent-form, rest-days, and goal-difference helpers (no forward leakage) — agent: python-pro
+- #9 [priority:high] feat: core per-match feature assembler over martj42 history (features/build.py) — agent: python-pro
+- #10 [priority:medium] feat: WC2026 current-state feature frame (no-key martj42 schedule + key-gated live adapter) — agent: python-pro
+- #11 [priority:medium] feat: features package public API, exports, and no-key integration smoke test — agent: python-pro

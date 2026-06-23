@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
+import pandas as pd
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from worldcup_playoff.data.client import FootballClient
@@ -13,34 +14,52 @@ from worldcup_playoff.data.crosswalk import normalize_team
 logger = logging.getLogger(__name__)
 
 _FINISHED_STATUS = "FINISHED"
+_WC_TOURNAMENT = "FIFA World Cup"
+_RESULTS_COLS = ("DATE", "HOME_TEAM", "AWAY_TEAM", "HOME_GOALS", "AWAY_GOALS", "TOURNAMENT", "NEUTRAL")
 
 
 class LiveMatch(BaseModel):
-    """A single match from the football-data.org matches endpoint."""
+    """A single match from the football-data.org matches endpoint.
+
+    Fields ``date``, ``home_goals``, ``away_goals``, and ``neutral`` carry
+    martj42-compatible values for use with ``live_fixtures_to_df``.
+    """
 
     model_config = ConfigDict(extra="ignore")
 
     id: int
     utc_date: str = ""
     status: str
-    stage: str
+    stage: str = ""
     group: Optional[str] = None
     home_team: Optional[str] = None
     away_team: Optional[str] = None
+    date: str = ""
+    home_goals: Optional[int] = None
+    away_goals: Optional[int] = None
+    neutral: bool = True
 
     @model_validator(mode="before")
     @classmethod
     def _extract_fields(cls, data: Any) -> Any:
         if not isinstance(data, dict):
             return data
-        home_name = (data.get("homeTeam") or {}).get("name")
-        away_name = (data.get("awayTeam") or {}).get("name")
-        return {
-            **data,
-            "utc_date": data.get("utcDate", ""),
-            "home_team": normalize_team(home_name) if home_name else None,
-            "away_team": normalize_team(away_name) if away_name else None,
-        }
+        out = dict(data)
+        if "utcDate" in data:
+            utc = data["utcDate"] or ""
+            out["utc_date"] = utc
+            out.setdefault("date", utc[:10])
+        if "homeTeam" in data:
+            n = (data.get("homeTeam") or {}).get("name")
+            out["home_team"] = normalize_team(n) if n else None
+        if "awayTeam" in data:
+            n = (data.get("awayTeam") or {}).get("name")
+            out["away_team"] = normalize_team(n) if n else None
+        if "score" in data:
+            ft = (data.get("score") or {}).get("fullTime") or {}
+            out.setdefault("home_goals", ft.get("home"))
+            out.setdefault("away_goals", ft.get("away"))
+        return out
 
 
 class TableRow(BaseModel):
@@ -137,3 +156,47 @@ def fetch_tournament_state(
     if client is None:
         client = FootballClient()
     return LiveTournamentAdapter(client, competition=competition).tournament_state()
+
+
+# ---------------------------------------------------------------------------
+# martj42-schema conversion
+# ---------------------------------------------------------------------------
+
+
+def _match_to_row(m: LiveMatch) -> dict:
+    return {
+        "DATE": m.date,
+        "HOME_TEAM": m.home_team,
+        "AWAY_TEAM": m.away_team,
+        "HOME_GOALS": m.home_goals,
+        "AWAY_GOALS": m.away_goals,
+        "TOURNAMENT": _WC_TOURNAMENT,
+        "NEUTRAL": m.neutral,
+    }
+
+
+def _to_results_df(matches: list[LiveMatch]) -> pd.DataFrame:
+    """Build a martj42 results DataFrame from a list of valid LiveMatch objects."""
+    if not matches:
+        return pd.DataFrame(columns=list(_RESULTS_COLS))
+    rows = [_match_to_row(m) for m in matches]
+    df = pd.DataFrame(rows)[list(_RESULTS_COLS)]
+    df["HOME_GOALS"] = df["HOME_GOALS"].astype("Int64")
+    df["AWAY_GOALS"] = df["AWAY_GOALS"].astype("Int64")
+    return df
+
+
+def live_fixtures_to_df(
+    state: TournamentState, *, include_played: bool = False
+) -> pd.DataFrame:
+    """Convert TournamentState fixtures to a martj42-schema DataFrame.
+
+    Processes ``remaining_group_fixtures`` (and optionally ``played``).
+    None-team placeholder slots (unresolved knockout positions) are dropped.
+    Goals are ``<NA>`` for remaining (unplayed) fixtures.
+    """
+    fixtures: list[LiveMatch] = list(state.remaining_group_fixtures)
+    if include_played:
+        fixtures += list(state.played)
+    valid = [m for m in fixtures if m.home_team is not None and m.away_team is not None]
+    return _to_results_df(valid)

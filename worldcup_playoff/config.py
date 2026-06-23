@@ -259,9 +259,36 @@ class PoissonConfig(BaseModel):
         return v
 
 
+class FeatureBuildConfig(BaseModel):
+    """Configuration for the football-only feature assembler (Cycle 3+)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    ranking_staleness_cutoff: str = "2020-12-10"
+    form_window: int = 5
+    form_half_life_days: float = 365.0
+    random_seed: int = 42
+    confederation_fallback: bool = True
+
+    @field_validator("form_window")
+    @classmethod
+    def form_window_must_be_at_least_one(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("form_window must be >= 1")
+        return v
+
+    @field_validator("form_half_life_days")
+    @classmethod
+    def form_half_life_days_must_be_positive(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("form_half_life_days must be positive")
+        return v
+
+
 class AppConfig(BaseModel):
     data: DataConfig = DataConfig()
     features: FeaturesConfig = FeaturesConfig()
+    features_build: FeatureBuildConfig = FeatureBuildConfig()
     training: TrainingConfig = TrainingConfig()
     distributions: DistributionConfig = DistributionConfig()
     simulation: SimulationConfig = SimulationConfig()

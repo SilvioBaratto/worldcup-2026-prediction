@@ -29,7 +29,9 @@ logger = logging.getLogger(__name__)
 # Value objects
 # ---------------------------------------------------------------------------
 
-_SORT_COLS = ["_d", "HOME_TEAM", "AWAY_TEAM", "HOME_GOALS", "AWAY_GOALS"]
+# Public: imported by ``worldcup_playoff.features.timeaware`` so both code paths
+# share the same sort key literal and can never drift independently.
+SORT_COLS = ["_d", "HOME_TEAM", "AWAY_TEAM", "HOME_GOALS", "AWAY_GOALS"]
 
 
 @dataclass(frozen=True)
@@ -143,7 +145,7 @@ class EloEngine:
     def _sort(self, df: pd.DataFrame) -> pd.DataFrame:
         return (
             df.assign(_d=pd.to_datetime(df["DATE"], errors="coerce"))
-            .sort_values(_SORT_COLS, kind="stable", na_position="last")
+            .sort_values(SORT_COLS, kind="stable", na_position="last")
             .drop(columns=["_d"])
             .reset_index(drop=True)
         )

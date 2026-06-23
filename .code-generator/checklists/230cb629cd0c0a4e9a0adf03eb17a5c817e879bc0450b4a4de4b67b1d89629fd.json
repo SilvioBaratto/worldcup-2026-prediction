@@ -1,7 +1,7 @@
 [
   {
-    "issue_number": 5,
-    "title": "feat: World Football Elo engine (chronological ratings + pre-match Elo-diff from martj42)",
+    "issue_number": 7,
+    "title": "feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,
@@ -9,8 +9,35 @@
     "professionalized": false
   },
   {
-    "issue_number": 6,
-    "title": "feat: Dixon-Coles bivariate-Poisson estimator (attack/defence abilities + scoreline sampler)",
+    "issue_number": 8,
+    "title": "feat: time-aware recent-form, rest-days, and goal-difference helpers (no forward leakage)",
+    "tests_passed": true,
+    "committed": false,
+    "feature_done": false,
+    "runtime_verified": true,
+    "professionalized": false
+  },
+  {
+    "issue_number": 9,
+    "title": "feat: core per-match feature assembler over martj42 history (features/build.py)",
+    "tests_passed": true,
+    "committed": false,
+    "feature_done": false,
+    "runtime_verified": true,
+    "professionalized": false
+  },
+  {
+    "issue_number": 10,
+    "title": "feat: WC2026 current-state feature frame (no-key martj42 schedule + key-gated live adapter)",
+    "tests_passed": true,
+    "committed": false,
+    "feature_done": false,
+    "runtime_verified": true,
+    "professionalized": false
+  },
+  {
+    "issue_number": 11,
+    "title": "feat: features package public API, exports, and no-key integration smoke test",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,

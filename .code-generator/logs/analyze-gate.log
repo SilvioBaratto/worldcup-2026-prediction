@@ -871,3 +871,470 @@ Right (strict JSON, deterministic, machine-parseable):
 2026-06-23 23:01:54,347 INFO msg #12: ResultMessage (tokens_in=2487 tokens_out=1032 cache_read=16890 cache_write=28533 is_error=False subtype=success stop_reason=end_turn num_turns=1)
 2026-06-23 23:01:54,582 INFO SDK session complete.
 2026-06-23 23:01:54,586 INFO Phase analyze-gate complete: in=2487 cache_read=16890 cache_write=28533 out=1032 total=48942
+2026-06-23 23:56:32,952 INFO SDK session starting (model=opus effort=high max_turns=None).
+2026-06-23 23:56:32,952 DEBUG SDK prompt (56818 chars):
+# Prompt — Analyze Coverage
+
+**Model:** `claude-opus-4-8`
+**Tools:** `Read`
+**Runtime placeholders:**
+- `# Cycle 3 — Feature Assembly
+
+## Objective
+Build `features/build.py`: assemble per-match, football-only covariate vectors combining Elo, Dixon-Coles abilities, FIFA ranking/confederation, recent form, goal difference, rest days, and the neutral-venue flag — for both historical training matches and current WC2026 state.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline, via a Groll-style RF hybrid conditioned on results to date.
+
+## Preceding cycles
+Cycle 1 delivered the data layer (`data/martj42_loader.py`, `data/live.py`, crosswalk, bracket-slotting). Cycle 2 delivered `data/elo.py` (per-team, per-date Elo + Elo-diff) and `simulation/poisson.py` (Dixon-Coles attack/defence abilities). This cycle reads those rating/ability outputs — do not recompute Elo or Poisson fits.
+
+## Following cycles
+Cycle 4 trains the hybrid and baselines on these features; Cycle 5 simulates and evaluates. Do NOT train any model, define `[rf]` hyperparameters, or run backtests here.
+
+## In scope
+- `features/build.py`: a feature builder that emits, per match, the covariates: Elo, Elo-difference, FIFA ranking (with confederation as fallback when ranking is stale/unavailable), time-weighted recent form, goal difference, Dixon-Coles attack/defence abilities, rest days, confederation (UEFA/CONMEBOL/CAF/AFC/CONCACAF/OFC), and neutral-venue flag.
+- Assemble feature frames from martj42 (historical) and from the live WC2026 adapter (current state), joined via the Cycle-1 crosswalk.
+- FIFA-ranking handling: cnc8 data ends 2020-12-10 → use a fresher pull or derive confederation from a static map; ranking absence must degrade to the confederation covariate, not fail.
+- Tests for feature shapes, neutral-flag correctness, fallback behavior, and time-aware (no-leakage) construction.
+
+## Out of scope
+- Any socio-economic / market-value / GDP / yfinance covariates — explicitly excluded by locked decisions.
+- Bookmaker odds as a feature — odds are backtest-baseline only (Cycle 5).
+- Computing Elo or Dixon-Coles abilities — Cycle 2 (consume, don't recompute).
+- Model fitting and the RF hybrid — Cycle 4.
+
+## Acceptance criteria
+- All covariates are football-only; no socio-economic/market-value features and no odds.
+- Builder runs no-key (martj42 + computed Elo/Poisson + static confederation map); live state is optional and key-gated.
+- Features are constructed time-aware with no forward leakage; deterministic given a seed.
+- Feature frames cover both historical training matches and current WC2026 matches.
+- New module ships with tests; the existing ~248-test suite stays green.
+` — canonical `requirements.md` content (post-`optimize`, post-`clarify`)
+- `[
+  {
+    "body": "## Goal\nExpose a clean, minimal public API from `worldcup_playoff/features/__init__.py`, and add a thin **no-key end-to-end** test proving the default path produces both a historical training frame and a WC2026 frame with **identical columns**. Final, integration-flavored slice that makes the cycle's output importable by Cycle 4.\n\n## Context\nTasks #7\u2013#10 create the package modules (`confederation.py`, `timeaware.py`, `build.py`, `wc2026.py`). This task wires the package's public surface and proves the slices compose. Follow the established export pattern in `worldcup_playoff/data/__init__.py` and `worldcup_playoff/simulation/__init__.py`: explicit `from ... import ...` blocks plus a sorted `__all__` list.\n\nCycle 4 will import from this package, e.g. `from worldcup_playoff.features import build_features, wc2026_features, MatchFeatures`. Keep the surface minimal (YAGNI) \u2014 do **not** pre-wire the pipeline or CLI (those are Cycle 4/5). Do not touch the top-level `worldcup_playoff/__init__.py` unless a downstream import genuinely needs it.\n\nThe existing suite must stay green: there are ~497 test functions across `tests/` today (briefing's \"~248-test suite\" is the headline count); your new package and its tests must not regress any of them.\n\n**Scope guard:** packaging + a smoke test only. No new covariate logic, no model/training (Cycle 4), no Monte Carlo/backtest (Cycle 5).\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `from worldcup_playoff.features import (...)` resolves every name in `__all__` (an \"exports are importable\" test).\n- [ ] `__all__` is sorted and exposes exactly the intended public surface (confederation, time-aware, build, wc2026 symbols) \u2014 no internal helpers leak.\n- [ ] **No-key integration smoke test:** build a small martj42-shaped history (incl. a couple of unplayed `FIFA World Cup` rows); call `compute_elo` + `fit_dixon_coles` once; pass both into the historical builder and `wc2026_features`; assert the two frames share the **same column set** and the WC2026 frame's rows are a subset of the historical frame's rows. Runs with **no network**.\n- [ ] Full suite (existing + new) stays green; `ruff check` (line-length 100) and `mypy --strict` are clean on the new package.\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #7: feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config\n- #8: feat: time-aware recent-form, rest-days, and goal-difference helpers\n- #9: feat: core per-match feature assembler over martj42 history\n- #10: feat: WC2026 current-state feature frame\n\n## Implementation notes\n- **Modify:** `worldcup_playoff/features/__init__.py` \u2014 populate the export surface with an `__all__` list (mirroring `simulation/__init__.py`):\n  - From `confederation`: `CONFEDERATIONS`, `CONFEDERATION_MAP`, `confederation_of`, `resolve_ranking`, `RankingResolution`.\n  - From `timeaware`: `sort_chronological`, `recent_form`, `rest_days`, `goal_difference`.\n  - From `build`: `MatchFeatures`, `FeatureBuilder`, `build_features`, `to_frame`.\n  - From `wc2026`: `wc2026_features`, `live_fixtures_to_df`.\n- **Create:** `tests/test_features_integration.py` \u2014 the no-key end-to-end smoke test described above; in-memory frames only, no network/I/O; assert same-column-set between historical and WC2026 frames and the subset relationship.\n- Conventions: `from __future__ import annotations`; explicit imports + sorted `__all__`; no globals; mypy strict; ruff line-length 100. Do not pre-wire pipeline/CLI.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: features",
+        "id": "LA_kwDOTBxfPc8AAAACoqMq5A",
+        "name": "area:features"
+      }
+    ],
+    "number": 11,
+    "state": "OPEN",
+    "title": "feat: features package public API, exports, and no-key integration smoke test"
+  },
+  {
+    "body": "## Goal\nProduce feature frames for **current WC2026 matches** \u2014 both the unplayed fixtures already present in martj42's `wc2026_schedule` (no-key path) and, optionally, the live `TournamentState` (key-gated). Reuse the core assembler (issue #9) so WC2026 features are **schema-identical** to training features. This satisfies the cycle requirement that feature frames cover both historical training matches **and** current WC2026 matches, with the no-key path fully functional and the live path strictly additive.\n\n## Context\nWC2026 is mid-group-stage; the forecast conditions on results to date. Two sources feed current state:\n- **No-key (default):** martj42 already contains the WC2026 fixture list. `worldcup_playoff/data/martj42_loader.py` exposes `wc2026_schedule(df)` which filters `TOURNAMENT == \"FIFA World Cup\"` (played + unplayed, `<NA>` goals until played). This path requires **zero network**.\n- **Key-gated (optional):** `worldcup_playoff/data/live.py` \u2014 `fetch_tournament_state(client, competition=\"WC\") -> TournamentState`. `TournamentState(played, remaining_group_fixtures, standings)`. `LiveMatch` fields: `id, utc_date, status, stage, group, home_team, away_team` (team names already crosswalk-normalized; **may be `None`** for unresolved knockout slots). `GroupStanding(group, stage, table: list[TableRow])`.\n\n**Critical correctness point:** a WC2026 fixture's pre-match form/rest/Elo must reflect **all prior football**, not just other WC fixtures. So build the issue-#9 assembler over the **full** chronologically-sorted history, then **filter** the resulting frame to WC2026 rows \u2014 this preserves correct `before_idx` (no-leakage) semantics. Do NOT run the builder on the WC2026 subset alone.\n\nReuse the same `EloResult`/`TeamAbilities` the caller already computed (DI) \u2014 no recompute. `data.elo.seed_wc2026(result, teams)` is available if pre-tournament Elo for not-yet-seen teams is needed.\n\n**Scope guard:** consume Elo/Poisson (Cycle 2), reuse the issue-#9 assembler (no duplicate covariate logic), no model/training (Cycle 4), no Monte Carlo/backtest (Cycle 5). Football-only.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] Given an in-memory martj42 frame containing unplayed `FIFA World Cup` rows, `wc2026_features(...)` returns those rows with the full feature schema and `home_goals`/`away_goals` as `<NA>`.\n- [ ] WC2026 fixture features equal what the full-history issue-#9 builder produces for the same rows (consistency \u2014 a single covariate code path, proven by comparing the filtered subset to the full build).\n- [ ] `live_fixtures_to_df(state)` maps a list of `LiveMatch` to the exact martj42 results column set/dtypes (passes `validate_results_df`), sets `TOURNAMENT=\"FIFA World Cup\"`, `<NA>` goals for remaining fixtures, and **drops `None`-team placeholder slots**.\n- [ ] The entire suite runs with **no network** \u2014 the live path is exercised only via constructed `TournamentState`/`LiveMatch` objects (mirroring `tests/test_live_adapter.py`).\n- [ ] No-key path produces a usable WC2026 frame without any API key.\n- [ ] Deterministic given the seed.\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #7: feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config\n- #9: feat: core per-match feature assembler over martj42 history\n\n## Implementation notes\n- **Create:** `worldcup_playoff/features/wc2026.py`\n  - `wc2026_features(results_df, *, config, elo, abilities, ranking=None) -> pd.DataFrame` \u2014 run the issue-#9 builder on the **full** `results_df` (sorted), then filter to `wc2026_schedule` rows; return only the WC2026 subset.\n  - `live_fixtures_to_df(state: TournamentState, *, include_played: bool = False) -> pd.DataFrame` \u2014 convert `remaining_group_fixtures` (and optionally `played`) `LiveMatch` objects into the martj42 results schema: `DATE` from `utc_date[:10]`, `HOME_TEAM`/`AWAY_TEAM` already normalized, goals `<NA>` for remaining, `TOURNAMENT=\"FIFA World Cup\"`, `NEUTRAL` per the WC2026 (host-cities-neutral) convention. Drop fixtures with `None` teams.\n  - Thin documented wrapper around `data.elo.seed_wc2026` if pre-tournament Elo seeding is needed for not-yet-seen teams.\n- **Modify:** none (exports wired by the final exports task).\n- **Create:** `tests/test_features_wc2026.py` \u2014 BDD naming; in-memory martj42 frame with unplayed WC rows; constructed `TournamentState`/`LiveMatch` (incl. a `None`-team placeholder to assert it is dropped); assert schema-identity with the issue-#9 build and `validate_results_df` passes. No network/I/O.\n- Conventions: `from __future__ import annotations`; `|` unions; `logger = logging.getLogger(__name__)`; reuse the existing assembler \u2014 do not duplicate covariate logic; mypy strict; ruff line-length 100.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: features",
+        "id": "LA_kwDOTBxfPc8AAAACoqMq5A",
+        "name": "area:features"
+      }
+    ],
+    "number": 10,
+    "state": "OPEN",
+    "title": "feat: WC2026 current-state feature frame (no-key martj42 schedule + key-gated live adapter)"
+  },
+  {
+    "body": "## Goal\nThe heart of Cycle 3: a `FeatureBuilder` that **consumes** a martj42 results frame plus a pre-computed `EloResult` and `TeamAbilities` and emits one frozen feature-row value object per match plus a tidy DataFrame. Here Elo (consumed), Dixon-Coles attack/defence (consumed), confederation/ranking (issue #7), and the time-aware form/rest/goal-diff helpers (issue #8) compose into the final **football-only** covariate vector for historical training matches. Elo and Dixon-Coles are passed in (DI) and **never recomputed** here.\n\n## Context\nThis is `worldcup_playoff/features/build.py`, the module named in the cycle objective. Verified contracts the builder consumes:\n- `compute_elo(df, EloConfig) -> EloResult`. `EloResult.match_diffs: list[MatchEloDiff]` is **1:1 with the engine's internally-sorted rows** (same sort reproduced by `sort_chronological` in issue #8). `MatchEloDiff` fields: `date, home_team, away_team, home_elo, away_elo, elo_diff, neutral` \u2014 `home_elo`/`away_elo`/`elo_diff` are already **pre-match** and `elo_diff` is **venue-agnostic** (excludes home advantage). Pull these directly; do not recompute.\n- `fit_dixon_coles(df, PoissonConfig) -> TeamAbilities` with `.attack: dict[str,float]`, `.defence: dict[str,float]`, `home_adv`, `rho`, `intercept`. A single **global** fit \u2192 a lookup table keyed by canonical team name. Attack is mean-zero-normalized, so a missing team \u2192 neutral `0.0`.\n- Input frame schema from `Martj42Loader.load_results()`: `DATE` (object ISO), `HOME_TEAM`/`AWAY_TEAM` (normalized), `HOME_GOALS`/`AWAY_GOALS` (nullable `Int64`, `<NA>` unplayed), `TOURNAMENT`, `NEUTRAL` (bool).\n- Issue #7 supplies `resolve_ranking` / `confederation_of` / `CONFEDERATIONS` and `FeatureBuildConfig`. Issue #8 supplies `sort_chronological`, `recent_form`, `rest_days`, `goal_difference`.\n\n**No-leakage join (the load-bearing invariant):** `sorted_df = sort_chronological(df)` is byte-identical to the Elo engine sort, so `elo.match_diffs[i]` aligns positionally with `sorted_df.iloc[i]`. Add a **per-row alignment guard** asserting `(diff.home_team, diff.away_team, diff.date) == (row.HOME_TEAM, row.AWAY_TEAM, row.DATE)` and raise a clear `ValueError` on drift rather than silently emit leaked features. All time-aware helpers are called with `before_idx=i` so a match never sees its own or later results.\n\n**Scope guard:** consume Elo/Poisson \u2014 do NOT recompute or refit them in `build()`. No model training / `[rf]` (Cycle 4), no Monte Carlo/backtest (Cycle 5). **Football-only:** no socio-economic/market-value/GDP/odds columns ever appear in the output.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] Output frame has exactly one row per input match (including unplayed WC2026 rows) with a stable, documented column set; labels (`home_goals`/`away_goals`) pass through as `<NA>` for unplayed.\n- [ ] **Football-only allow-list test:** the exact output column set is asserted \u2014 no GDP/market-value/odds fields present.\n- [ ] `elo_diff == home_elo - away_elo` for every row (consumed, not recomputed); attack/defence columns equal the values in a hand-built `TeamAbilities` passed in (proves no refit).\n- [ ] Neutral flag round-trips exactly from the input `NEUTRAL` column.\n- [ ] A constructed two-match history shows match-2 features using only match-1 information (end-to-end no-leakage test).\n- [ ] Misaligned Elo/df input raises `ValueError` (alignment-guard test).\n- [ ] Confederation columns are deterministically encoded over the six `CONFEDERATIONS` indicators; a `None` ranking degrades to confederation without breaking the frame.\n- [ ] Deterministic given `FeatureBuildConfig.random_seed`.\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #7: feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config\n- #8: feat: time-aware recent-form, rest-days, and goal-difference helpers\n\n## Implementation notes\n- **Create:** `worldcup_playoff/features/build.py`\n  - Frozen dataclass `MatchFeatures` (the `FittedDistribution`/`MatchEloDiff`-style record): `date, home_team, away_team, neutral, home_elo, away_elo, elo_diff, home_attack, home_defence, away_attack, away_defence, home_form, away_form, home_rest_days: float | None, away_rest_days: float | None, home_goal_diff, away_goal_diff, home_confederation: str | None, away_confederation: str | None, home_ranking: float | None, away_ranking: float | None, home_goals: int | None, away_goals: int | None`. As a pure data record it may exceed the 50-line class budget (same exemption as `MatchEloDiff`).\n  - `FeatureBuilder(config: FeatureBuildConfig, *, ranking=None, confed_map=CONFEDERATION_MAP)` with `build(df, elo, abilities) -> list[MatchFeatures]` and `build_frame(df, elo, abilities) -> pd.DataFrame`. Keep methods < 10 lines by delegating to the issue-#7/#8 helpers.\n  - `to_frame(rows: list[MatchFeatures]) -> pd.DataFrame` \u2014 tidy output; deterministic one-hot of the two confederation columns into the six indicators (fixed column order).\n  - Module-level factory `build_features(df, config=None, *, ranking=None) -> pd.DataFrame` \u2014 convenience that calls `compute_elo` + `fit_dixon_coles` once when the caller does not supply them; the primary `build()` accepts pre-computed `EloResult`/`TeamAbilities` (DI, no recompute when shared across historical + WC2026 frames).\n- **Modify:** none (exports wired by the final exports task).\n- **Create:** `tests/test_features_build.py` \u2014 BDD naming; in-memory martj42-shaped frames; pass a hand-built `TeamAbilities` and a real `compute_elo` result; assert the allow-list, alignment guard (`ValueError`), no-leakage, neutral round-trip, determinism. No network/I/O.\n- Conventions: `from __future__ import annotations`; module-level pure helpers above the class; `|` unions; `logger = logging.getLogger(__name__)`; mypy strict; ruff line-length 100.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: features",
+        "id": "LA_kwDOTBxfPc8AAAACoqMq5A",
+        "name": "area:features"
+      }
+    ],
+    "number": 9,
+    "state": "OPEN",
+    "title": "feat: core per-match feature assembler over martj42 history (features/build.py)"
+  },
+  {
+    "body": "## Goal\nBuild the pure, stateless helpers that compute the **strictly pre-match** time-dependent covariates \u2014 time-weighted recent form, rest days, and windowed goal difference \u2014 over a chronologically sorted match frame. Isolating these as pure functions makes the **no-forward-leakage** guarantee unit-testable in isolation, independent of Elo/Poisson. These are leaf functions consumed by the core assembler.\n\n## Context\nCycle 3 assembles per-match football-only covariates time-aware (a match's features may use only information available **strictly before** that match). The cleanest leakage guarantee is to anchor the whole builder to **one chronological sort** that is byte-identical to the Elo engine's sort, so each helper can read only rows with `index < before_idx`.\n\nKey facts:\n- `worldcup_playoff/data/elo.py` sorts internally by `[\"_d\", \"HOME_TEAM\", \"AWAY_TEAM\", \"HOME_GOALS\", \"AWAY_GOALS\"]` with `kind=\"stable\"`, `na_position=\"last\"`, then `reset_index(drop=True)` (where `_d = pd.to_datetime(df[\"DATE\"], errors=\"coerce\")`). Your `sort_chronological(df)` must **reproduce this exact key** so the sorted frame is positionally aligned 1:1 with `EloResult.match_diffs` (which the sibling assembler consumes).\n- Input frame schema (from `Martj42Loader.load_results()`): `DATE` (object ISO string), `HOME_TEAM`/`AWAY_TEAM` (normalized object), `HOME_GOALS`/`AWAY_GOALS` (nullable `Int64`, `<NA>` for unplayed incl. WC2026), `TOURNAMENT` (object), `NEUTRAL` (bool).\n- Reuse the existing decay primitive `decay_weight(age_days, half_life_days)` from `worldcup_playoff/simulation/poisson.py` (`0.5 ** (age/half_life)`) \u2014 do NOT redefine it.\n- `FeatureBuildConfig` (form_window, form_half_life_days, random_seed) comes from issue #7.\n\n**Scope guard:** pure compute only \u2014 no Elo/Poisson recompute (Cycle 2 consume), no per-match assembly (sibling task), no model/training (Cycle 4), no Monte Carlo (Cycle 5).\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `sort_chronological(df)` reproduces the Elo engine's sort key exactly (stable, `na_position=\"last\"`, reset index) \u2014 verified against a constructed frame.\n- [ ] `recent_form` for a team with a single prior 3-0 win returns the max decayed points-per-game; with no prior matches returns a defined neutral default (e.g. `0.0`) \u2014 pick one and assert it.\n- [ ] **No-leakage:** inserting a *later* match into the frame does not change `recent_form(before_idx=i)` for an earlier `i` (explicit test);... [truncated, 10310 bytes omitted]` — JSON array of Phase 1 issues, each with `issue_number`, `title`, `body`, `labels`
+- `(project constitution unavailable — analyze gate cannot flag constitution violations)` — project constitution / non-negotiable constraints
+- `# Cycle 3 — Feature Assembly
+
+## Objective
+Build `features/build.py`: assemble per-match, football-only covariate vectors combining Elo, Dixon-Coles abilities, FIFA ranking/confederation, recent form, goal difference, rest days, and the neutral-venue flag — for both historical training matches and current WC2026 state.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline, via a Groll-style RF hybrid conditioned on results to date.
+
+## Preceding cycles
+Cycle 1 delivered the data layer (`data/martj42_loader.py`, `data/live.py`, crosswalk, bracket-slotting). Cycle 2 delivered `data/elo.py` (per-team, per-date Elo + Elo-diff) and `simulation/poisson.py` (Dixon-Coles attack/defence abilities). This cycle reads those rating/ability outputs — do not recompute Elo or Poisson fits.
+
+## Following cycles
+Cycle 4 trains the hybrid and baselines on these features; Cycle 5 simulates and evaluates. Do NOT train any model, define `[rf]` hyperparameters, or run backtests here.
+
+## In scope
+- `features/build.py`: a feature builder that emits, per match, the covariates: Elo, Elo-difference, FIFA ranking (with confederation as fallback when ranking is stale/unavailable), time-weighted recent form, goal difference, Dixon-Coles attack/defence abilities, rest days, confederation (UEFA/CONMEBOL/CAF/AFC/CONCACAF/OFC), and neutral-venue flag.
+- Assemble feature frames from martj42 (historical) and from the live WC2026 adapter (current state), joined via the Cycle-1 crosswalk.
+- FIFA-ranking handling: cnc8 data ends 2020-12-10 → use a fresher pull or derive confederation from a static map; ranking absence must degrade to the confederation covariate, not fail.
+- Tests for feature shapes, neutral-flag correctness, fallback behavior, and time-aware (no-leakage) construction.
+
+## Out of scope
+- Any socio-economic / market-value / GDP / yfinance covariates — explicitly excluded by locked decisions.
+- Bookmaker odds as a feature — odds are backtest-baseline only (Cycle 5).
+- Computing Elo or Dixon-Coles abilities — Cycle 2 (consume, don't recompute).
+- Model fitting and the RF hybrid — Cycle 4.
+
+## Acceptance criteria
+- All covariates are football-only; no socio-economic/market-value features and no odds.
+- Builder runs no-key (martj42 + computed Elo/Poisson + static confederation map); live state is optional and key-gated.
+- Features are constructed time-aware with no forward leakage; deterministic given a seed.
+- Feature frames cover both historical training matches and current WC2026 matches.
+- New module ships with tests; the existing ~248-test suite stays green.
+` — current cycle's scope (In scope / Out of scope / Acceptance criteria); empty string in single-cycle mode
+
+---
+
+## Requirements
+
+# Cycle 3 — Feature Assembly
+
+## Objective
+Build `features/build.py`: assemble per-match, football-only covariate vectors combining Elo, Dixon-Coles abilities, FIFA ranking/confederation, recent form, goal difference, rest days, and the neutral-venue flag — for both historical training matches and current WC2026 state.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline, via a Groll-style RF hybrid conditioned on results to date.
+
+## Preceding cycles
+Cycle 1 delivered the data layer (`data/martj42_loader.py`, `data/live.py`, crosswalk, bracket-slotting). Cycle 2 delivered `data/elo.py` (per-team, per-date Elo + Elo-diff) and `simulation/poisson.py` (Dixon-Coles attack/defence abilities). This cycle reads those rating/ability outputs — do not recompute Elo or Poisson fits.
+
+## Following cycles
+Cycle 4 trains the hybrid and baselines on these features; Cycle 5 simulates and evaluates. Do NOT train any model, define `[rf]` hyperparameters, or run backtests here.
+
+## In scope
+- `features/build.py`: a feature builder that emits, per match, the covariates: Elo, Elo-difference, FIFA ranking (with confederation as fallback when ranking is stale/unavailable), time-weighted recent form, goal difference, Dixon-Coles attack/defence abilities, rest days, confederation (UEFA/CONMEBOL/CAF/AFC/CONCACAF/OFC), and neutral-venue flag.
+- Assemble feature frames from martj42 (historical) and from the live WC2026 adapter (current state), joined via the Cycle-1 crosswalk.
+- FIFA-ranking handling: cnc8 data ends 2020-12-10 → use a fresher pull or derive confederation from a static map; ranking absence must degrade to the confederation covariate, not fail.
+- Tests for feature shapes, neutral-flag correctness, fallback behavior, and time-aware (no-leakage) construction.
+
+## Out of scope
+- Any socio-economic / market-value / GDP / yfinance covariates — explicitly excluded by locked decisions.
+- Bookmaker odds as a feature — odds are backtest-baseline only (Cycle 5).
+- Computing Elo or Dixon-Coles abilities — Cycle 2 (consume, don't recompute).
+- Model fitting and the RF hybrid — Cycle 4.
+
+## Acceptance criteria
+- All covariates are football-only; no socio-economic/market-value features and no odds.
+- Builder runs no-key (martj42 + computed Elo/Poisson + static confederation map); live state is optional and key-gated.
+- Features are constructed time-aware with no forward leakage; deterministic given a seed.
+- Feature frames cover both historical training matches and current WC2026 matches.
+- New module ships with tests; the existing ~248-test suite stays green.
+
+
+---
+
+## Issues
+
+[
+  {
+    "body": "## Goal\nExpose a clean, minimal public API from `worldcup_playoff/features/__init__.py`, and add a thin **no-key end-to-end** test proving the default path produces both a historical training frame and a WC2026 frame with **identical columns**. Final, integration-flavored slice that makes the cycle's output importable by Cycle 4.\n\n## Context\nTasks #7\u2013#10 create the package modules (`confederation.py`, `timeaware.py`, `build.py`, `wc2026.py`). This task wires the package's public surface and proves the slices compose. Follow the established export pattern in `worldcup_playoff/data/__init__.py` and `worldcup_playoff/simulation/__init__.py`: explicit `from ... import ...` blocks plus a sorted `__all__` list.\n\nCycle 4 will import from this package, e.g. `from worldcup_playoff.features import build_features, wc2026_features, MatchFeatures`. Keep the surface minimal (YAGNI) \u2014 do **not** pre-wire the pipeline or CLI (those are Cycle 4/5). Do not touch the top-level `worldcup_playoff/__init__.py` unless a downstream import genuinely needs it.\n\nThe existing suite must stay green: there are ~497 test functions across `tests/` today (briefing's \"~248-test suite\" is the headline count); your new package and its tests must not regress any of them.\n\n**Scope guard:** packaging + a smoke test only. No new covariate logic, no model/training (Cycle 4), no Monte Carlo/backtest (Cycle 5).\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `from worldcup_playoff.features import (...)` resolves every name in `__all__` (an \"exports are importable\" test).\n- [ ] `__all__` is sorted and exposes exactly the intended public surface (confederation, time-aware, build, wc2026 symbols) \u2014 no internal helpers leak.\n- [ ] **No-key integration smoke test:** build a small martj42-shaped history (incl. a couple of unplayed `FIFA World Cup` rows); call `compute_elo` + `fit_dixon_coles` once; pass both into the historical builder and `wc2026_features`; assert the two frames share the **same column set** and the WC2026 frame's rows are a subset of the historical frame's rows. Runs with **no network**.\n- [ ] Full suite (existing + new) stays green; `ruff check` (line-length 100) and `mypy --strict` are clean on the new package.\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #7: feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config\n- #8: feat: time-aware recent-form, rest-days, and goal-difference helpers\n- #9: feat: core per-match feature assembler over martj42 history\n- #10: feat: WC2026 current-state feature frame\n\n## Implementation notes\n- **Modify:** `worldcup_playoff/features/__init__.py` \u2014 populate the export surface with an `__all__` list (mirroring `simulation/__init__.py`):\n  - From `confederation`: `CONFEDERATIONS`, `CONFEDERATION_MAP`, `confederation_of`, `resolve_ranking`, `RankingResolution`.\n  - From `timeaware`: `sort_chronological`, `recent_form`, `rest_days`, `goal_difference`.\n  - From `build`: `MatchFeatures`, `FeatureBuilder`, `build_features`, `to_frame`.\n  - From `wc2026`: `wc2026_features`, `live_fixtures_to_df`.\n- **Create:** `tests/test_features_integration.py` \u2014 the no-key end-to-end smoke test described above; in-memory frames only, no network/I/O; assert same-column-set between historical and WC2026 frames and the subset relationship.\n- Conventions: `from __future__ import annotations`; explicit imports + sorted `__all__`; no globals; mypy strict; ruff line-length 100. Do not pre-wire pipeline/CLI.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: features",
+        "id": "LA_kwDOTBxfPc8AAAACoqMq5A",
+        "name": "area:features"
+      }
+    ],
+    "number": 11,
+    "state": "OPEN",
+    "title": "feat: features package public API, exports, and no-key integration smoke test"
+  },
+  {
+    "body": "## Goal\nProduce feature frames for **current WC2026 matches** \u2014 both the unplayed fixtures already present in martj42's `wc2026_schedule` (no-key path) and, optionally, the live `TournamentState` (key-gated). Reuse the core assembler (issue #9) so WC2026 features are **schema-identical** to training features. This satisfies the cycle requirement that feature frames cover both historical training matches **and** current WC2026 matches, with the no-key path fully functional and the live path strictly additive.\n\n## Context\nWC2026 is mid-group-stage; the forecast conditions on results to date. Two sources feed current state:\n- **No-key (default):** martj42 already contains the WC2026 fixture list. `worldcup_playoff/data/martj42_loader.py` exposes `wc2026_schedule(df)` which filters `TOURNAMENT == \"FIFA World Cup\"` (played + unplayed, `<NA>` goals until played). This path requires **zero network**.\n- **Key-gated (optional):** `worldcup_playoff/data/live.py` \u2014 `fetch_tournament_state(client, competition=\"WC\") -> TournamentState`. `TournamentState(played, remaining_group_fixtures, standings)`. `LiveMatch` fields: `id, utc_date, status, stage, group, home_team, away_team` (team names already crosswalk-normalized; **may be `None`** for unresolved knockout slots). `GroupStanding(group, stage, table: list[TableRow])`.\n\n**Critical correctness point:** a WC2026 fixture's pre-match form/rest/Elo must reflect **all prior football**, not just other WC fixtures. So build the issue-#9 assembler over the **full** chronologically-sorted history, then **filter** the resulting frame to WC2026 rows \u2014 this preserves correct `before_idx` (no-leakage) semantics. Do NOT run the builder on the WC2026 subset alone.\n\nReuse the same `EloResult`/`TeamAbilities` the caller already computed (DI) \u2014 no recompute. `data.elo.seed_wc2026(result, teams)` is available if pre-tournament Elo for not-yet-seen teams is needed.\n\n**Scope guard:** consume Elo/Poisson (Cycle 2), reuse the issue-#9 assembler (no duplicate covariate logic), no model/training (Cycle 4), no Monte Carlo/backtest (Cycle 5). Football-only.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] Given an in-memory martj42 frame containing unplayed `FIFA World Cup` rows, `wc2026_features(...)` returns those rows with the full feature schema and `home_goals`/`away_goals` as `<NA>`.\n- [ ] WC2026 fixture features equal what the full-history issue-#9 builder produces for the same rows (consistency \u2014 a single covariate code path, proven by comparing the filtered subset to the full build).\n- [ ] `live_fixtures_to_df(state)` maps a list of `LiveMatch` to the exact martj42 results column set/dtypes (passes `validate_results_df`), sets `TOURNAMENT=\"FIFA World Cup\"`, `<NA>` goals for remaining fixtures, and **drops `None`-team placeholder slots**.\n- [ ] The entire suite runs with **no network** \u2014 the live path is exercised only via constructed `TournamentState`/`LiveMatch` objects (mirroring `tests/test_live_adapter.py`).\n- [ ] No-key path produces a usable WC2026 frame without any API key.\n- [ ] Deterministic given the seed.\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #7: feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config\n- #9: feat: core per-match feature assembler over martj42 history\n\n## Implementation notes\n- **Create:** `worldcup_playoff/features/wc2026.py`\n  - `wc2026_features(results_df, *, config, elo, abilities, ranking=None) -> pd.DataFrame` \u2014 run the issue-#9 builder on the **full** `results_df` (sorted), then filter to `wc2026_schedule` rows; return only the WC2026 subset.\n  - `live_fixtures_to_df(state: TournamentState, *, include_played: bool = False) -> pd.DataFrame` \u2014 convert `remaining_group_fixtures` (and optionally `played`) `LiveMatch` objects into the martj42 results schema: `DATE` from `utc_date[:10]`, `HOME_TEAM`/`AWAY_TEAM` already normalized, goals `<NA>` for remaining, `TOURNAMENT=\"FIFA World Cup\"`, `NEUTRAL` per the WC2026 (host-cities-neutral) convention. Drop fixtures with `None` teams.\n  - Thin documented wrapper around `data.elo.seed_wc2026` if pre-tournament Elo seeding is needed for not-yet-seen teams.\n- **Modify:** none (exports wired by the final exports task).\n- **Create:** `tests/test_features_wc2026.py` \u2014 BDD naming; in-memory martj42 frame with unplayed WC rows; constructed `TournamentState`/`LiveMatch` (incl. a `None`-team placeholder to assert it is dropped); assert schema-identity with the issue-#9 build and `validate_results_df` passes. No network/I/O.\n- Conventions: `from __future__ import annotations`; `|` unions; `logger = logging.getLogger(__name__)`; reuse the existing assembler \u2014 do not duplicate covariate logic; mypy strict; ruff line-length 100.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: features",
+        "id": "LA_kwDOTBxfPc8AAAACoqMq5A",
+        "name": "area:features"
+      }
+    ],
+    "number": 10,
+    "state": "OPEN",
+    "title": "feat: WC2026 current-state feature frame (no-key martj42 schedule + key-gated live adapter)"
+  },
+  {
+    "body": "## Goal\nThe heart of Cycle 3: a `FeatureBuilder` that **consumes** a martj42 results frame plus a pre-computed `EloResult` and `TeamAbilities` and emits one frozen feature-row value object per match plus a tidy DataFrame. Here Elo (consumed), Dixon-Coles attack/defence (consumed), confederation/ranking (issue #7), and the time-aware form/rest/goal-diff helpers (issue #8) compose into the final **football-only** covariate vector for historical training matches. Elo and Dixon-Coles are passed in (DI) and **never recomputed** here.\n\n## Context\nThis is `worldcup_playoff/features/build.py`, the module named in the cycle objective. Verified contracts the builder consumes:\n- `compute_elo(df, EloConfig) -> EloResult`. `EloResult.match_diffs: list[MatchEloDiff]` is **1:1 with the engine's internally-sorted rows** (same sort reproduced by `sort_chronological` in issue #8). `MatchEloDiff` fields: `date, home_team, away_team, home_elo, away_elo, elo_diff, neutral` \u2014 `home_elo`/`away_elo`/`elo_diff` are already **pre-match** and `elo_diff` is **venue-agnostic** (excludes home advantage). Pull these directly; do not recompute.\n- `fit_dixon_coles(df, PoissonConfig) -> TeamAbilities` with `.attack: dict[str,float]`, `.defence: dict[str,float]`, `home_adv`, `rho`, `intercept`. A single **global** fit \u2192 a lookup table keyed by canonical team name. Attack is mean-zero-normalized, so a missing team \u2192 neutral `0.0`.\n- Input frame schema from `Martj42Loader.load_results()`: `DATE` (object ISO), `HOME_TEAM`/`AWAY_TEAM` (normalized), `HOME_GOALS`/`AWAY_GOALS` (nullable `Int64`, `<NA>` unplayed), `TOURNAMENT`, `NEUTRAL` (bool).\n- Issue #7 supplies `resolve_ranking` / `confederation_of` / `CONFEDERATIONS` and `FeatureBuildConfig`. Issue #8 supplies `sort_chronological`, `recent_form`, `rest_days`, `goal_difference`.\n\n**No-leakage join (the load-bearing invariant):** `sorted_df = sort_chronological(df)` is byte-identical to the Elo engine sort, so `elo.match_diffs[i]` aligns positionally with `sorted_df.iloc[i]`. Add a **per-row alignment guard** asserting `(diff.home_team, diff.away_team, diff.date) == (row.HOME_TEAM, row.AWAY_TEAM, row.DATE)` and raise a clear `ValueError` on drift rather than silently emit leaked features. All time-aware helpers are called with `before_idx=i` so a match never sees its own or later results.\n\n**Scope guard:** consume Elo/Poisson \u2014 do NOT recompute or refit them in `build()`. No model training / `[rf]` (Cycle 4), no Monte Carlo/backtest (Cycle 5). **Football-only:** no socio-economic/market-value/GDP/odds columns ever appear in the output.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] Output frame has exactly one row per input match (including unplayed WC2026 rows) with a stable, documented column set; labels (`home_goals`/`away_goals`) pass through as `<NA>` for unplayed.\n- [ ] **Football-only allow-list test:** the exact output column set is asserted \u2014 no GDP/market-value/odds fields present.\n- [ ] `elo_diff == home_elo - away_elo` for every row (consumed, not recomputed); attack/defence columns equal the values in a hand-built `TeamAbilities` passed in (proves no refit).\n- [ ] Neutral flag round-trips exactly from the input `NEUTRAL` column.\n- [ ] A constructed two-match history shows match-2 features using only match-1 information (end-to-end no-leakage test).\n- [ ] Misaligned Elo/df input raises `ValueError` (alignment-guard test).\n- [ ] Confederation columns are deterministically encoded over the six `CONFEDERATIONS` indicators; a `None` ranking degrades to confederation without breaking the frame.\n- [ ] Deterministic given `FeatureBuildConfig.random_seed`.\n- [ ] All tests pass\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #7: feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config\n- #8: feat: time-aware recent-form, rest-days, and goal-difference helpers\n\n## Implementation notes\n- **Create:** `worldcup_playoff/features/build.py`\n  - Frozen dataclass `MatchFeatures` (the `FittedDistribution`/`MatchEloDiff`-style record): `date, home_team, away_team, neutral, home_elo, away_elo, elo_diff, home_attack, home_defence, away_attack, away_defence, home_form, away_form, home_rest_days: float | None, away_rest_days: float | None, home_goal_diff, away_goal_diff, home_confederation: str | None, away_confederation: str | None, home_ranking: float | None, away_ranking: float | None, home_goals: int | None, away_goals: int | None`. As a pure data record it may exceed the 50-line class budget (same exemption as `MatchEloDiff`).\n  - `FeatureBuilder(config: FeatureBuildConfig, *, ranking=None, confed_map=CONFEDERATION_MAP)` with `build(df, elo, abilities) -> list[MatchFeatures]` and `build_frame(df, elo, abilities) -> pd.DataFrame`. Keep methods < 10 lines by delegating to the issue-#7/#8 helpers.\n  - `to_frame(rows: list[MatchFeatures]) -> pd.DataFrame` \u2014 tidy output; deterministic one-hot of the two confederation columns into the six indicators (fixed column order).\n  - Module-level factory `build_features(df, config=None, *, ranking=None) -> pd.DataFrame` \u2014 convenience that calls `compute_elo` + `fit_dixon_coles` once when the caller does not supply them; the primary `build()` accepts pre-computed `EloResult`/`TeamAbilities` (DI, no recompute when shared across historical + WC2026 frames).\n- **Modify:** none (exports wired by the final exports task).\n- **Create:** `tests/test_features_build.py` \u2014 BDD naming; in-memory martj42-shaped frames; pass a hand-built `TeamAbilities` and a real `compute_elo` result; assert the allow-list, alignment guard (`ValueError`), no-leakage, neutral round-trip, determinism. No network/I/O.\n- Conventions: `from __future__ import annotations`; module-level pure helpers above the class; `|` unions; `logger = logging.getLogger(__name__)`; mypy strict; ruff line-length 100.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: features",
+        "id": "LA_kwDOTBxfPc8AAAACoqMq5A",
+        "name": "area:features"
+      }
+    ],
+    "number": 9,
+    "state": "OPEN",
+    "title": "feat: core per-match feature assembler over martj42 history (features/build.py)"
+  },
+  {
+    "body": "## Goal\nBuild the pure, stateless helpers that compute the **strictly pre-match** time-dependent covariates \u2014 time-weighted recent form, rest days, and windowed goal difference \u2014 over a chronologically sorted match frame. Isolating these as pure functions makes the **no-forward-leakage** guarantee unit-testable in isolation, independent of Elo/Poisson. These are leaf functions consumed by the core assembler.\n\n## Context\nCycle 3 assembles per-match football-only covariates time-aware (a match's features may use only information available **strictly before** that match). The cleanest leakage guarantee is to anchor the whole builder to **one chronological sort** that is byte-identical to the Elo engine's sort, so each helper can read only rows with `index < before_idx`.\n\nKey facts:\n- `worldcup_playoff/data/elo.py` sorts internally by `[\"_d\", \"HOME_TEAM\", \"AWAY_TEAM\", \"HOME_GOALS\", \"AWAY_GOALS\"]` with `kind=\"stable\"`, `na_position=\"last\"`, then `reset_index(drop=True)` (where `_d = pd.to_datetime(df[\"DATE\"], errors=\"coerce\")`). Your `sort_chronological(df)` must **reproduce this exact key** so the sorted frame is positionally aligned 1:1 with `EloResult.match_diffs` (which the sibling assembler consumes).\n- Input frame schema (from `Martj42Loader.load_results()`): `DATE` (object ISO string), `HOME_TEAM`/`AWAY_TEAM` (normalized object), `HOME_GOALS`/`AWAY_GOALS` (nullable `Int64`, `<NA>` for unplayed incl. WC2026), `TOURNAMENT` (object), `NEUTRAL` (bool).\n- Reuse the existing decay primitive `decay_weight(age_days, half_life_days)` from `worldcup_playoff/simulation/poisson.py` (`0.5 ** (age/half_life)`) \u2014 do NOT redefine it.\n- `FeatureBuildConfig` (form_window, form_half_life_days, random_seed) comes from issue #7.\n\n**Scope guard:** pure compute only \u2014 no Elo/Poisson recompute (Cycle 2 consume), no per-match assembly (sibling task), no model/training (Cycle 4), no Monte Carlo (Cycle 5).\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `sort_chronological(df)` reproduces the Elo engine's sort key exactly (stable, `na_position=\"last\"`, reset index) \u2014 verified against a constructed frame.\n- [ ] `recent_form` for a team with a single prior 3-0 win returns the max decayed points-per-game; with no prior matches returns a defined neutral default (e.g. `0.0`) \u2014 pick one and assert it.\n- [ ] **No-leakage:** inserting a *later* match into the frame does not change `recent_form(before_idx=i)` for an earlier `i` (explicit test);... [truncated, 10310 bytes omitted]
+
+---
+
+## Constitution
+
+(project constitution unavailable — analyze gate cannot flag constitution violations)
+
+---
+
+## Cycle Scope (current cycle only)
+
+# Cycle 3 — Feature Assembly
+
+## Objective
+Build `features/build.py`: assemble per-match, football-only covariate vectors combining Elo, Dixon-Coles abilities, FIFA ranking/confederation, recent form, goal difference, rest days, and the neutral-venue flag — for both historical training matches and current WC2026 state.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, aiming to match or beat the bookmaker baseline, via a Groll-style RF hybrid conditioned on results to date.
+
+## Preceding cycles
+Cycle 1 delivered the data layer (`data/martj42_loader.py`, `data/live.py`, crosswalk, bracket-slotting). Cycle 2 delivered `data/elo.py` (per-team, per-date Elo + Elo-diff) and `simulation/poisson.py` (Dixon-Coles attack/defence abilities). This cycle reads those rating/ability outputs — do not recompute Elo or Poisson fits.
+
+## Following cycles
+Cycle 4 trains the hybrid and baselines on these features; Cycle 5 simulates and evaluates. Do NOT train any model, define `[rf]` hyperparameters, or run backtests here.
+
+## In scope
+- `features/build.py`: a feature builder that emits, per match, the covariates: Elo, Elo-difference, FIFA ranking (with confederation as fallback when ranking is stale/unavailable), time-weighted recent form, goal difference, Dixon-Coles attack/defence abilities, rest days, confederation (UEFA/CONMEBOL/CAF/AFC/CONCACAF/OFC), and neutral-venue flag.
+- Assemble feature frames from martj42 (historical) and from the live WC2026 adapter (current state), joined via the Cycle-1 crosswalk.
+- FIFA-ranking handling: cnc8 data ends 2020-12-10 → use a fresher pull or derive confederation from a static map; ranking absence must degrade to the confederation covariate, not fail.
+- Tests for feature shapes, neutral-flag correctness, fallback behavior, and time-aware (no-leakage) construction.
+
+## Out of scope
+- Any socio-economic / market-value / GDP / yfinance covariates — explicitly excluded by locked decisions.
+- Bookmaker odds as a feature — odds are backtest-baseline only (Cycle 5).
+- Computing Elo or Dixon-Coles abilities — Cycle 2 (consume, don't recompute).
+- Model fitting and the RF hybrid — Cycle 4.
+
+## Acceptance criteria
+- All covariates are football-only; no socio-economic/market-value features and no odds.
+- Builder runs no-key (martj42 + computed Elo/Poisson + static confederation map); live state is optional and key-gated.
+- Features are constructed time-aware with no forward leakage; deterministic given a seed.
+- Feature frames cover both historical training matches and current WC2026 matches.
+- New module ships with tests; the existing ~248-test suite stays green.
+
+
+---
+
+## Prompt
+
+You are a senior reviewer running the Analyze gate. Emit a deterministic, machine-parseable JSON report. The orchestrator parses your output as JSON without an LLM round-trip, so the schema is non-negotiable.
+
+This gate runs after Phase 1 (issue creation) and before any Phase 3/4 implementation spend.
+
+### What requirements to check
+
+**When `Cycle Scope` section is non-empty** (multi-cycle mode):
+- Check the **Issues** against the `## Acceptance criteria` section inside **Cycle Scope only**. This is the authoritative checklist for this cycle.
+- The full **Requirements** document is background context for constitution checks — do NOT generate coverage-gap findings against the full `## Scope`, `### N.` subsections, or `## Global acceptance criteria` from it. Those belong to future cycles.
+- Only flag gaps for acceptance criteria explicitly listed in the Cycle Scope's `## Acceptance criteria` section.
+
+**When `Cycle Scope` section is empty** (single-cycle mode):
+- Check the **Issues** against the full **Requirements** document as normal, including all `## Global acceptance criteria` rows.
+
+### What to detect
+
+1. **Coverage gaps** (`coverage-gap`) — acceptance criteria in the **active checklist** (see above) with no covering issue.
+2. **Duplications** (`duplication`) — two or more issues whose scope substantially overlaps.
+3. **Ambiguities** (`ambiguity`) — issues whose acceptance criteria are missing, vague, or untestable.
+4. **Constitution violations** (`constitution-violation`) — any issue that would violate the **Constitution**.
+
+### Severity and verdict rules
+
+- `critical` — blocks the pipeline. Any `constitution-violation` MUST be `critical`. Coverage gaps for items in the **active checklist** that are squarely in scope for this cycle are `critical`.
+- `warning` — non-blocking. Coverage gaps for items outside this cycle's active checklist, most duplications.
+- `info` — observational; safe to ignore.
+- `verdict` is `blocked` when **any** finding has severity `critical`; otherwise `pass`.
+
+A constitution / non-negotiable violation MUST be severity `critical` and MUST force `verdict=blocked` — this rule cannot be relaxed.
+
+### Output format — strict JSON, machine-parseable
+
+Emit a single JSON object. No prose, no code fences outside this block, nothing before or after the object except the trailing fix hint described below.
+
+```json
+{
+  "verdict": "pass | blocked",
+  "findings": [
+    {
+      "category": "coverage-gap | duplication | ambiguity | constitution-violation",
+      "severity": "critical | warning | info",
+      "issues": [123, 124],
+      "anchor": "Goal 3 / ### 2. Auth / Global acceptance criteria #4",
+      "summary": "One-line description of the problem."
+    }
+  ],
+  "fix_hint": "Human-readable next step (one or two sentences)."
+}
+```
+
+- `verdict` is exactly `pass` or `blocked` — no other strings.
+- `findings` is an empty list (`[]`) when the cycle is clean. Do **not** omit the key.
+- `issues` is a list of integer issue numbers; use `[]` for findings not tied to a specific issue (e.g. a missing-coverage gap).
+- `anchor` references a section/bullet/line from `Requirements` or `Constitution` so the operator can locate the problem without re-reading everything.
+- `summary` is one short sentence.
+- `fix_hint` is the **human-readable fix hint** that closes the report. Place it inside the JSON object as the final key. Do not emit it as free prose outside the object — the parser will reject mixed output.
+
+### Wrong vs Right
+
+Wrong (free prose, ambiguous verdict, unparseable):
+- ~~"There seem to be some coverage gaps. I'd suggest looking at issues 4 and 5."~~
+
+Right (strict JSON, deterministic, machine-parseable):
+- `{"verdict": "blocked", "findings": [{"category": "constitution-violation", "severity": "critical", "issues": [12], "anchor": "Non-negotiable #1 (Max subscription only)", "summary": "Issue 12 adds ANTHROPIC_API_KEY env var, violating the Max-only constraint."}], "fix_hint": "Remove the API key path from issue 12 and rely on the Max subscription only."}`
+
+### Constraints
+
+- **YOLO mode**: act without asking for confirmation.
+- **Strict JSON only** — any prose outside the single JSON object breaks the downstream parser.
+- **Constitution violations are always `critical`** and **always force `verdict=blocked`** — this rule cannot be relaxed under any condition.
+- **Schema is rigid**: keys, types, and enum values are exactly as documented above. Do not add fields.
+- **The report ends with `fix_hint`** inside the JSON object — a human-readable, one- or two-sentence next step the operator can act on.
+- **Read-only**: this prompt has no write tools. Do not propose code edits inline — only summaries + anchors.
+- **Be conservative**: when a finding is borderline, prefer `warning` over `critical`. Reserve `critical` for true blockers (constitution violations + active-checklist coverage gaps for in-scope items).
+
+2026-06-23 23:56:33,293 INFO msg #1: session bound to model claude-opus-4-8 (SystemMessage ground truth)
+2026-06-23 23:56:33,293 DEBUG msg #1: SystemMessage subtype=init type='system' subtype='init' cwd='/Volumes/External SSD/worldcup-2026-prediction' session_id='5f7a7555-2a2a-4e8b-a550-a61b500bf880' tools=['Task', 'AskUserQuestion', 'Bash', 'CronCreate', 'CronDelete', 'CronList', 'DesignSync', 'Edit', 'EnterPlanMode', 'EnterWorktree', 'ExitPlanMode', 'ExitWorktree', 'Glob', 'Grep', 'Monitor', 'NotebookEdit', 'PushNotification', 'Read', 'RemoteTrigger', 'ScheduleWakeup', 'Skill', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskOutput', 'TaskStop', 'TaskUpdate', 'ToolSearch', 'WebFetch', 'WebSearch', 'Workflow', 'Write'] mcp_servers=[] model='claude-opus-4-8' permissionMode='bypassPermissions' slash_commands=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator', 'clear', 'compact', 'context', 'heapdump', 'init', 'reload-skills', 'review', 'security-review', 'usage-credits', 'extra-usage', 'usage', 'insights', 'goal', 'team-onboarding'] apiKeySource='none' claude_code_version='2.1.175' output_style='default' agents=['claude', 'Explore', 'general-purpose', 'Plan', 'statusline-setup'] skills=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator'] plugins=[] analytics_disabled=False product_feedback_disabled=False uuid='d9335352-b257-4342-b4e8-de4ba47c05ba' fast_mode_state='off'
+2026-06-23 23:56:34,936 INFO msg #2: RateLimitEvent
+2026-06-23 23:56:34,937 INFO RateLimitEvent: overage_status=rejected status=allowed rate_limit_type=five_hour utilization=None decision=continue
+2026-06-23 23:56:36,397 DEBUG msg #3: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=50 estimated_tokens_delta=50 uuid='3aed4574-5a9d-4da5-9914-e58b382ab3d4' session_id='5f7a7555-2a2a-4e8b-a550-a61b500bf880'
+2026-06-23 23:56:37,831 DEBUG msg #4: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=150 estimated_tokens_delta=100 uuid='1c75df5a-aaab-482c-9feb-7ecf9df7b87d' session_id='5f7a7555-2a2a-4e8b-a550-a61b500bf880'
+2026-06-23 23:56:39,162 DEBUG msg #5: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=300 estimated_tokens_delta=150 uuid='39934ff3-2db7-4d41-8c88-be04468dff1e' session_id='5f7a7555-2a2a-4e8b-a550-a61b500bf880'
+2026-06-23 23:56:40,596 DEBUG msg #6: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=400 estimated_tokens_delta=100 uuid='c2a7d014-beb0-4cda-9ef2-78f67e3afa23' session_id='5f7a7555-2a2a-4e8b-a550-a61b500bf880'
+2026-06-23 23:56:42,031 DEBUG msg #7: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=550 estimated_tokens_delta=150 uuid='ff76f780-067c-41db-911c-7e9eb50c377d' session_id='5f7a7555-2a2a-4e8b-a550-a61b500bf880'
+2026-06-23 23:56:43,974 DEBUG msg #8: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=650 estimated_tokens_delta=100 uuid='22fa9306-e496-47df-a856-324c1838c6d1' session_id='5f7a7555-2a2a-4e8b-a550-a61b500bf880'
+2026-06-23 23:56:43,976 DEBUG msg #9: assistant (tool_use) thinking: 
+2026-06-23 23:56:44,525 INFO msg #10: assistant (212 chars)
+```json
+{
+  "verdict": "pass",
+  "findings": [],
+  "fix_hint": "All five Cycle 3 acceptance criteria are covered by issues #7–#11 with testable criteria and no overlapping scope; proceed to implementation."
+}
+```
+2026-06-23 23:56:44,618 INFO msg #11: ResultMessage (tokens_in=2487 tokens_out=786 cache_read=16890 cache_write=29893 is_error=False subtype=success stop_reason=end_turn num_turns=1)
+2026-06-23 23:56:45,140 INFO SDK session complete.
+2026-06-23 23:56:45,143 INFO Phase analyze-gate complete: in=2487 cache_read=16890 cache_write=29893 out=786 total=50056

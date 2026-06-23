@@ -1,9 +1,9 @@
 {
   "mode": "multi-cycle",
   "started_at": "2026-06-23T18:24:44Z",
-  "updated_at": "2026-06-23T21:48:38Z",
+  "updated_at": "2026-06-23T23:35:54Z",
   "state_version": 2,
-  "current_cycle": 2,
+  "current_cycle": 3,
   "cycles": [
     {
       "id": 1,
@@ -261,8 +261,8 @@
       "name": "Statistical Abilities",
       "milestone_number": 2,
       "milestone_title": "Cycle 2 \u2014 Elo & Dixon-Coles Estimation",
-      "status": "open",
-      "phase": 65,
+      "status": "completed",
+      "phase": 7,
       "issues": [
         {
           "number": 5,
@@ -379,19 +379,30 @@
           "cache_write_1h": 83655,
           "compaction_events": 0,
           "clear_events": 0
+        },
+        "phase7": {
+          "input": 2487,
+          "output": 102,
+          "cache_read": 15328,
+          "cache_write": 10578,
+          "num_turns": 1,
+          "cache_write_5m": 0,
+          "cache_write_1h": 10578,
+          "compaction_events": 0,
+          "clear_events": 0
         }
       },
       "started_at": "2026-06-23T20:52:37Z",
-      "finished_at": null,
+      "finished_at": "2026-06-23T21:48:45Z",
       "cache_telemetry": {
-        "input": 20875,
-        "output": 212281,
-        "cache_read": 13678977,
-        "cache_write": 593167,
-        "cache_write_1h": 356872,
+        "input": 23362,
+        "output": 212383,
+        "cache_read": 13694305,
+        "cache_write": 603745,
+        "cache_write_1h": 367450,
         "cache_write_5m": 236295,
-        "cache_hit_pct": 95.7,
-        "wall_seconds": 2477.88255274907
+        "cache_hit_pct": 95.6,
+        "wall_seconds": 2482.0612814990454
       },
       "phase2_batch_id": null,
       "ollama_model": null,
@@ -476,11 +487,82 @@
     {
       "id": 3,
       "name": "Feature Assembly",
-      "milestone_number": null,
+      "milestone_number": 3,
       "milestone_title": "Cycle 3 \u2014 Football-Only Covariates",
       "status": "open",
-      "phase": 0,
-      "issues": [],
+      "phase": 65,
+      "issues": [
+        {
+          "number": 7,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:features"
+          ],
+          "reviewed": true,
+          "comments": "",
+          "title": "feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config"
+        },
+        {
+          "number": 8,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:features"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-23T22:00:15Z):\n> The alignment contract this cycle depends on \u2014 the chronologically sorted frame being positionally 1:1 with EloResult.match_diffs \u2014 hinges on sort_chronological reproducing the Elo engine's sort byte-for-byte. But the plan has you declare a *new* sort-key constant in timeaware.py rather than reuse the engine's. Two independent literals will silently drift if elo.py's sort key ever changes, and the only symptom is leaked/misaligned features downstream. Fix: promote elo.py's private _SORT_COLS to a public name (e.g. elo.SORT_COLS) and import it here instead of re-declaring the list; replicate the full transform exactly \u2014 assign _d=pd.to_datetime(df['DATE'], errors='coerce'), sort_values(SORT_COLS, kind='stable', na_position='last'), drop _d, reset_index(drop=True). Add a test that runs a constructed frame through both the engine's ordering and sort_chronological and asserts row-for-row equality, so any future divergence fails loudly here rather than only in #9's runtime alignment guard. Separately, make the reference date for recent_form's decay explicit: anchor age_days to the *current* match date (D \u2212 prior_match_date) so 'time-weighted' is unambiguous and testable.",
+          "title": "feat: time-aware recent-form, rest-days, and goal-difference helpers (no forward leakage)"
+        },
+        {
+          "number": 9,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:features"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-23T22:00:17Z):\n> Performance-as-correctness risk in the per-row composition. As specified, recent_form, goal_difference, and rest_days each scan the prefix rows[:before_idx] for the team, and build() invokes them for both teams on every match. Over the full martj42 history (~tens of thousands of internationals) that is O(N\u00b2) prefix scans \u2014 a single build can run for many minutes and will dominate Cycle-5 backtests that rebuild repeatedly, with no runtime bound in the acceptance criteria to catch it. Root cause: re-deriving each team's prior matches from scratch on every row. Fix: make one chronological pass that maintains per-team incremental state (a rolling deque of recent played results + running goal-diff + last-played date), or build a per-team appearance index dict[team] -> list[(idx, date, points, goal_diff)] once and have the helpers take a windowed slice (O(window)) instead of an O(before_idx) scan. Keep the pure leaf helpers for the #8 leakage unit tests, but route build() through the indexed path so there is one tested code path rather than a fast production path diverging from the tested-but-slow helpers. Minor: MatchFeatures labels are typed int | None while inputs are nullable Int64 \u2014 convert pd.NA to None explicitly so the dataclass round-trips (the frame can keep <NA>).",
+          "title": "feat: core per-match feature assembler over martj42 history (features/build.py)"
+        },
+        {
+          "number": 10,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:medium",
+            "phase:implement",
+            "agent:python-pro",
+            "area:features"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-23T22:00:18Z):\n> The plan is right to build over the full chronologically-sorted history and then filter to WC2026 rows \u2014 that preserves correct before_idx (no-leakage) semantics, and the explicit 'do NOT run the builder on the WC2026 subset alone' guard is the correct call. But there is a concrete gap: the assembler's MatchFeatures / output frame exposes no tournament, stage, or match-id column, so there is no key to select the WC2026 rows after building. Do not re-derive the subset by joining on (date, home, away) \u2014 neutral-site duplicates and same-day fixtures can collide and silently mis-select. Fix: compute the mask positionally \u2014 sort_chronological(df)['TOURNAMENT'] == 'FIFA World Cup' is row-for-row aligned with the output frame, so apply that boolean mask by position; alternatively coordinate with the assembler to pass through a non-covariate 'tournament' identifier column (metadata, not a feature, so it stays inside the football-only allow-list). Add a test asserting a WC2026 fixture's row carries pre-match form/rest/Elo that reflects the team's non-WC prior matches, proving the full-history build (not a WC-only build) produced it. The no-key martj42 path and the key-gated live path matching the verified TournamentState(played, remaining_group_fixtures, standings) shape are otherwise well-specified.",
+          "title": "feat: WC2026 current-state feature frame (no-key martj42 schedule + key-gated live adapter)"
+        },
+        {
+          "number": 11,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:medium",
+            "phase:implement",
+            "agent:python-pro",
+            "area:features"
+          ],
+          "reviewed": true,
+          "comments": "",
+          "title": "feat: features package public API, exports, and no-key integration smoke test"
+        }
+      ],
       "commit_sha": null,
       "depends_on": [
         1,
@@ -497,31 +579,124 @@
           "effort": "low"
         }
       ],
-      "base_commit": null,
-      "token_usage": {},
-      "started_at": null,
+      "base_commit": "d58e18d5690e47d2bd5bb031af0939bbc470e4f1",
+      "token_usage": {
+        "phase1": {
+          "input": 3123,
+          "output": 23127,
+          "cache_read": 1281501,
+          "cache_write": 104516,
+          "num_turns": 25,
+          "cache_write_5m": 0,
+          "cache_write_1h": 104516,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase2": {
+          "input": 5,
+          "output": 14844,
+          "cache_read": 118748,
+          "cache_write": 50839,
+          "num_turns": 7,
+          "cache_write_5m": 0,
+          "cache_write_1h": 50839,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase3_4": {
+          "input": 4370,
+          "output": 310444,
+          "cache_read": 12988925,
+          "cache_write": 908697,
+          "num_turns": 186,
+          "cache_write_5m": 908697,
+          "cache_write_1h": 0,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase5": {
+          "input": 3251,
+          "output": 31394,
+          "cache_read": 1473872,
+          "cache_write": 123405,
+          "num_turns": 39,
+          "cache_write_5m": 0,
+          "cache_write_1h": 123405,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase6": {
+          "input": 177,
+          "output": 9724,
+          "cache_read": 1093006,
+          "cache_write": 36817,
+          "num_turns": 34,
+          "cache_write_5m": 0,
+          "cache_write_1h": 36817,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "mav": {
+          "input": 37,
+          "output": 7925,
+          "cache_read": 469555,
+          "cache_write": 129517,
+          "num_turns": 9,
+          "cache_write_5m": 0,
+          "cache_write_1h": 129517,
+          "compaction_events": 0,
+          "clear_events": 0
+        }
+      },
+      "started_at": "2026-06-23T21:48:47Z",
       "finished_at": null,
       "cache_telemetry": {
-        "input": 0,
-        "output": 0,
-        "cache_read": 0,
-        "cache_write": 0,
-        "cache_write_1h": 0,
-        "cache_write_5m": 0,
-        "cache_hit_pct": 0.0,
-        "wall_seconds": 0
+        "input": 10963,
+        "output": 397458,
+        "cache_read": 17425607,
+        "cache_write": 1353791,
+        "cache_write_1h": 445094,
+        "cache_write_5m": 908697,
+        "cache_hit_pct": 92.7,
+        "wall_seconds": 3833.156605707016
       },
       "phase2_batch_id": null,
       "ollama_model": null,
       "gemini_model": null,
       "codex_model": null,
-      "cache_prewarmed": false,
-      "cache_ttl_probe": null,
-      "phase6_5": null,
+      "cache_prewarmed": true,
+      "cache_ttl_probe": "1h",
+      "phase6_5": {
+        "attempt": 0,
+        "last_tier": "DONE",
+        "tiers_passed": [
+          "T0"
+        ],
+        "tiers_failed": [],
+        "tiers_skipped": [
+          "T1",
+          "T2",
+          "T3",
+          "T4"
+        ],
+        "skip_reasons": {
+          "T1": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+          "T2": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+          "T3": "no frontend",
+          "T4": "no docker"
+        }
+      },
       "vigil_triggered": false,
       "phase8": null,
       "phase4_bon": [],
-      "phase6_mav": null,
+      "phase6_mav": {
+        "aspects_passed": [
+          "acceptance_criteria",
+          "security"
+        ],
+        "aspects_failed": [],
+        "overall_pass": true
+      },
       "vg_config": null,
       "cycle5_decisions": [],
       "tool_search_enabled": false,
@@ -533,10 +708,37 @@
       "github_mode": true,
       "commit_enabled": true,
       "static_blocker": false,
-      "static_status": null,
+      "static_status": "scanned",
       "mutation_score": null,
-      "pbt_result": null,
-      "model_cost": {}
+      "pbt_result": {
+        "passed": 27,
+        "failed": 0
+      },
+      "model_cost": {
+        "phase3_4": {
+          "claude-haiku-4-5-20251001": {
+            "cost_usd": 0.011991,
+            "input_tokens": 11546,
+            "output_tokens": 89,
+            "cache_read": 0,
+            "cache_write": 0
+          },
+          "claude-sonnet-4-6": {
+            "cost_usd": 14.671086,
+            "input_tokens": 140536,
+            "output_tokens": 319884,
+            "cache_read": 13192740,
+            "cache_write": 915566
+          },
+          "claude-opus-4-8": {
+            "cost_usd": 0.9388890000000001,
+            "input_tokens": 5,
+            "output_tokens": 14844,
+            "cache_read": 118748,
+            "cache_write": 50839
+          }
+        }
+      }
     },
     {
       "id": 4,
@@ -705,7 +907,7 @@
     }
   },
   "session_mode": "shared",
-  "client_alive_at": "2026-06-23T20:52:37+00:00",
+  "client_alive_at": "2026-06-23T21:48:47+00:00",
   "phase2_batch_id": null,
   "repo": {
     "host": "github.com",

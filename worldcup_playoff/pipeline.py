@@ -172,6 +172,7 @@ class Pipeline:
         details_path = self._root / self._config.data.match_details_csv_path
         if details_path.exists():
             details_df = pd.read_csv(details_path)
+            assert details_df is not None
             logger.info(
                 "Loaded match details from %s (%d rows)", details_path, len(details_df)
             )

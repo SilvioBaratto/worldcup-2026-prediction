@@ -385,4 +385,5 @@ class TestApiKeyHeader:
         """Custom headers must not be injected when use_custom_headers=False."""
         client = FootballClient(ClientConfig(use_custom_headers=False))
         # The default requests.Session User-Agent starts with 'python-requests'
-        assert "Mozilla" not in client._session.headers.get("User-Agent", "")
+        ua = str(client._session.headers.get("User-Agent", ""))
+        assert "Mozilla" not in ua

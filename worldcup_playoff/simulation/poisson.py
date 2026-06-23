@@ -213,7 +213,9 @@ class DixonColesEstimator:
         x0 = np.zeros(2 * n + 3)
         x0[2 * n] = self._cfg.home_adv_init
         x0[2 * n + 1] = self._cfg.rho_init
-        bounds = [(None, None)] * (2 * n) + [(None, None), (-0.99, 0.0), (None, None)]
+        bounds: list[tuple[float | None, float | None]] = []
+        bounds.extend([(None, None)] * (2 * n))
+        bounds.extend([(None, None), (-0.99, 0.0), (None, None)])
         return x0, bounds
 
     def _unpack(self, x: np.ndarray, teams: list[str]) -> TeamAbilities:
