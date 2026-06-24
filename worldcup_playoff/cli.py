@@ -37,6 +37,7 @@ app = typer.Typer(
     name="worldcup-playoff",
     help="FIFA World Cup 2026 Knockout Prediction via Monte Carlo simulation.",
     add_completion=False,
+    rich_markup_mode=None,
 )
 console = Console()
 

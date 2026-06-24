@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import difflib
+import io
 import logging
 from pathlib import Path
 
 import pandas as pd
+import requests
 
 from worldcup_playoff.config import Martj42Config
 from worldcup_playoff.data.crosswalk import normalize_series
@@ -161,8 +163,10 @@ def validate_goalscorers_df(df: pd.DataFrame) -> None:
 
 
 def wc2026_schedule(df: pd.DataFrame) -> pd.DataFrame:
-    """Return rows where TOURNAMENT == 'FIFA World Cup', including unplayed fixtures."""
-    return df[df["TOURNAMENT"] == "FIFA World Cup"].reset_index(drop=True)
+    """Return 2026 FIFA World Cup rows (played + unplayed), excluding all prior editions."""
+    is_wc = df["TOURNAMENT"] == "FIFA World Cup"
+    is_2026 = pd.to_datetime(df["DATE"], errors="coerce").dt.year == 2026
+    return df[is_wc & is_2026].reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
@@ -208,12 +212,16 @@ class Martj42Loader:
         if path.exists():
             logger.info("Loading %s from cache: %s", filename, path)
             return pd.read_csv(path)
+        return self._download_and_cache(filename, path)
+
+    def _download_and_cache(self, filename: str, path: Path) -> pd.DataFrame:
         url = self._base_url + filename
         logger.info("Downloading %s from %s", filename, url)
-        df = pd.read_csv(url)
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
         path.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(path, index=False)
-        return df
+        path.write_text(response.text, encoding="utf-8")
+        return pd.read_csv(io.StringIO(response.text))
 
     def _apply_crosswalk(self, df: pd.DataFrame, cols: list[str]) -> None:
         for col in cols:

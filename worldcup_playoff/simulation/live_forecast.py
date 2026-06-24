@@ -22,6 +22,7 @@ Key design choices
 """
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -29,6 +30,8 @@ import numpy as np
 
 from worldcup_playoff.data.live import TournamentState
 from worldcup_playoff.simulation.poisson import TeamAbilities
+
+logger = logging.getLogger(__name__)
 
 # Re-export so callers can import everything from one place.
 __all__ = [
@@ -139,13 +142,23 @@ def _to_probabilities(counts: dict[str, int], n: int) -> dict[str, float]:
 
 
 def _fetch_state_and_abilities(cfg: Any) -> tuple[TournamentState, TeamAbilities]:
-    """Load live tournament state and fit Dixon-Coles abilities (may raise)."""
-    from worldcup_playoff.data.live import fetch_tournament_state
+    """Load tournament state and fit Dixon-Coles abilities (may raise).
+
+    Tries the live football-data.org API first; if it is unreachable (e.g. no API
+    key → HTTP 403, or offline), falls back to reconstructing the WC2026 group
+    state from the martj42 cache so ``forecast`` still runs key-free.
+    """
+    from worldcup_playoff.data.live import build_state_from_results, fetch_tournament_state
     from worldcup_playoff.data.martj42_loader import load_martj42_results
     from worldcup_playoff.simulation.poisson import fit_dixon_coles
-    state = fetch_tournament_state()
     df = load_martj42_results(cfg.martj42)
-    return state, fit_dixon_coles(df, cfg.poisson)
+    abilities = fit_dixon_coles(df, cfg.poisson)
+    try:
+        state = fetch_tournament_state()
+    except Exception:
+        logger.warning("Live API unreachable; building WC2026 state from martj42 cache.")
+        state = build_state_from_results(df)
+    return state, abilities
 
 
 def _play_round(

@@ -41,6 +41,7 @@ date,home_team,away_team,home_score,away_score,tournament,city,country,neutral
 2018-07-15,France,Croatia,4,2,FIFA World Cup,Moscow,Russia,TRUE
 2018-06-16,IR Iran,Morocco,1,0,FIFA World Cup,Saint Petersburg,Russia,TRUE
 2026-06-11,United States,Mexico,NA,NA,FIFA World Cup,New York,United States,TRUE
+2026-06-12,Brazil,Saudi Arabia,3,0,FIFA World Cup,Los Angeles,United States,TRUE
 2025-03-26,England,Albania,2,0,UEFA Nations League,London,England,FALSE
 """
 
@@ -489,6 +490,16 @@ def test_when_wc2026_schedule_is_called_then_played_fixtures_are_also_included(
     assert len(played) > 0
 
 
+def test_when_wc2026_schedule_is_called_then_pre_2026_world_cup_rows_are_excluded(
+    loader: Martj42Loader,
+):
+    # The fixture contains 2006 and 2018 FIFA World Cup rows; they must not appear.
+    df = loader.wc2026_schedule()
+    if len(df) > 0:
+        years = pd.to_datetime(df["DATE"]).dt.year
+        assert (years == 2026).all(), "Non-2026 World Cup rows must be filtered out"
+
+
 # =============================================================================
 # Criterion 7 — schema tests use mocked network (fixture CSV in tmp_path)
 # — verified structurally: all tests in this file use cache_dir (tmp_path),
@@ -498,7 +509,7 @@ def test_when_wc2026_schedule_is_called_then_played_fixtures_are_also_included(
 
 def test_when_results_loaded_via_cache_then_row_count_matches_fixture(loader: Martj42Loader):
     df = loader.load_results()
-    assert len(df) == 5  # five rows in _RESULTS_CSV
+    assert len(df) == 6  # six rows in _RESULTS_CSV
 
 
 def test_when_results_loaded_via_cache_then_german_goal_tally_is_correct(loader: Martj42Loader):
