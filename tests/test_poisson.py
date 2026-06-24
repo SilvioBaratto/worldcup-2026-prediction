@@ -260,6 +260,32 @@ class TestMeanZeroNormalization:
         abilities = DixonColesEstimator().fit(_played_df())
         assert np.mean(list(abilities.attack.values())) == pytest.approx(0.0, abs=1e-6)
 
+    def test_when_fitted_then_mean_of_defence_values_is_approximately_zero(self):
+        abilities = DixonColesEstimator().fit(_played_df())
+        assert np.mean(list(abilities.defence.values())) == pytest.approx(0.0, abs=1e-6)
+
+    def test_when_normalization_applied_then_fitted_lambdas_are_unchanged(self):
+        """Normalization must compensate intercept so all fitted λ remain identical."""
+        from worldcup_playoff.simulation.poisson import _normalize_params
+        import numpy as np
+
+        n = 3
+        # Craft params with non-zero attack and defence means.
+        atk = np.array([0.4, -0.1, 0.3])
+        dfn = np.array([0.2, 0.5, -0.1])
+        home_adv, rho, intercept = 0.25, -0.1, 0.1
+        params = np.concatenate([atk, dfn, [home_adv, rho, intercept]])
+        normed = _normalize_params(params, n)
+
+        # λ_home for each ordered pair must be invariant.
+        for i in range(n):
+            for j in range(n):
+                if i == j:
+                    continue
+                lh_orig = np.exp(params[2 * n + 2] + params[i] - params[n + j] + home_adv)
+                lh_norm = np.exp(normed[2 * n + 2] + normed[i] - normed[n + j] + home_adv)
+                assert lh_orig == pytest.approx(lh_norm, rel=1e-9)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 6. Recovery sanity

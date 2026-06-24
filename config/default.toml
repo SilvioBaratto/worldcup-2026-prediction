@@ -113,15 +113,12 @@ k_continental = 40
 k_world_cup = 60
 qualifier_keywords = ["qualification", "qualifying", "qualifier"]
 continental_keywords = [
-    "Copa America",
-    "UEFA European Championship",
-    "AFCON",
-    "Africa Cup of Nations",
+    "Copa América",
+    "UEFA Euro",
+    "African Cup of Nations",
     "Asian Cup",
     "Gold Cup",
-    "CONCACAF Gold Cup",
     "Nations League",
-    "Copa del Rey",
 ]
 world_cup_keywords = ["World Cup"]
 
@@ -130,7 +127,6 @@ half_life_days = 365.0
 max_goals = 10
 rho_init = -0.1
 home_adv_init = 0.25
-min_matches = 1
 random_seed = 42
 optimizer_maxiter = 200
 

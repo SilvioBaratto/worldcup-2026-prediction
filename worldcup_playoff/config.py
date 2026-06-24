@@ -202,15 +202,12 @@ class EloConfig(BaseModel):
     # "FIFA World Cup qualification" maps to qualifier tier, not world-cup.
     qualifier_keywords: list[str] = ["qualification", "qualifying", "qualifier"]
     continental_keywords: list[str] = [
-        "Copa America",
-        "UEFA European Championship",
-        "AFCON",
-        "Africa Cup of Nations",
-        "Asian Cup",
-        "Gold Cup",
-        "CONCACAF Gold Cup",
-        "Nations League",
-        "Copa del Rey",
+        "Copa América",           # martj42 exact; accent-normalised match also catches "Copa America"
+        "UEFA Euro",              # martj42 uses "UEFA Euro" / "UEFA Euro qualification"
+        "African Cup of Nations", # martj42 exact
+        "Asian Cup",              # substring of "AFC Asian Cup"
+        "Gold Cup",               # martj42 exact
+        "Nations League",         # covers "UEFA Nations League", "CONCACAF Nations League"
     ]
     world_cup_keywords: list[str] = ["World Cup"]
 
@@ -249,7 +246,6 @@ class PoissonConfig(BaseModel):
     max_goals: int = 10
     rho_init: float = -0.1
     home_adv_init: float = 0.25
-    min_matches: int = 1
     random_seed: int = 42
     optimizer_maxiter: int = 200
 
@@ -265,6 +261,13 @@ class PoissonConfig(BaseModel):
     def max_goals_must_be_at_least_one(cls, v: int) -> int:
         if v < 1:
             raise ValueError("max_goals must be at least 1")
+        return v
+
+    @field_validator("rho_init")
+    @classmethod
+    def rho_init_must_be_at_most_zero(cls, v: float) -> float:
+        if not (-0.99 <= v <= 0):
+            raise ValueError("rho_init must be in [-0.99, 0]")
         return v
 
     @field_validator("optimizer_maxiter")

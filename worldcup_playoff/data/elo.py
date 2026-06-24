@@ -16,6 +16,7 @@ Design notes
 from __future__ import annotations
 
 import logging
+import unicodedata
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -96,6 +97,11 @@ class EloResult:
 # ---------------------------------------------------------------------------
 
 
+def _normalize(text: str) -> str:
+    """Strip diacritics and lowercase for accent-insensitive keyword matching."""
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
+
+
 def _we(dr: float) -> float:
     """Win expectation from Elo rating difference *dr*."""
     return float(1.0 / (1.0 + 10.0 ** (-dr / 400.0)))
@@ -165,7 +171,6 @@ class EloEngine:
         if pd.isna(row["HOME_GOALS"]) or pd.isna(row["AWAY_GOALS"]):
             ratings.setdefault(home, self._config.initial_rating)
             ratings.setdefault(away, self._config.initial_rating)
-            history += [EloRating(home, date, ratings[home]), EloRating(away, date, ratings[away])]
             return
         new_h, new_a = self._update(
             h_elo,
@@ -193,13 +198,18 @@ class EloEngine:
         return h_elo + delta, a_elo - delta
 
     def _k(self, tournament: str) -> int:
-        """K factor: qualifier checked before world_cup for correct precedence."""
-        t, c = tournament.lower(), self._config
-        if any(kw.lower() in t for kw in c.qualifier_keywords):
+        """K factor: qualifier checked before world_cup for correct precedence.
+
+        Both the tournament string and keywords are accent-normalised so that
+        e.g. martj42's 'Copa América' matches the keyword 'Copa América' even
+        when character encodings differ.
+        """
+        t, c = _normalize(tournament), self._config
+        if any(_normalize(kw) in t for kw in c.qualifier_keywords):
             return c.k_qualifier
-        if any(kw.lower() in t for kw in c.continental_keywords):
+        if any(_normalize(kw) in t for kw in c.continental_keywords):
             return c.k_continental
-        if any(kw.lower() in t for kw in c.world_cup_keywords):
+        if any(_normalize(kw) in t for kw in c.world_cup_keywords):
             return c.k_world_cup
         return c.k_friendly
 

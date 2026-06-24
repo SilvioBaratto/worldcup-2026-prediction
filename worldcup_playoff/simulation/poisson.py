@@ -98,10 +98,11 @@ def score_matrix(
 def _apply_tau_correction(
     mat: np.ndarray, lh: float, la: float, rho: float, max_goals: int
 ) -> None:
-    """Apply τ correction in-place for the four low-score cells."""
+    """Apply τ correction in-place for the four low-score cells, clipping to 0."""
     for h in range(min(2, max_goals + 1)):
         for a in range(min(2, max_goals + 1)):
             mat[h, a] *= dixon_coles_tau(h, a, lh, la, rho)
+    np.maximum(mat, 0.0, out=mat)  # τ can go negative for large |rho|; clip to valid pmf
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -180,12 +181,18 @@ def _nll(params: np.ndarray, data: _PreparedData) -> float:
     return float(-(data.weights * ll).sum())
 
 
-def _normalize_attack(params: np.ndarray, n: int) -> np.ndarray:
-    """Enforce mean-zero attack identifiability constraint."""
-    mean_atk = float(np.mean(params[:n]))
+def _normalize_params(params: np.ndarray, n: int) -> np.ndarray:
+    """Mean-zero attack and defence; compensate intercept so fitted λ are unchanged.
+
+    λ = exp(intercept + attack_h − defence_a + ha), so shifting both by their means
+    requires intercept' = intercept + mean_atk − mean_dfn.
+    """
     result = params.copy()
+    mean_atk = float(np.mean(result[:n]))
+    mean_dfn = float(np.mean(result[n : 2 * n]))
     result[:n] -= mean_atk
-    result[2 * n + 2] += mean_atk  # compensate in intercept so rates are unchanged
+    result[n : 2 * n] -= mean_dfn
+    result[2 * n + 2] += mean_atk - mean_dfn
     return result
 
 
@@ -197,8 +204,16 @@ def _normalize_attack(params: np.ndarray, n: int) -> np.ndarray:
 class DixonColesEstimator:
     """Fits attack/defence abilities via weighted MLE (L-BFGS-B)."""
 
-    def __init__(self, config: PoissonConfig | None = None) -> None:
-        self._cfg = config or PoissonConfig()
+    def __init__(
+        self,
+        config: PoissonConfig | None = None,
+        *,
+        half_life_days: float | None = None,
+    ) -> None:
+        cfg = config or PoissonConfig()
+        if half_life_days is not None:
+            cfg = cfg.model_copy(update={"half_life_days": half_life_days})
+        self._cfg = cfg
 
     def fit(self, df: pd.DataFrame) -> TeamAbilities:
         """Return TeamAbilities fitted on played rows of *df*."""
@@ -220,7 +235,7 @@ class DixonColesEstimator:
 
     def _unpack(self, x: np.ndarray, teams: list[str]) -> TeamAbilities:
         n = len(teams)
-        normed = _normalize_attack(x, n)
+        normed = _normalize_params(x, n)
         atk = {t: float(normed[i]) for i, t in enumerate(teams)}
         dfn = {t: float(normed[n + i]) for i, t in enumerate(teams)}
         return TeamAbilities(atk, dfn, float(normed[2 * n]), float(normed[2 * n + 1]), float(normed[2 * n + 2]))
@@ -243,9 +258,10 @@ class ScorelineSampler:
         home: str,
         away: str,
         rng: np.random.Generator,
+        neutral: bool = False,
     ) -> tuple[int, int]:
         """Draw one (home_goals, away_goals) pair advancing the injected Generator."""
-        lh, la = lambdas(self._abilities, home, away, neutral=False)
+        lh, la = lambdas(self._abilities, home, away, neutral=neutral)
         mat = score_matrix(lh, la, rho=self._abilities.rho, max_goals=self._cfg.max_goals)
         g = self._cfg.max_goals + 1
         idx = int(rng.choice(g * g, p=mat.ravel()))
@@ -279,6 +295,27 @@ def fit_dixon_coles(df: pd.DataFrame, config: PoissonConfig | None = None) -> Te
     return DixonColesEstimator(config).fit(df)
 
 
-def make_sampler(abilities: TeamAbilities, config: PoissonConfig | None = None) -> ScorelineSampler:
-    """Create a ScorelineSampler from fitted abilities."""
+def _dict_to_team_abilities(
+    d: dict[str, dict[str, float]],
+    config: PoissonConfig | None,
+) -> TeamAbilities:
+    """Convert ``{team: {attack, defence}}`` dict to TeamAbilities (home_adv/rho from config)."""
+    attack = {team: float(vals["attack"]) for team, vals in d.items()}
+    defence = {team: float(vals["defence"]) for team, vals in d.items()}
+    if config is not None:
+        home_adv = config.home_adv_init
+        rho = config.rho_init
+    else:
+        home_adv = 0.25
+        rho = -0.1
+    return TeamAbilities(attack=attack, defence=defence, home_adv=home_adv, rho=rho, intercept=0.0)
+
+
+def make_sampler(
+    abilities: TeamAbilities | dict[str, dict[str, float]],
+    config: PoissonConfig | None = None,
+) -> ScorelineSampler:
+    """Create a ScorelineSampler from fitted abilities or a raw ``{team: {attack, defence}}`` dict."""
+    if isinstance(abilities, dict):
+        abilities = _dict_to_team_abilities(abilities, config)
     return ScorelineSampler(abilities, config)

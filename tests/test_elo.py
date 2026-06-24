@@ -284,6 +284,24 @@ class TestWhenTournamentClassifiedThenKFactorReflectsImportance:
         wc_gain = _gain_for_tournament("FIFA World Cup")
         assert qualifier_gain < continental_gain < wc_gain
 
+    def test_when_copa_america_with_accent_then_continental_k_applied(self):
+        """martj42 emits 'Copa América' (accented é); must not fall through to friendly tier."""
+        continental_gain = _gain_for_tournament("Copa América")
+        friendly_gain = _gain_for_tournament("Friendly")
+        assert continental_gain > friendly_gain
+
+    def test_when_african_cup_of_nations_then_continental_k_applied(self):
+        """martj42 emits 'African Cup of Nations'; must not fall through to friendly tier."""
+        continental_gain = _gain_for_tournament("African Cup of Nations")
+        friendly_gain = _gain_for_tournament("Friendly")
+        assert continental_gain > friendly_gain
+
+    def test_when_uefa_euro_then_continental_k_applied(self):
+        """martj42 emits 'UEFA Euro'; must not fall through to friendly tier."""
+        continental_gain = _gain_for_tournament("UEFA Euro")
+        friendly_gain = _gain_for_tournament("Friendly")
+        assert continental_gain > friendly_gain
+
 
 # ---------------------------------------------------------------------------
 # AC7 — Unplayed fixtures (<NA> goals): no rating change, diff emitted, no raise
