@@ -1,2 +1,0 @@
-2026-06-24 01:35:53,525 WARNING Phase 6.4: semgrep binary not found — skipping semgrep scan
-2026-06-24 01:35:53,526 INFO Phase 6.4: no blocking static findings — gate passes clean

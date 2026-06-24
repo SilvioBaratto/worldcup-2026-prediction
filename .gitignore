@@ -28,3 +28,6 @@ output/models/*.joblib
 output/distributions.json
 output/plots/*.png
 graphify-out/
+
+# code-generator scaffolding (local only)
+.code-generator/

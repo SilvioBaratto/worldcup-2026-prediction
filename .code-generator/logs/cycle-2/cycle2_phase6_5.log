@@ -1,4 +1,0 @@
-2026-06-23 23:48:37,370 WARNING Phase 6.5: tier T1 skipped — no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)
-2026-06-23 23:48:37,370 WARNING Phase 6.5: tier T2 skipped — no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)
-2026-06-23 23:48:37,371 WARNING Phase 6.5: tier T3 skipped — no frontend
-2026-06-23 23:48:37,371 WARNING Phase 6.5: tier T4 skipped — no docker
