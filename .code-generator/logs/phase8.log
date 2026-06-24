@@ -1,0 +1,508 @@
+2026-06-24 06:04:29,351 INFO SDK session starting (model=opus effort=xhigh max_turns=None).
+2026-06-24 06:04:29,351 DEBUG SDK prompt (1399 chars):
+# Prompt — Phase 8: Project finalization
+
+**Model:** `claude-opus-4-8`
+**Tools:** `Read`
+
+---
+
+## Prompt
+
+You are the finalization agent. The orchestrator runs the CI green-gate around
+this call; your job is to confirm the project is internally consistent before
+that machinery starts.
+
+### Instructions
+
+1. Read the project's top-level structure (e.g. `README.md`, `pyproject.toml`, `package.json`) to confirm the project is reachable.
+2. Output exactly one line: `FINALIZATION_OK`.
+
+YOLO mode — no confirmation prompts.
+
+### Constraints
+
+- Tools: `Read` only. Do **not** write, edit, or run shell commands.
+- Do **not** create, modify, or read any file under `.code-generator/` — orchestrator-only state.
+- Do **not** invoke `git`, `gh`, `pytest`, or any package manager.
+- Output the single line above and stop. Preamble or explanation is a bug.
+
+### CI_GREEN_GATE
+
+After this prompt returns, the orchestrator generates `.github/workflows/`,
+commits + pushes them, and runs `phase8_repair_loop.run_ci_green_gate` to
+drive CI to green or to surrender via a routed remediation issue. The
+`professionalized` checklist flag is ticked only when the green-gate
+succeeds (or when no remote is configured and the gate is skipped). Removing
+this section is a bug — the `_assert_prompt_sentinel` guard in
+`phase8_finalization.py` fails the run on its absence.
+
+---
+
+## Volatile Context
+
+- **Cycle name:** 
+
+2026-06-24 06:04:29,641 INFO msg #1: session bound to model claude-opus-4-8 (SystemMessage ground truth)
+2026-06-24 06:04:29,642 DEBUG msg #1: SystemMessage subtype=init type='system' subtype='init' cwd='/Volumes/External SSD/worldcup-2026-prediction' session_id='0d97ccdd-bcee-4340-9c94-102b1fc70eda' tools=['Task', 'AskUserQuestion', 'Bash', 'CronCreate', 'CronDelete', 'CronList', 'DesignSync', 'Edit', 'EnterPlanMode', 'EnterWorktree', 'ExitPlanMode', 'ExitWorktree', 'Monitor', 'NotebookEdit', 'PushNotification', 'Read', 'RemoteTrigger', 'ScheduleWakeup', 'Skill', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskOutput', 'TaskStop', 'TaskUpdate', 'ToolSearch', 'WebFetch', 'WebSearch', 'Workflow', 'Write'] mcp_servers=[] model='claude-opus-4-8' permissionMode='bypassPermissions' slash_commands=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator', 'clear', 'compact', 'context', 'heapdump', 'init', 'reload-skills', 'review', 'security-review', 'usage-credits', 'extra-usage', 'usage', 'insights', 'goal', 'team-onboarding'] apiKeySource='none' claude_code_version='2.1.175' output_style='default' agents=['claude', 'Explore', 'general-purpose', 'Plan', 'statusline-setup'] skills=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator'] plugins=[] analytics_disabled=False product_feedback_disabled=False uuid='8f03d2a4-17fb-4d50-ba38-7e915385895b' fast_mode_state='off'
+2026-06-24 06:04:30,984 INFO msg #2: RateLimitEvent
+2026-06-24 06:04:30,985 INFO RateLimitEvent: overage_status=rejected status=allowed rate_limit_type=five_hour utilization=None decision=continue
+2026-06-24 06:04:32,818 DEBUG msg #3: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=50 estimated_tokens_delta=50 uuid='0a438ffc-a2da-482d-bf5b-b80ef13636cb' session_id='0d97ccdd-bcee-4340-9c94-102b1fc70eda'
+2026-06-24 06:04:33,742 DEBUG msg #4: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=145 estimated_tokens_delta=95 uuid='421128b2-5f5d-4ef9-a171-777c8509fa78' session_id='0d97ccdd-bcee-4340-9c94-102b1fc70eda'
+2026-06-24 06:04:33,745 DEBUG msg #5: assistant (tool_use) thinking: 
+2026-06-24 06:04:34,663 DEBUG msg #6: assistant (tool_use) tool_use(Read): {'file_path': '/Volumes/External SSD/worldcup-2026-prediction/pyproject.toml'}
+2026-06-24 06:04:34,680 DEBUG msg #7: UserMessage tool_result(toolu_01ComPTGS832HSvEXRQkzwTc): 1	[build-system]
+2	requires = ["hatchling"]
+3	build-backend = "hatchling.build"
+4	
+5	[project]
+6	name = "worldcup-2026-prediction"
+7	version = "1.0.0"
+8	description = "Monte Carlo simulation of FIFA World Cup 2026 knockout outcomes using ML classifiers"
+9	requires-python = ">=3.11"
+10	license = "MIT"
+11	authors = [{ name = "Silvio Baratto" }]
+12	readme = "README.md"
+13	dependencies = [
+14	    "numpy>=1.24",
+15	    "pandas>=2.0",
+16	    "scikit-learn>=1.3",
+17	    "scipy>=1.11",
+18	    "statsmodels>=0.14",
+19	    "fitter>=1.6",
+20	    "matplotlib>=3.7",
+21	    "requests>=2.31",
+22	    "seaborn>=0.12",
+23	    "typer[all]>=0.9",
+24	    "pydantic>=2.0",
+25	    "joblib>=1.3",
+26	    "rich>=13.0",
+27	    "beautifulsoup4>=4.12",
+28	]
+29	
+30	[project.optional-dependencies]
+31	dev = ["pytest>=7.0", "pytest-cov", "ruff", "mypy", "hypothesis>=6.0"]
+32	
+33	[project.scripts]
+34	worldcup-playoff = "worldcup_playoff.cli:app"
+35	
+36	[tool.hatch.build.targets.wheel]
+37	packages = ["worldcup_playoff"]
+38	
+39	[tool.ruff]
+40	target-version = "py311"
+41	line-length = 100
+42	
+43	[tool.mypy]
+44	python_version = "3.11"
+45	strict = true
+46	ignore_missing_imports = true
+47	disallow_incomplete_defs = false
+48	
+49	[tool.pytest.ini_options]
+50	testpaths = ["tests"]
+51	
+2026-06-24 06:04:34,763 DEBUG msg #8: assistant (tool_use) tool_use(Read): {'file_path': '/Volumes/External SSD/worldcup-2026-prediction/README.md'}
+2026-06-24 06:04:34,841 DEBUG msg #9: UserMessage tool_result(toolu_0112AKWmyRS7Urwyi6L6SvkV): 1	# FIFA World Cup 2026 Knockout Prediction
+2	
+3	Monte Carlo simulation of FIFA World Cup 2026 knockout outcomes using machine learning classifiers and statistical feature generation.
+4	
+5	## Overview
+6	
+7	This project predicts the FIFA World Cup 2026 knockout stage through a multi-stage pipeline:
+8	
+9	1. **Data acquisition** — downloads historical international and club match statistics from the [football-data.org](https://www.football-data.org/) REST API v4 via a rate-limited client with circuit-breaker retry logic
+10	2. **Training** — fits three ML classifiers (SVM, Random Forest, Gaussian Naive Bayes) on historical match data (2006 onward) to predict the home/favoured team winning a single match
+11	3. **Distribution fitting** — fits scipy statistical distributions to each national team's recent per-match performance (goals, shots, shots on target, possession, pass accuracy)
+12	4. **Monte Carlo simulation** — samples synthetic match features from the fitted distributions, predicts each tie's outcome with the trained classifier, and runs thousands of full knockout brackets (Round of 32 → Round of 16 → Quarter-finals → Semi-finals → Final) to produce per-team advancement probabilities at every round
+13	5. **Visualization** — renders a bracket PNG and round-probability charts
+14	
+15	Unlike the NBA original this project is derived from, World Cup knockout ties are decided by a **single match** — extra time and penalties collapse into one win/loss outcome — so there is no best-of-N series to configure anywhere in the pipeline.
+16	
+17	## Installation
+18	
+19	Requires Python 3.11+.
+20	
+21	```bash
+22	git clone https://github.com/SilvioBaratto/worldcup-2026-prediction.git
+23	cd worldcup-2026-prediction
+24	pip install -e .
+25	```
+26	
+27	For development (adds pytest, pytest-cov, ruff, mypy):
+28	
+29	```bash
+30	pip install -e ".[dev]"
+31	```
+32	
+33	Without editable install:
+34	
+35	```bash
+36	pip install -r requirements.txt
+37	```
+38	
+39	### API key
+40	
+41	The football-data.org client reads its key from the `FOOTBALL_DATA_API_KEY` environment variable and sends it as the `X-Auth-Token` header. The client works **unauthenticated** as well, but is then subject to the free-tier rate limit of 10 requests/minute (the default 6 s spacing between calls is tuned for exactly this).
+42	
+43	```bash
+44	export FOOTBALL_DATA_API_KEY="your-token-here"
+45	```
+46	
+47	## Quick Start
+48	
+49	```bash
+50	# Run the full pipeline: clean → train → fit → simulate → visualize
+51	worldcup-playoff run --bracket config/playoff_2026.toml
+52	
+53	# Or without installation
+54	python -m worldcup_playoff run --bracket config/playoff_2026.toml
+55	```
+56	
+57	## CLI Reference
+58	
+59	All commands accept `--verbose` / `-v` (countable: `-v` for INFO, `-vv` for DEBUG). Most accept `--config` / `-c` (default: `config/default.toml`).
+60	
+61	### Data Acquisition
+62	
+63	#### `download`
+64	
+65	Bulk-download all World Cup datasets from football-data.org in one pass (`teams.csv`, `matches.csv`, `ranking.csv`, `players.csv`, `match_details.csv`).
+66	
+67	```bash
+68	worldcup-playoff download --seasons 2006-2026 --output-dir dataset/csv
+69	worldcup-playoff download --only matches,teams --seasons 2018-2026
+70	worldcup-playoff download --skip-details  # skip match_details.csv
+71	```
+72	
+73	| Flag | Default | Description |
+74	|------|---------|-------------|
+75	| `--seasons` | `2006-2026` | Season range as `START-END` (4-digit years) |
+76	| `--output-dir` | `dataset/csv` | Output directory for all CSVs |
+77	| `--skip-details` | `False` | Skip `match_details.csv` |
+78	| `--only` | all | Comma-separated subset: `teams`, `matches`, `ranking`, `players`, `match-details` |
+79	
+80	#### `build-teams`
+81	
+82	Fetch national-team metadata across major competitions (`WC`, `EC`, `CA`) and write `teams.csv`.
+83	
+84	```bash
+85	worldcup-playoff build-teams --output-dir dataset/csv
+86	```
+87	
+88	| Flag | Default | Description |
+89	|------|---------|-------------|
+90	| `--output-dir` | `dataset/csv` | Output directory for `teams.csv` |
+91	
+92	#### `build-matches`
+93	
+94	Fetch finished match results per competition per season and assemble `matches.csv`.
+95	
+96	```bash
+97	worldcup-playoff build-matches --start-year 2006 --end-year 2026
+98	```
+99	
+100	| Flag | Default | Description |
+101	|------|---------|-------------|
+102	| `--start-year` | `2006` | First season year to query |
+103	| `--end-year` | current year | Last season year to query |
+104	| `--output-dir` | `dataset/csv` | Output directory for `matches.csv` |
+105	
+106	#### `build-match-details`
+107	
+108	Fetch per-match detail statistics for every match ID in `matches.csv` and assemble `match_details.csv`. Supports checkpointing (a `.partial` file) so an interrupted run resumes without re-fetching.
+109	
+110	```bash
+111	worldcup-playoff build-match-details --matches-csv dataset/csv/matches.csv
+112	```
+113	
+114	| Flag | Default | Description |
+115	|------|---------|-------------|
+116	| `--matches-csv` | `dataset/csv/matches.csv` | Source CSV to pull match IDs from |
+117	| `--checkpoint-every` | `100` | Save partial progress every N matches |
+118	| `--output-dir` | `dataset/csv` | Output directory for `match_details.csv` |
+119	
+120	> **Note on heuristics:** the free tier does not expose shots, possession, or pass accuracy per match. When those fields are absent the builder fills them with **fixed, deterministic** formulae (never random): `SHOTS = goals * 5 + 7`, `SHOTS_ON_TARGET = max(goals + 2, shots // 3)`, `POSSESSION = 50.0`, `PASS_PCT = 75.0`. A paid tier exposing `TOTAL_SHOTS` / `SHOTS_ON_TARGET` / `BALL_POSSESSION` / `PASS_ACCURACY` statistics overrides the heuristics automatically.
+121	
+122	#### `generate-bracket`
+123	
+124	Auto-generate a knockout bracket TOML from the competition's qualified teams (Round of 32, seed `1 vs 32`, `2 vs 31`, …).
+125	
+126	```bash
+127	worldcup-playoff generate-bracket --season 2026
+128	worldcup-playoff generate-bracket --output config/playoff_2026.toml
+129	```
+130	
+131	| Flag | Default | Description |
+132	|------|---------|-------------|
+133	| `--season` / `-s` | auto-detected | World Cup year (e.g. `2026`) |
+134	| `--competition` | `WC` | football-data.org competition code |
+135	| `--output` / `-o` | `config/playoff_{year}.toml` | Output TOML path |
+136	
+137	### Pipeline Stages
+138	
+139	#### `clean`
+140	
+141	Stage 1: Read raw CSVs, merge `matches.csv` with `match_details.csv` on `MATCH_ID`, filter by `min_date`, drop drawn matches, fix zero possession/pass-pct values with epsilon, add the binary `HOME_WIN` target, and write `dataset/train_data.csv`.
+142	
+143	```bash
+144	worldcup-playoff clean
+145	```
+146	
+147	#### `train`
+148	
+149	Stage 2: Train one or more classifiers (temporal split), print evaluation metrics, save models.
+150	
+151	```bash
+152	worldcup-playoff train --classifier all          # svm, random-forest, naive-bayes, or all
+153	```
+154	
+155	| Flag | Default | Description |
+156	|------|---------|-------------|
+157	| `--classifier` | `all` | `svm`, `random-forest`, `naive-bayes`, or `all` |
+158	
+159	#### `fit`
+160	
+161	Stage 3: Fit scipy statistical distributions to each national team's per-feature performance data.
+162	
+163	```bash
+164	worldcup-playoff fit
+165	```
+166	
+167	#### `simulate`
+168	
+169	Stage 4: Run the Monte Carlo knockout simulation (requires pre-trained models and distributions).
+170	
+171	```bash
+172	worldcup-playoff simulate --bracket config/playoff_2026.toml --n-simulations 10000
+173	```
+174	
+175	| Flag | Default | Description |
+176	|------|---------|-------------|
+177	| `--bracket` / `-b` | `config/playoff_2026.toml` | Bracket TOML file |
+178	| `--n-simulations` / `-n` | from config (10000) | Override simulation count |
+179	
+180	#### `bracket`
+181	
+182	Simulate and render a bracket PNG visualization.
+183	
+184	```bash
+185	worldcup-playoff bracket --bracket config/playoff_2026.toml --output output/plots/bracket.png
+186	```
+187	
+188	| Flag | Default | Description |
+189	|------|---------|-------------|
+190	| `--bracket` / `-b` | `config/playoff_2026.toml` | Bracket TOML file |
+191	| `--n-simulations` / `-n` | from config | Override simulation count |
+192	| `--output` / `-o` | `output/plots/bracket.png` | Output PNG path |
+193	
+194	#### `run`
+195	
+196	Execute the full pipeline end-to-end: clean, train all classifiers, fit distributions, simulate, and save visualizations.
+197	
+198	```bash
+199	worldcup-playoff run --bracket config/playoff_2026.toml
+200	```
+201	
+202	| Flag | Default | Description |
+203	|------|---------|-------------|
+204	| `--bracket` / `-b` | `config/playoff_2026.toml` | Bracket TOML file |
+205	
+206	## Pipeline Architecture
+207	
+208	```
+209	football-data.org v4                Raw CSVs                    Training Data
+210	       │                               │                              │
+211	       ▼                               ▼                              ▼
+212	 FootballClient ──► Builders ──► dataset/csv/*.csv ──► DataCleaner ──► train_data.csv
+213	 (circuit-breaker,              │                                       │
+214	  rate-limited,                 │                    ┌──────────────────┼──────────────────┐
+215	  X-Auth-Token)                 │                    ▼                  ▼                   ▼
+216	                                │              ClassifierFactory  DistributionFitter
+217	                                │                    │                  │
+218	                                │                    ▼                  ▼
+219	                                │              *.joblib           distributions.json
+220	                                │                    │                  │
+221	                                │                    ▼                  ▼
+222	                                │              GamePredictor ◄──── FeatureSampler
+223	                                │                    │
+224	                                │                    ▼
+225	                                │           TournamentSimulator
+226	                                │              (Monte Carlo,
+227	                                │               single-match ties)
+228	                                │                    │
+229	                                │                    ▼
+230	                                │              RoundResult
+231	                                │                    │
+232	                                │                    ▼
+233	                                │              ResultPlotter
+234	                                │                    │
+235	                                │                    ▼
+236	                                │           bracket.png + probabilities.png
+237	```
+238	
+239	The `Pipeline` orchestrator wires all stages together. Each stage is independently runnable via the CLI, and intermediate artifacts (CSVs, `.joblib` models, `distributions.json`) are persisted to disk so stages can be re-run in isolation.
+240	
+241	## Project Structure
+242	
+243	```
+244	worldcup_playoff/
+245	├── __init__.py             # Package version
+246	├── __main__.py             # Enables `python -m worldcup_playoff`
+247	├── cli.py                  # Typer CLI — all user-facing commands (entry point: worldcup_playoff.cli:app)
+248	├── pipeline.py             # Orchestrator — wires all stages together
+249	├── config.py               # Pydantic config models loaded from TOML
+250	├── types.py                # Classifier Protocol (sklearn interface contract)
+251	├── data/
+252	│   ├── client.py           # FootballClient — rate-limited football-data.org v4 client with
+253	│   │                       #   circuit-breaker retry + session recycling
+254	│   ├── builders.py         # CSV builders: TeamsBuilder, MatchesBuilder, RankingBuilder,
+255	│   │                       #   PlayersBuilder, MatchDetailsBuilder (with checkpointing + heuristics)
+256	│   ├── bracket_builder.py  # BracketBuilder — generates Round-of-32 bracket TOML from qualified teams
+257	│   ├── loader.py           # DataLoader — reads CSVs with schema/dtype validation
+258	│   └── cleaner.py          # DataCleaner — merge, date filtering, draw removal, zero-PCT fix, HOME_WIN
+259	├── models/
+260	│   ├── classifiers.py      # ClassifierFactory (SVM/RF/NB), ClassifierTrainer (fit/save/load)
+261	│   └── evaluation.py       # ModelEvaluator — classification report + confusion matrix + ROC curves
+262	├── simulation/
+263	│   ├── distributions.py    # DistributionFitter, FeatureSampler, FittedDistribution
+264	│   ├── game.py             # GamePredictor — samples features, predicts a single-match tie winner
+265	│   └── tournament.py       # TournamentSimulator — Monte Carlo bracket, BracketSlot tree, RoundResult
+266	└── visualization/
+267	    └── plots.py            # ResultPlotter — bracket PNG + advancement-probability area chart
+268	
+269	config/
+270	├── default.toml            # Pipeline parameters (data paths, hyperparams, simulation settings)
+271	└── playoff_2026.toml       # Bracket definition (16 first-round / Round-of-32 matchups)
+272	
+273	dataset/
+274	├── csv/                    # Raw CSVs from football-data.org
+275	│   │                       #   (matches, teams, ranking, players, match_details)
+276	└── train_data.csv          # Cleaned training data produced by the clean stage
+277	
+278	output/
+279	├── models/                 # Trained classifiers (svm.joblib, random_forest.joblib, naive_bayes.joblib)
+280	├── distributions.json      # Fitted per-team statistical distributions
+281	└── plots/                  # Generated visualizations (bracket.png, probabilities.png)
+282	```
+283	
+284	## Configuration
+285	
+286	All pipeline parameters live in TOML files.
+287	
+288	### `config/default.toml`
+289	
+290	| Section | Key Settings |
+291	|---------|-------------|
+292	| `[data]` | CSV paths, date filters (`min_date` = `2006-01-01`, `train_cutoff_date` = `2026-06-01`), `epsilon` for zero-percentage imputation, season ranges, competition codes |
+293	| `[features]` | 10 selected match statistics (5 home + 5 away): `GOALS`, `SHOTS`, `SHOTS_ON_TARGET`, `POSSESSION`, `PASS_PCT`; `per_team_count = 5` |
+294	| `[training]` | Test split (30%), random state (42), per-classifier hyperparameters |
+295	| `[distributions]` | Minimum season (2018), 13 candidate distribution families |
+296	| `[simulation]` | Number of simulations (10000), default classifier (`naive_bayes`) — no series length (single-match ties) |
+297	| `[visualization]` | DPI (80), matplotlib style (`seaborn-v0_8`), output directory |
+298	| `[client]` | Rate-limit delay (6 s, tuned for the free 10 req/min tier), max retries (5), backoff base (2.0), timeout (120 s), custom headers toggle |
+299	
+300	### `config/playoff_*.toml`
+301	
+302	Bracket definitions with 16 first-round (Round-of-32) matchups. Each matchup specifies `home`, `away`, and an optional `group` label. **Adjacent matchups feed the next round** — the list order defines the bracket tree (matchup 1 winner meets matchup 2 winner, etc.) — and the matchup count must be a power of two.
+303	
+304	```toml
+305	name = "2026 FIFA World Cup — Knockout (Round of 32)"
+306	
+307	[[matchups]]
+308	home = "Argentina"
+309	away = "Saudi Arabia"
+310	group = "Top"
+311	```
+312	
+313	## Features
+314	
+315	Ten feature columns are fed to the classifier — five per team, expressed as football box-score metrics:
+316	
+317	| Base statistic | Home column | Away column |
+318	|----------------|-------------|-------------|
+319	| Goals | `GOALS_home` | `GOALS_away` |
+320	| Total shots | `SHOTS_home` | `SHOTS_away` |
+321	| Shots on target | `SHOTS_ON_TARGET_home` | `SHOTS_ON_TARGET_away` |
+322	| Ball possession % | `POSSESSION_home` | `POSSESSION_away` |
+323	| Pass accuracy % | `PASS_PCT_home` | `PASS_PCT_away` |
+324	
+325	Each fitted per-team distribution is over one of the five **base** statistics; the `FeatureSampler` draws one value per base stat for the home team and one per base stat for the away team, concatenating them (home first, away second) into a length-10 vector for `classifier.predict`.
+326	
+327	## ML Classifiers
+328	
+329	| Classifier | Key Hyperparameters | Notes |
+330	|-----------|-------------------|-------|
+331	| **SVM** | `C=0.1`, `gamma=0.1`, `kernel="linear"` | Wrapped in `make_pipeline(StandardScaler(), SVC(..., probability=True))` to prevent data leakage |
+332	| **Random Forest** | `n_estimators=500`, `max_depth=50`, `max_features="sqrt"`, `bootstrap=True` | Used directly without scaling |
+333	| **Gaussian Naive Bayes** | `var_smoothing=1.87e-07` | Default classifier for simulation; used directly without scaling |
+334	
+335	Training uses a **temporal split** (`shuffle=False`, `test_size=0.3`) to preserve chronological ordering — later matches form the test set, preventing future-data leakage. The binary target is `1` when the home/favoured team wins.
+336	
+337	## football-data.org API Client
+338	
+339	The `FootballClient` wraps all football-data.org v4 REST calls with production-grade reliability:
+340	
+341	- **Rate limiting** — configurable delay (default 6 s) between calls, tuned for the free-tier 10 req/min limit
+342	- **Authentication** — reads `FOOTBALL_DATA_API_KEY` and sends it as `X-Auth-Token`; falls back to unauthenticated access (lower rate) when the variable is absent
+343	- **Circuit breaker** — after 3 consecutive failures, pauses 60 seconds and resets the HTTP session before retrying
+344	- **Exponential backoff with jitter** — retries on HTTP 429/500/502/503/504 and connection errors, with `wait = backoff_base^attempt + random(0,1)`
+345	- **Session recycling** — periodically resets the underlying `requests.Session` (every 50 calls) to prevent stale TCP connections
+346	- **Custom headers** — sends a browser-style `User-Agent` and `Accept` headers to avoid WAF blocks
+347	
+348	### football-data.org v4 endpoints used
+349	
+350	Base URL: `https://api.football-data.org/v4`
+351	
+352	| Endpoint | Builder | Purpose |
+353	|----------|---------|---------|
+354	| `/competitions/{code}/teams` | TeamsBuilder, PlayersBuilder, BracketBuilder | National-team metadata and qualified-team lists |
+355	| `/competitions/{code}/matches` | MatchesBuilder | Finished match results per competition-season (`?season=&status=FINISHED`) |
+356	| `/competitions/{code}/standings` | RankingBuilder | Group/league standings per season (`?season=`) |
+357	| `/teams/{id}` | PlayersBuilder | Squad rosters per team |
+358	| `/matches/{id}` | MatchDetailsBuilder | Per-match detail (score; shots/possession/pass on paid tier) |
+359	
+360	Competition codes queried include the FIFA World Cup (`WC`), UEFA European Championship (`EC`), Copa América (`CA`), and major club leagues for additional historical match volume (`CL`, `PL`, `BL1`, `SA`, `PD`, `FL1`).
+361	
+362	## Key Design Decisions
+363	
+364	- **Single-match knockout ties** — the World Cup knockout format has no best-of-N series. `GamePredictor.predict_tie(home, away)` samples one feature vector, runs the classifier once, and returns the winner. `TournamentSimulator._play_tie` resolves each tie with a single prediction; `SimulationConfig` carries no series-length fields.
+365	- **Dependency injection** — all components receive their dependencies via constructor; no global state. `GamePredictor` receives classifier + sampler + distributions; the `Pipeline` receives config objects.
+366	- **`Classifier` Protocol** — a two-method interface (`fit`, `predict`) in `types.py` that any sklearn-compatible model satisfies, so the simulation layer never depends on a concrete sklearn class.
+367	- **Per-team probabilities** — `RoundResult.probabilities` returns each team's advancement probability as `count / n_simulations`. In rounds with multiple concurrent ties, probabilities sum to the number of ties in the round (not 1.0).
+368	- **Bracket-tree parity** — `build_bracket_tree()` pairs matchups by adjacent index, exactly mirroring `TournamentSimulator._simulate_once`, so the bracket visualization always matches the simulation topology. The matchup-list length must be a power of two.
+369	- **Deterministic stat heuristics** — when the free API tier omits shots/possession/pass-accuracy, `MatchDetailsBuilder` fills them with fixed formulae (never random), so dataset construction is reproducible.
+370	- **Checkpointing** — `MatchDetailsBuilder` writes a `.partial` file every 100 matches, enabling resumption after network failures during long downloads.
+371	
+372	## Results
+373	
+374	Run 10,000 simulations of the 2026 knockout bracket with Gaussian Naive Bayes and inspect the generated `output/plots/bracket.png` (per-team advancement probabilities and a champion banner) and `output/plots/probabilities.png` (a stacked area chart of advancement probability by team and round). Accuracy depends on the quality and completeness of the downloaded match statistics; the deterministic free-tier heuristics for shots/possession/pass accuracy reduce signal relative to a paid statistics feed.
+375	
+376	## Testing
+377	
+378	```bash
+379	pytest                            # all tests
+380	pytest tests/test_game.py         # single file
+381	pytest -k test_predict            # single test by name
+382	pytest --cov=worldcup_playoff     # with coverage
+383	```
+384	
+385	Tests are pure unit tests using mocks — no network calls to football-data.org.
+386	
+387	## Tooling
+388	
+389	| Tool | Config |
+390	|------|--------|
+391	| **ruff** | line-length 100, target Python 3.11 |
+392	| **mypy** | strict mode, Python 3.11 |
+393	| **pytest** | testpaths = `tests/` |
+394	| **hatchling** | build backend |
+395	
+396	## License
+397	
+398	MIT
+399	
+2026-06-24 06:04:37,116 INFO msg #10: assistant (15 chars)
+FINALIZATION_OK
+2026-06-24 06:04:37,229 INFO msg #11: ResultMessage (tokens_in=2489 tokens_out=292 cache_read=37676 cache_write=19043 is_error=False subtype=success stop_reason=end_turn num_turns=3)
+2026-06-24 06:04:37,748 INFO SDK session complete.

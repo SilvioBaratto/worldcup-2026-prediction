@@ -1,7 +1,7 @@
 {
   "mode": "multi-cycle",
   "started_at": "2026-06-23T18:24:44Z",
-  "updated_at": "2026-06-24T04:04:17Z",
+  "updated_at": "2026-06-24T04:04:37Z",
   "state_version": 2,
   "current_cycle": 5,
   "cycles": [
@@ -1012,8 +1012,8 @@
       "name": "Evaluation, Simulation & Integration",
       "milestone_number": 5,
       "milestone_title": "Cycle 5 \u2014 Tournament Simulation & Full Pipeline",
-      "status": "open",
-      "phase": 65,
+      "status": "completed",
+      "phase": 7,
       "issues": [
         {
           "number": 16,
@@ -1233,19 +1233,30 @@
           "cache_write_1h": 76599,
           "compaction_events": 0,
           "clear_events": 0
+        },
+        "phase7": {
+          "input": 2487,
+          "output": 148,
+          "cache_read": 15328,
+          "cache_write": 11207,
+          "num_turns": 1,
+          "cache_write_5m": 0,
+          "cache_write_1h": 11207,
+          "compaction_events": 0,
+          "clear_events": 0
         }
       },
       "started_at": "2026-06-24T01:31:29Z",
-      "finished_at": null,
+      "finished_at": "2026-06-24T04:04:25Z",
       "cache_telemetry": {
-        "input": 42210,
-        "output": 517809,
-        "cache_read": 28010882,
-        "cache_write": 1439657,
-        "cache_write_1h": 397777,
+        "input": 44697,
+        "output": 517957,
+        "cache_read": 28026210,
+        "cache_write": 1450864,
+        "cache_write_1h": 408984,
         "cache_write_5m": 1041880,
-        "cache_hit_pct": 95.0,
-        "wall_seconds": 5939.349051543977
+        "cache_hit_pct": 94.9,
+        "wall_seconds": 5944.058349335974
       },
       "phase2_batch_id": null,
       "ollama_model": null,
@@ -1344,7 +1355,7 @@
     }
   },
   "session_mode": "shared",
-  "client_alive_at": "2026-06-24T01:31:29+00:00",
+  "client_alive_at": null,
   "phase2_batch_id": null,
   "repo": {
     "host": "github.com",
@@ -1391,7 +1402,16 @@
   "cache_ttl_probe": null,
   "phase6_5": null,
   "vigil_triggered": false,
-  "phase8": null,
+  "phase8": {
+    "attempt": 1,
+    "status": "running",
+    "started_at": "2026-06-24T04:04:29+00:00",
+    "finished_at": null,
+    "ci_status": null,
+    "ci_run_id": null,
+    "repair_attempts": 0,
+    "workflow_files_written": []
+  },
   "phase4_bon": [],
   "phase6_mav": null,
   "vg_config": {
