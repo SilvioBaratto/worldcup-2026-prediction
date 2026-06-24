@@ -1,0 +1,1553 @@
+........................................................................ [  5%]
+........................................................................ [ 10%]
+........................................................................ [ 15%]
+........................................................................ [ 20%]
+........................................................................ [ 25%]
+........................................................................ [ 30%]
+........................................................................ [ 35%]
+........................................................................ [ 40%]
+........................................................................ [ 45%]
+........................................................................ [ 50%]
+........................................................................ [ 55%]
+........................................................................ [ 60%]
+........................................................................ [ 65%]
+........................................................................ [ 70%]
+........................................................................ [ 75%]
+........................................................................ [ 80%]
+........................................................................ [ 85%]
+........................................................................ [ 90%]
+........................................................................ [ 95%]
+.................................................................        [100%]
+=============================== warnings summary ===============================
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 18836 (\N{CJK UNIFIED IDEOGRAPH-4994}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 18836 (\N{CJK UNIFIED IDEOGRAPH-4994}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 71205 (\N{MODI LETTER BHA}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 71205 (\N{MODI LETTER BHA}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 74333 (\N{CUNEIFORM SIGN NINDA2 TIMES SHE PLUS ASH PLUS ASH}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 168928 (\N{CJK UNIFIED IDEOGRAPH-293E0}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 176856 (\N{CJK UNIFIED IDEOGRAPH-2B2D8}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 74333 (\N{CUNEIFORM SIGN NINDA2 TIMES SHE PLUS ASH PLUS ASH}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 168928 (\N{CJK UNIFIED IDEOGRAPH-293E0}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 176856 (\N{CJK UNIFIED IDEOGRAPH-2B2D8}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 38572 (\N{CJK UNIFIED IDEOGRAPH-96AC}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 113668 (\N{DUPLOYAN LETTER F}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 189575 (\N{CJK UNIFIED IDEOGRAPH-2E487}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 147682 (\N{CJK UNIFIED IDEOGRAPH-240E2}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 171344 (\N{CJK UNIFIED IDEOGRAPH-29D50}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 111275 (\N{NUSHU CHARACTER-1B2AB}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 180180 (\N{CJK UNIFIED IDEOGRAPH-2BFD4}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 30657 (\N{CJK UNIFIED IDEOGRAPH-77C1}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 163688 (\N{CJK UNIFIED IDEOGRAPH-27F68}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 135741 (\N{CJK UNIFIED IDEOGRAPH-2123D}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 18052 (\N{CJK UNIFIED IDEOGRAPH-4684}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 168170 (\N{CJK UNIFIED IDEOGRAPH-290EA}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 161992 (\N{CJK UNIFIED IDEOGRAPH-278C8}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 74448 (\N{CUNEIFORM SIGN SHIM TIMES MUG}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 131508 (\N{CJK UNIFIED IDEOGRAPH-201B4}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 141503 (\N{CJK UNIFIED IDEOGRAPH-228BF}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 200657 (\N{CJK UNIFIED IDEOGRAPH-30FD1}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 170321 (\N{CJK UNIFIED IDEOGRAPH-29951}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 48892 (\N{HANGUL SYLLABLE BBEM}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 131814 (\N{CJK UNIFIED IDEOGRAPH-202E6}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 198399 (\N{CJK UNIFIED IDEOGRAPH-306FF}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 38572 (\N{CJK UNIFIED IDEOGRAPH-96AC}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 113668 (\N{DUPLOYAN LETTER F}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 189575 (\N{CJK UNIFIED IDEOGRAPH-2E487}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 147682 (\N{CJK UNIFIED IDEOGRAPH-240E2}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 171344 (\N{CJK UNIFIED IDEOGRAPH-29D50}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 111275 (\N{NUSHU CHARACTER-1B2AB}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 180180 (\N{CJK UNIFIED IDEOGRAPH-2BFD4}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 30657 (\N{CJK UNIFIED IDEOGRAPH-77C1}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 163688 (\N{CJK UNIFIED IDEOGRAPH-27F68}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 135741 (\N{CJK UNIFIED IDEOGRAPH-2123D}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 18052 (\N{CJK UNIFIED IDEOGRAPH-4684}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 168170 (\N{CJK UNIFIED IDEOGRAPH-290EA}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 161992 (\N{CJK UNIFIED IDEOGRAPH-278C8}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 74448 (\N{CUNEIFORM SIGN SHIM TIMES MUG}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 131508 (\N{CJK UNIFIED IDEOGRAPH-201B4}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 141503 (\N{CJK UNIFIED IDEOGRAPH-228BF}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 200657 (\N{CJK UNIFIED IDEOGRAPH-30FD1}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 170321 (\N{CJK UNIFIED IDEOGRAPH-29951}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 48892 (\N{HANGUL SYLLABLE BBEM}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 131814 (\N{CJK UNIFIED IDEOGRAPH-202E6}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 198399 (\N{CJK UNIFIED IDEOGRAPH-306FF}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 156054 (\N{CJK UNIFIED IDEOGRAPH-26196}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 164980 (\N{CJK UNIFIED IDEOGRAPH-28474}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 202681 (\N{CJK UNIFIED IDEOGRAPH-317B9}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 113728 (\N{DUPLOYAN LETTER S K R}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 134532 (\N{CJK UNIFIED IDEOGRAPH-20D84}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 159462 (\N{CJK UNIFIED IDEOGRAPH-26EE6}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 174189 (\N{CJK UNIFIED IDEOGRAPH-2A86D}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 196829 (\N{CJK UNIFIED IDEOGRAPH-300DD}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 189347 (\N{CJK UNIFIED IDEOGRAPH-2E3A3}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 172136 (\N{CJK UNIFIED IDEOGRAPH-2A068}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 48827 (\N{HANGUL SYLLABLE BBYAED}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 20058 (\N{CJK UNIFIED IDEOGRAPH-4E5A}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 131600 (\N{CJK UNIFIED IDEOGRAPH-20210}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 101543 (\N{KHITAN SMALL SCRIPT CHARACTER-18CA7}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 2832 (\N{ORIYA LETTER AI}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Matplotlib currently does not support Oriya natively.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 39661 (\N{CJK UNIFIED IDEOGRAPH-9AED}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 156054 (\N{CJK UNIFIED IDEOGRAPH-26196}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 164980 (\N{CJK UNIFIED IDEOGRAPH-28474}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 202681 (\N{CJK UNIFIED IDEOGRAPH-317B9}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 113728 (\N{DUPLOYAN LETTER S K R}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 134532 (\N{CJK UNIFIED IDEOGRAPH-20D84}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 159462 (\N{CJK UNIFIED IDEOGRAPH-26EE6}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 174189 (\N{CJK UNIFIED IDEOGRAPH-2A86D}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 196829 (\N{CJK UNIFIED IDEOGRAPH-300DD}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 189347 (\N{CJK UNIFIED IDEOGRAPH-2E3A3}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 172136 (\N{CJK UNIFIED IDEOGRAPH-2A068}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 48827 (\N{HANGUL SYLLABLE BBYAED}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 20058 (\N{CJK UNIFIED IDEOGRAPH-4E5A}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 131600 (\N{CJK UNIFIED IDEOGRAPH-20210}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 101543 (\N{KHITAN SMALL SCRIPT CHARACTER-18CA7}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 2832 (\N{ORIYA LETTER AI}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Matplotlib currently does not support Oriya natively.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 39661 (\N{CJK UNIFIED IDEOGRAPH-9AED}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 176997 (\N{CJK UNIFIED IDEOGRAPH-2B365}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 136775 (\N{CJK UNIFIED IDEOGRAPH-21647}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 169880 (\N{CJK UNIFIED IDEOGRAPH-29798}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 55181 (\N{HANGUL SYLLABLE HINJ}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 15059 (\N{CJK UNIFIED IDEOGRAPH-3AD3}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 132625 (\N{CJK UNIFIED IDEOGRAPH-20611}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 141454 (\N{CJK UNIFIED IDEOGRAPH-2288E}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 31507 (\N{CJK UNIFIED IDEOGRAPH-7B13}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 164153 (\N{CJK UNIFIED IDEOGRAPH-28139}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 152346 (\N{CJK UNIFIED IDEOGRAPH-2531A}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 15646 (\N{CJK UNIFIED IDEOGRAPH-3D1E}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 74608 (\N{CUNEIFORM SIGN AB TIMES NUN}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 168948 (\N{CJK UNIFIED IDEOGRAPH-293F4}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 168711 (\N{CJK UNIFIED IDEOGRAPH-29307}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 176997 (\N{CJK UNIFIED IDEOGRAPH-2B365}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 136775 (\N{CJK UNIFIED IDEOGRAPH-21647}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 169880 (\N{CJK UNIFIED IDEOGRAPH-29798}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 55181 (\N{HANGUL SYLLABLE HINJ}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 15059 (\N{CJK UNIFIED IDEOGRAPH-3AD3}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 132625 (\N{CJK UNIFIED IDEOGRAPH-20611}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 141454 (\N{CJK UNIFIED IDEOGRAPH-2288E}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 31507 (\N{CJK UNIFIED IDEOGRAPH-7B13}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 164153 (\N{CJK UNIFIED IDEOGRAPH-28139}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 152346 (\N{CJK UNIFIED IDEOGRAPH-2531A}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 15646 (\N{CJK UNIFIED IDEOGRAPH-3D1E}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 74608 (\N{CUNEIFORM SIGN AB TIMES NUN}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 168948 (\N{CJK UNIFIED IDEOGRAPH-293F4}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 168711 (\N{CJK UNIFIED IDEOGRAPH-29307}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 145845 (\N{CJK UNIFIED IDEOGRAPH-239B5}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 153787 (\N{CJK UNIFIED IDEOGRAPH-258BB}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 148770 (\N{CJK UNIFIED IDEOGRAPH-24522}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 92422 (\N{BAMUM LETTER PHASE-D KUOM}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 145845 (\N{CJK UNIFIED IDEOGRAPH-239B5}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 153787 (\N{CJK UNIFIED IDEOGRAPH-258BB}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 148770 (\N{CJK UNIFIED IDEOGRAPH-24522}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 92422 (\N{BAMUM LETTER PHASE-D KUOM}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 132299 (\N{CJK UNIFIED IDEOGRAPH-204CB}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 132299 (\N{CJK UNIFIED IDEOGRAPH-204CB}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 158735 (\N{CJK UNIFIED IDEOGRAPH-26C0F}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 73450 (\N{MAKASAR LETTER JA}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 165324 (\N{CJK UNIFIED IDEOGRAPH-285CC}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 158735 (\N{CJK UNIFIED IDEOGRAPH-26C0F}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 73450 (\N{MAKASAR LETTER JA}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 165324 (\N{CJK UNIFIED IDEOGRAPH-285CC}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 162667 (\N{CJK UNIFIED IDEOGRAPH-27B6B}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 146305 (\N{CJK UNIFIED IDEOGRAPH-23B81}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 12420 (\N{HIRAGANA LETTER YA}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 32192 (\N{CJK UNIFIED IDEOGRAPH-7DC0}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 139734 (\N{CJK UNIFIED IDEOGRAPH-221D6}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 38393 (\N{CJK UNIFIED IDEOGRAPH-95F9}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 199342 (\N{CJK UNIFIED IDEOGRAPH-30AAE}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 144739 (\N{CJK UNIFIED IDEOGRAPH-23563}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 154845 (\N{CJK UNIFIED IDEOGRAPH-25CDD}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 194930 (\N{CJK COMPATIBILITY IDEOGRAPH-2F972}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 203593 (\N{CJK UNIFIED IDEOGRAPH-31B49}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 162667 (\N{CJK UNIFIED IDEOGRAPH-27B6B}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 146305 (\N{CJK UNIFIED IDEOGRAPH-23B81}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 12420 (\N{HIRAGANA LETTER YA}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 32192 (\N{CJK UNIFIED IDEOGRAPH-7DC0}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 139734 (\N{CJK UNIFIED IDEOGRAPH-221D6}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 38393 (\N{CJK UNIFIED IDEOGRAPH-95F9}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 199342 (\N{CJK UNIFIED IDEOGRAPH-30AAE}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 144739 (\N{CJK UNIFIED IDEOGRAPH-23563}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 154845 (\N{CJK UNIFIED IDEOGRAPH-25CDD}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 194930 (\N{CJK COMPATIBILITY IDEOGRAPH-2F972}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 203593 (\N{CJK UNIFIED IDEOGRAPH-31B49}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 94642 (\U000171b2) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 140839 (\N{CJK UNIFIED IDEOGRAPH-22627}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 171219 (\N{CJK UNIFIED IDEOGRAPH-29CD3}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 22143 (\N{CJK UNIFIED IDEOGRAPH-567F}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 41870 (\N{YI SYLLABLE RRYT}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 188106 (\N{CJK UNIFIED IDEOGRAPH-2DECA}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 94642 (\U000171b2) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 140839 (\N{CJK UNIFIED IDEOGRAPH-22627}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 171219 (\N{CJK UNIFIED IDEOGRAPH-29CD3}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 22143 (\N{CJK UNIFIED IDEOGRAPH-567F}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 41870 (\N{YI SYLLABLE RRYT}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 188106 (\N{CJK UNIFIED IDEOGRAPH-2DECA}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 200709 (\N{CJK UNIFIED IDEOGRAPH-31005}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 172033 (\N{CJK UNIFIED IDEOGRAPH-2A001}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 198592 (\N{CJK UNIFIED IDEOGRAPH-307C0}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 149317 (\N{CJK UNIFIED IDEOGRAPH-24745}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 141296 (\N{CJK UNIFIED IDEOGRAPH-227F0}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 19129 (\N{CJK UNIFIED IDEOGRAPH-4AB9}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 44193 (\N{HANGUL SYLLABLE GENG}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 39493 (\N{CJK UNIFIED IDEOGRAPH-9A45}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 47173 (\N{HANGUL SYLLABLE RYENJ}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 37214 (\N{CJK UNIFIED IDEOGRAPH-915E}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 150251 (\N{CJK UNIFIED IDEOGRAPH-24AEB}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:81: UserWarning: Glyph 78834 (\N{EGYPTIAN HIEROGLYPH Z007}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 200709 (\N{CJK UNIFIED IDEOGRAPH-31005}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 172033 (\N{CJK UNIFIED IDEOGRAPH-2A001}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 198592 (\N{CJK UNIFIED IDEOGRAPH-307C0}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 149317 (\N{CJK UNIFIED IDEOGRAPH-24745}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 141296 (\N{CJK UNIFIED IDEOGRAPH-227F0}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 19129 (\N{CJK UNIFIED IDEOGRAPH-4AB9}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 44193 (\N{HANGUL SYLLABLE GENG}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 39493 (\N{CJK UNIFIED IDEOGRAPH-9A45}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 47173 (\N{HANGUL SYLLABLE RYENJ}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 37214 (\N{CJK UNIFIED IDEOGRAPH-915E}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 150251 (\N{CJK UNIFIED IDEOGRAPH-24AEB}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 78834 (\N{EGYPTIAN HIEROGLYPH Z007}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 675535 (\U000a4ecf) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 367983 (\U00059d6f) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 516275 (\U0007e0b3) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 143 (\x8f) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 7 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 963550 (\U000eb3de) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 675535 (\U000a4ecf) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 367983 (\U00059d6f) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 516275 (\U0007e0b3) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 143 (\x8f) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 7 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 963550 (\U000eb3de) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 31 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 6 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 388298 (\U0005ecca) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 463750 (\U00071386) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 233906 (\U000391b2) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 622348 (\U00097f0c) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 31 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 6 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 388298 (\U0005ecca) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 463750 (\U00071386) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 233906 (\U000391b2) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 622348 (\U00097f0c) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 306195 (\U0004ac13) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 1 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 156 (\x9c) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 16 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 14 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 184211 (\N{CJK UNIFIED IDEOGRAPH-2CF93}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 869612 (\U000d44ec) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 132 (\x84) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 149 (\x95) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 235184 (\U000396b0) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 306195 (\U0004ac13) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 1 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 156 (\x9c) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 16 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 14 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 184211 (\N{CJK UNIFIED IDEOGRAPH-2CF93}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 869612 (\U000d44ec) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 132 (\x84) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 149 (\x95) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 235184 (\U000396b0) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 295896 (\U000483d8) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 29 (
+  ) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 141 (\x8d) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 133 (\x85) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 295896 (\U000483d8) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 29 (
+  ) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 141 (\x8d) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 133 (\x85) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 327982 (\U0005012e) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 25 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 128 (\x80) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 608776 (\U00094a08) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 746635 (\U000b648b) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 127 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 327982 (\U0005012e) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 25 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 128 (\x80) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 608776 (\U00094a08) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 746635 (\U000b648b) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 127 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 746511 (\U000b640f) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 746511 (\U000b640f) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 13 (
+  ) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 538458 (\U0008375a) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 530260 (\U00081754) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 129 (\x81) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 27 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 13 (
+  ) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 538458 (\U0008375a) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 530260 (\U00081754) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 129 (\x81) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 27 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 108416 (\U0001a780) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 108416 (\U0001a780) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 17 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 285846 (\U00045c96) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 12 (
+  ) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 966429 (\U000ebf1d) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 1066710 (\U001046d6) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 17 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 285846 (\U00045c96) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 12 (
+  ) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 966429 (\U000ebf1d) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 1066710 (\U001046d6) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 30 (
+  ) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 821464 (\U000c88d8) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 348467 (\U00055133) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 729263 (\U000b20af) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 399499 (\U0006188b) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 68654 (\N{OLD TURKIC LETTER YENISEI AENG}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 1028852 (\U000fb2f4) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 30 (
+  ) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 821464 (\U000c88d8) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 348467 (\U00055133) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 729263 (\U000b20af) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 399499 (\U0006188b) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 68654 (\N{OLD TURKIC LETTER YENISEI AENG}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 1028852 (\U000fb2f4) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 148 (\x94) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 68912 (\N{HANIFI ROHINGYA DIGIT ZERO}) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 432015 (\U0006978f) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 150 (\x96) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 11 (
+  ) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 3 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 130 (\x82) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 524005 (\U0007fee5) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 23 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 1074054 (\U00106386) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 459025 (\U00070111) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 656195 (\U000a0343) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 971909 (\U000ed485) missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:145: UserWarning: Glyph 21 () missing from font(s) Arial.
+    plt.tight_layout()
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 148 (\x94) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 68912 (\N{HANIFI ROHINGYA DIGIT ZERO}) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 432015 (\U0006978f) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 150 (\x96) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 11 (
+  ) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 3 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 130 (\x82) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 524005 (\U0007fee5) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 23 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 1074054 (\U00106386) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 459025 (\U00070111) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 656195 (\U000a0343) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 971909 (\U000ed485) missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+tests/test_forecast_plots.py::test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_not_raise
+  /Volumes/External SSD/worldcup-2026-prediction/worldcup_playoff/visualization/forecast_plots.py:43: UserWarning: Glyph 21 () missing from font(s) Arial.
+    fig.savefig(path, bbox_inches="tight")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1433 passed, 566 warnings in 77.42s (0:01:17)

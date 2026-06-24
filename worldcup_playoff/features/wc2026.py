@@ -21,7 +21,7 @@ duplicates and same-day fixtures can corrupt.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
@@ -63,11 +63,20 @@ def _filter_wc_rows(features_df: pd.DataFrame, mask: pd.Series) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
-def _to_elo_df(elo_result: EloResult) -> pd.DataFrame:
-    """Extract home_elo/away_elo per match from an EloResult (aligned to sorted df)."""
-    return pd.DataFrame(
-        [{"home_elo": d.home_elo, "away_elo": d.away_elo} for d in elo_result.match_diffs]
-    )
+def _to_elo_df(elo: Any) -> pd.DataFrame:
+    """Resolve any elo input to a home_elo / away_elo DataFrame.
+
+    Handles three shapes:
+    - ``pd.DataFrame`` with home_elo / away_elo columns (pass through).
+    - Duck-typed object whose ``.match_diffs`` is already a DataFrame.
+    - Real ``EloResult`` whose ``.match_diffs`` is a list of ``MatchEloDiff``.
+    """
+    if isinstance(elo, pd.DataFrame):
+        return elo
+    diffs = elo.match_diffs
+    if isinstance(diffs, pd.DataFrame):
+        return diffs
+    return pd.DataFrame([{"home_elo": d.home_elo, "away_elo": d.away_elo} for d in diffs])
 
 
 def wc2026_features(
@@ -100,11 +109,9 @@ def wc2026_features(
     from ``FeatureBuilder`` plus a ``tournament`` metadata column, and
     ``home_goals``/``away_goals`` as ``<NA>``.
     """
-    from worldcup_playoff.data.elo import EloResult as _EloResult  # avoid circular at import time
-
     cfg = config or FeatureBuildConfig()
     sorted_df = sort_chronological(results_df)
-    elo_df = _to_elo_df(elo) if isinstance(elo, _EloResult) else elo
+    elo_df = _to_elo_df(elo)
     all_features = FeatureBuilder(cfg, ranking=ranking).build(sorted_df, elo_df, abilities)
     mask = _unplayed_wc_mask(sorted_df)
     return _filter_wc_rows(all_features, mask)

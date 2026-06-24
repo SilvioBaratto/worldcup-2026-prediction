@@ -314,11 +314,20 @@ class FeatureBuilder:
 # ---------------------------------------------------------------------------
 
 
-def _to_elo_df(elo_result: EloResult) -> pd.DataFrame:
-    """Extract home_elo/away_elo per match from an EloResult (aligned to sorted df)."""
-    return pd.DataFrame(
-        [{"home_elo": d.home_elo, "away_elo": d.away_elo} for d in elo_result.match_diffs]
-    )
+def _resolve_elo(elo: Any) -> pd.DataFrame:
+    """Convert any elo input to a ``home_elo`` / ``away_elo`` DataFrame.
+
+    Handles three input shapes:
+    - A plain DataFrame with ``home_elo``/``away_elo`` columns (already resolved).
+    - A real ``EloResult`` whose ``match_diffs`` is a ``list[MatchEloDiff]``.
+    - A duck-typed object whose ``match_diffs`` is already a DataFrame (e.g. test stubs).
+    """
+    if isinstance(elo, pd.DataFrame):
+        return elo
+    diffs = elo.match_diffs
+    if isinstance(diffs, pd.DataFrame):
+        return diffs
+    return pd.DataFrame([{"home_elo": d.home_elo, "away_elo": d.away_elo} for d in diffs])
 
 
 def build_features(
@@ -334,8 +343,9 @@ def build_features(
     Parameters
     ----------
     df:         Full martj42-internal results frame (DATE/HOME_TEAM/… uppercase schema).
-    elo:        Either an ``EloResult`` from ``compute_elo`` or a pre-built elo DataFrame
-                with ``home_elo`` / ``away_elo`` columns aligned to ``sort_chronological(df)``.
+    elo:        Either an ``EloResult`` from ``compute_elo``, a pre-built elo DataFrame
+                with ``home_elo`` / ``away_elo`` columns aligned to ``sort_chronological(df)``,
+                or any duck-typed object with a ``.match_diffs`` attribute.
     abilities:  Fitted Dixon-Coles abilities from ``fit_dixon_coles``.
     config:     Feature-build settings; uses ``FeatureBuildConfig()`` defaults when ``None``.
     ranking:    Optional ``{team: ranking_points}`` dict; falls back to the static
@@ -346,10 +356,8 @@ def build_features(
     DataFrame with FEATURE_COLUMNS plus a ``tournament`` metadata column (one row per match,
     including unplayed WC2026 fixtures with ``home_goals``/``away_goals`` as ``<NA>``).
     """
-    from worldcup_playoff.data.elo import EloResult as _EloResult  # avoid circular at import time
-
     cfg = config or FeatureBuildConfig()
-    elo_df = _to_elo_df(elo) if isinstance(elo, _EloResult) else elo
+    elo_df = _resolve_elo(elo)
     sorted_df = sort_chronological(df)
     features = FeatureBuilder(cfg, ranking=ranking).build(sorted_df, elo_df, abilities)
     result = features.copy()

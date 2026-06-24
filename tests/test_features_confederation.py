@@ -1,7 +1,6 @@
-"""Source-blind example tests for issue #7: confederation map + ranking resolver + config.
+"""Source-blind example tests for issue #34.
 
-All tests are derived solely from the acceptance criteria. No implementation source
-was read during authorship (Red-phase TDD).
+Derived from acceptance criteria only — no implementation source was read.
 """
 
 from __future__ import annotations
@@ -20,39 +19,107 @@ from worldcup_playoff.features.confederation import (
 from worldcup_playoff.config import AppConfig, FeatureBuildConfig
 from worldcup_playoff.data.crosswalk import normalize_team
 
-# ---------------------------------------------------------------------------
-# Criterion 1 — explicit spot-checks for known WC2026 teams + alias resolution
-# ---------------------------------------------------------------------------
+
+# ── Criterion 1 — FeatureBuildConfig defaults ──────────────────────────────
 
 
-def test_when_brazil_is_queried_then_conmebol_is_returned():
-    assert confederation_of("Brazil") == "CONMEBOL"
+def test_when_feature_build_config_is_created_then_ranking_staleness_cutoff_is_default():
+    assert FeatureBuildConfig().ranking_staleness_cutoff == "2020-12-10"
 
 
-def test_when_united_states_is_queried_then_concacaf_is_returned():
-    assert confederation_of("United States") == "CONCACAF"
+def test_when_feature_build_config_is_created_then_form_window_is_5():
+    assert FeatureBuildConfig().form_window == 5
 
 
-def test_when_turkiye_alias_is_queried_then_uefa_is_returned():
-    # "Türkiye" is a crosswalk alias that normalizes to "Turkey" → UEFA
-    assert confederation_of("Türkiye") == "UEFA"
+def test_when_feature_build_config_is_created_then_form_half_life_days_is_365():
+    assert FeatureBuildConfig().form_half_life_days == 365.0
 
 
-def test_when_japan_is_queried_then_afc_is_returned():
-    assert confederation_of("Japan") == "AFC"
+def test_when_feature_build_config_is_created_then_random_seed_is_42():
+    assert FeatureBuildConfig().random_seed == 42
 
 
-def test_when_new_zealand_is_queried_then_ofc_is_returned():
-    assert confederation_of("New Zealand") == "OFC"
+def test_when_feature_build_config_is_created_then_confederation_fallback_is_true():
+    assert FeatureBuildConfig().confederation_fallback is True
 
 
-# ---------------------------------------------------------------------------
-# Criterion 2 — parametrised WC2026 teams + unknown-team guard
-# ---------------------------------------------------------------------------
+def test_when_extra_field_is_supplied_then_feature_build_config_ignores_it():
+    # extra="ignore" — unknown fields must be silently discarded, not raise
+    cfg = FeatureBuildConfig(**{"__unexpected_extra__": "should_be_dropped"})
+    assert not hasattr(cfg, "__unexpected_extra__")
 
-# Representative subset of WC2026 qualified nations; each must map to exactly
-# one confederation without raising.  The parametrize list deliberately spans
-# all six confederations so the mapping is exercised end-to-end.
+
+def test_when_form_window_is_zero_then_validation_error_is_raised():
+    with pytest.raises(ValidationError):
+        FeatureBuildConfig(form_window=0)
+
+
+def test_when_form_window_is_negative_then_validation_error_is_raised():
+    with pytest.raises(ValidationError):
+        FeatureBuildConfig(form_window=-3)
+
+
+def test_when_form_half_life_days_is_zero_then_validation_error_is_raised():
+    with pytest.raises(ValidationError):
+        FeatureBuildConfig(form_half_life_days=0.0)
+
+
+def test_when_form_half_life_days_is_negative_then_validation_error_is_raised():
+    with pytest.raises(ValidationError):
+        FeatureBuildConfig(form_half_life_days=-1.0)
+
+
+# ── Criterion 2 — AppConfig wiring ─────────────────────────────────────────
+
+
+def test_when_app_config_is_default_then_features_build_is_feature_build_config():
+    assert isinstance(AppConfig().features_build, FeatureBuildConfig)
+
+
+def test_when_app_config_features_build_is_inspected_then_defaults_match():
+    cfg = AppConfig().features_build
+    assert cfg.ranking_staleness_cutoff == "2020-12-10"
+    assert cfg.form_window == 5
+    assert cfg.form_half_life_days == 365.0
+    assert cfg.random_seed == 42
+    assert cfg.confederation_fallback is True
+
+
+# ── Criterion 3 — CONFEDERATIONS tuple + CONFEDERATION_MAP coverage ────────
+
+
+def test_when_confederations_is_inspected_then_it_is_a_tuple():
+    assert isinstance(CONFEDERATIONS, tuple)
+
+
+def test_when_confederations_is_inspected_then_it_has_six_members():
+    assert len(CONFEDERATIONS) == 6
+
+
+def test_when_confederations_is_inspected_then_it_contains_all_six_bodies():
+    assert set(CONFEDERATIONS) == {"UEFA", "CONMEBOL", "CAF", "AFC", "CONCACAF", "OFC"}
+
+
+def test_when_confederations_is_inspected_then_order_matches_the_spec():
+    assert CONFEDERATIONS == ("UEFA", "CONMEBOL", "CAF", "AFC", "CONCACAF", "OFC")
+
+
+def test_when_confederation_map_is_inspected_then_it_has_at_least_48_entries():
+    assert len(CONFEDERATION_MAP) >= 48
+
+
+def test_when_confederation_map_values_are_inspected_then_all_belong_to_confederations():
+    for team, conf in CONFEDERATION_MAP.items():
+        assert conf in CONFEDERATIONS, f"{team!r} mapped to {conf!r} which is not in CONFEDERATIONS"
+
+
+def test_when_confederation_map_keys_are_normalized_then_round_trip_holds():
+    """Every key must already be crosswalk-canonical so post-normalization lookups hit."""
+    non_canonical = [k for k in CONFEDERATION_MAP if normalize_team(k) != k]
+    assert non_canonical == [], f"Non-canonical keys in CONFEDERATION_MAP: {non_canonical}"
+
+
+# Parametrised WC2026 spot-check — one representative per confederation
 _WC2026_SAMPLE: list[tuple[str, str]] = [
     # CONMEBOL
     ("Argentina", "CONMEBOL"),
@@ -116,232 +183,31 @@ def test_when_wc2026_team_is_queried_then_correct_confederation_is_returned(
     )
 
 
-def test_when_unknown_team_is_queried_then_none_is_returned():
+# ── Criterion 4 — confederation_of ─────────────────────────────────────────
+
+
+def test_when_known_team_is_given_then_confederation_of_returns_its_confederation():
+    assert confederation_of("France") == "UEFA"
+
+
+def test_when_turkiye_alias_is_queried_then_uefa_is_returned():
+    # "Türkiye" is a crosswalk alias that normalizes to "Turkey" → UEFA
+    assert confederation_of("Türkiye") == "UEFA"
+
+
+def test_when_unknown_team_is_given_then_confederation_of_returns_none():
     assert confederation_of("Atlantis FC") is None
 
 
-def test_when_unknown_team_is_queried_then_no_exception_is_raised():
-    # Must degrade gracefully — never raise for an unrecognised name
-    result = confederation_of("Planet Football United")
+def test_when_empty_string_is_given_then_confederation_of_returns_none_without_raising():
+    result = confederation_of("")
     assert result is None
-
-
-# ---------------------------------------------------------------------------
-# Criterion 3 — CONFEDERATIONS tuple structure; CONFEDERATION_MAP key canonicity
-# ---------------------------------------------------------------------------
-
-
-def test_when_confederations_is_inspected_then_it_is_a_tuple():
-    assert isinstance(CONFEDERATIONS, tuple)
-
-
-def test_when_confederations_is_inspected_then_it_has_six_members():
-    assert len(CONFEDERATIONS) == 6
-
-
-def test_when_confederations_is_inspected_then_it_contains_all_six_bodies():
-    assert set(CONFEDERATIONS) == {"UEFA", "CONMEBOL", "CAF", "AFC", "CONCACAF", "OFC"}
-
-
-def test_when_confederation_map_keys_are_normalized_then_round_trip_holds():
-    """Every key in CONFEDERATION_MAP must already be canonical.
-
-    A non-canonical key (e.g. 'Türkiye' instead of 'Turkey') would silently
-    miss lookups when callers pre-normalize team names through the crosswalk.
-    """
-    non_canonical = [k for k in CONFEDERATION_MAP if normalize_team(k) != k]
-    assert non_canonical == [], f"Non-canonical keys found in CONFEDERATION_MAP: {non_canonical}"
-
-
-# ---------------------------------------------------------------------------
-# Criterion 4 — resolve_ranking with ranking=None → used_fallback=True
-# ---------------------------------------------------------------------------
-
-
-def test_when_ranking_is_none_then_resolution_has_used_fallback_true():
-    result = resolve_ranking(
-        "Brazil",
-        ranking=None,
-        as_of="2020-12-10",
-        staleness_cutoff="2020-12-10",
-    )
-    assert isinstance(result, RankingResolution)
-    assert result.used_fallback is True
-
-
-def test_when_ranking_is_none_then_resolution_value_is_none():
-    result = resolve_ranking(
-        "Brazil",
-        ranking=None,
-        as_of="2020-12-10",
-        staleness_cutoff="2020-12-10",
-    )
-    assert result.value is None
-
-
-def test_when_ranking_is_none_then_confederation_is_populated():
-    result = resolve_ranking(
-        "Brazil",
-        ranking=None,
-        as_of="2020-12-10",
-        staleness_cutoff="2020-12-10",
-    )
-    assert result.confederation == "CONMEBOL"
-
-
-def test_when_ranking_is_none_and_team_is_afc_then_confederation_is_afc():
-    result = resolve_ranking(
-        "Japan",
-        ranking=None,
-        as_of="2020-12-10",
-        staleness_cutoff="2020-12-10",
-    )
-    assert result.confederation == "AFC"
-
-
-# ---------------------------------------------------------------------------
-# Criterion 5 — fresh ranking, stale ranking, absent team
-# ---------------------------------------------------------------------------
-
-
-def test_when_ranking_is_fresh_and_team_present_then_used_fallback_is_false():
-    result = resolve_ranking(
-        "Brazil",
-        ranking={"Brazil": 1750.5},
-        as_of="2020-12-10",
-        staleness_cutoff="2020-12-10",
-    )
-    assert result.used_fallback is False
-
-
-def test_when_ranking_is_fresh_and_team_present_then_value_is_populated():
-    result = resolve_ranking(
-        "Brazil",
-        ranking={"Brazil": 1750.5},
-        as_of="2020-12-10",
-        staleness_cutoff="2020-12-10",
-    )
-    assert result.value == 1750.5
-
-
-def test_when_ranking_is_fresh_then_confederation_is_still_populated():
-    result = resolve_ranking(
-        "Brazil",
-        ranking={"Brazil": 1750.5},
-        as_of="2020-12-10",
-        staleness_cutoff="2020-12-10",
-    )
-    assert result.confederation == "CONMEBOL"
-
-
-def test_when_as_of_is_after_staleness_cutoff_then_fallback_path_is_taken():
-    result = resolve_ranking(
-        "Brazil",
-        ranking={"Brazil": 1750.5},
-        as_of="2021-01-01",
-        staleness_cutoff="2020-12-10",
-    )
-    assert result.used_fallback is True
-    assert result.value is None
-
-
-def test_when_as_of_is_before_staleness_cutoff_then_fallback_is_not_taken():
-    result = resolve_ranking(
-        "France",
-        ranking={"France": 1850.0},
-        as_of="2020-06-01",
-        staleness_cutoff="2020-12-10",
-    )
-    assert result.used_fallback is False
-    assert result.value == 1850.0
-
-
-def test_when_team_is_absent_from_ranking_then_fallback_path_is_taken():
-    result = resolve_ranking(
-        "Japan",
-        ranking={"France": 1800.0},
-        as_of="2020-06-01",
-        staleness_cutoff="2020-12-10",
-    )
-    assert result.used_fallback is True
-    assert result.value is None
-
-
-def test_when_team_is_absent_from_ranking_then_confederation_is_populated():
-    result = resolve_ranking(
-        "Japan",
-        ranking={"France": 1800.0},
-        as_of="2020-06-01",
-        staleness_cutoff="2020-12-10",
-    )
-    assert result.confederation == "AFC"
-
-
-# ---------------------------------------------------------------------------
-# Criterion 6 — FeatureBuildConfig defaults and validation; AppConfig wiring
-# ---------------------------------------------------------------------------
-
-
-def test_when_feature_build_config_is_default_then_staleness_cutoff_is_correct():
-    assert FeatureBuildConfig().ranking_staleness_cutoff == "2020-12-10"
-
-
-def test_when_feature_build_config_is_default_then_form_window_is_five():
-    assert FeatureBuildConfig().form_window == 5
-
-
-def test_when_feature_build_config_is_default_then_half_life_is_365():
-    assert FeatureBuildConfig().form_half_life_days == 365.0
-
-
-def test_when_feature_build_config_is_default_then_random_seed_is_42():
-    assert FeatureBuildConfig().random_seed == 42
-
-
-def test_when_feature_build_config_is_default_then_confederation_fallback_is_true():
-    assert FeatureBuildConfig().confederation_fallback is True
-
-
-def test_when_form_window_is_zero_then_validation_error_is_raised():
-    with pytest.raises(ValidationError):
-        FeatureBuildConfig(form_window=0)
-
-
-def test_when_form_window_is_negative_then_validation_error_is_raised():
-    with pytest.raises(ValidationError):
-        FeatureBuildConfig(form_window=-3)
-
-
-def test_when_form_half_life_days_is_zero_then_validation_error_is_raised():
-    with pytest.raises(ValidationError):
-        FeatureBuildConfig(form_half_life_days=0.0)
-
-
-def test_when_form_half_life_days_is_negative_then_validation_error_is_raised():
-    with pytest.raises(ValidationError):
-        FeatureBuildConfig(form_half_life_days=-1.0)
-
-
-def test_when_app_config_is_default_then_features_build_is_feature_build_config():
-    assert isinstance(AppConfig().features_build, FeatureBuildConfig)
-
-
-def test_when_app_config_features_build_is_inspected_then_defaults_match():
-    # Ensures the AppConfig wiring uses the same defaults, not overriding them
-    cfg = AppConfig().features_build
-    assert cfg.form_window == 5
-    assert cfg.form_half_life_days == 365.0
-
-
-# ---------------------------------------------------------------------------
-# Property-based tests
-# ---------------------------------------------------------------------------
 
 
 @given(st.text())
 @settings(max_examples=200)
-def test_when_any_string_is_queried_then_confederation_of_never_raises(name: str) -> None:
-    """confederation_of is total over all strings: unknown inputs return None, never raise."""
+def test_when_any_string_is_given_then_confederation_of_never_raises(name: str) -> None:
+    """Total-function invariant: confederation_of must not raise for any str input."""
     result = confederation_of(name)
     assert result is None or result in CONFEDERATIONS
 
@@ -350,3 +216,140 @@ def test_when_any_string_is_queried_then_confederation_of_never_raises(name: str
 def test_when_confederation_map_key_is_normalised_then_it_is_unchanged(team: str) -> None:
     """Round-trip invariant: every key in CONFEDERATION_MAP is already canonical."""
     assert normalize_team(team) == team
+
+
+# ── Criterion 5 — resolve_ranking ──────────────────────────────────────────
+
+# The 'ranking' parameter is a dict {team: value} or None.
+# "team-absent" means the queried team is missing from the dict.
+
+
+def test_when_resolve_ranking_returns_result_then_it_has_required_attributes():
+    res = resolve_ranking(
+        "France", ranking={"France": 10.0}, as_of="2020-01-01", staleness_cutoff="2020-12-10"
+    )
+    assert hasattr(res, "value")
+    assert hasattr(res, "confederation")
+    assert hasattr(res, "used_fallback")
+
+
+def test_when_ranking_is_present_and_date_is_fresh_then_used_fallback_is_false():
+    res = resolve_ranking(
+        "France", ranking={"France": 1850.0}, as_of="2020-01-01", staleness_cutoff="2020-12-10"
+    )
+    assert res.used_fallback is False
+
+
+def test_when_ranking_is_present_and_date_is_fresh_then_value_is_the_ranking():
+    res = resolve_ranking(
+        "France", ranking={"France": 1850.0}, as_of="2020-01-01", staleness_cutoff="2020-12-10"
+    )
+    assert res.value == 1850.0
+
+
+def test_when_ranking_is_present_and_date_is_fresh_then_confederation_is_populated():
+    res = resolve_ranking(
+        "France", ranking={"France": 1850.0}, as_of="2020-01-01", staleness_cutoff="2020-12-10"
+    )
+    assert res.confederation == "UEFA"
+
+
+def test_when_ranking_is_none_then_used_fallback_is_true():
+    res = resolve_ranking("Brazil", ranking=None, as_of="2020-12-10", staleness_cutoff="2020-12-10")
+    assert isinstance(res, RankingResolution)
+    assert res.used_fallback is True
+
+
+def test_when_ranking_is_none_then_value_is_none():
+    res = resolve_ranking("Brazil", ranking=None, as_of="2020-12-10", staleness_cutoff="2020-12-10")
+    assert res.value is None
+
+
+def test_when_ranking_is_none_then_confederation_is_still_populated():
+    res = resolve_ranking("Brazil", ranking=None, as_of="2020-12-10", staleness_cutoff="2020-12-10")
+    assert res.confederation == "CONMEBOL"
+
+
+def test_when_as_of_is_after_cutoff_then_used_fallback_is_true():
+    # as_of > staleness_cutoff → stale → fallback
+    res = resolve_ranking(
+        "Brazil", ranking={"Brazil": 1750.5}, as_of="2021-01-01", staleness_cutoff="2020-12-10"
+    )
+    assert res.used_fallback is True
+
+
+def test_when_as_of_is_after_cutoff_then_value_is_none():
+    res = resolve_ranking(
+        "Brazil", ranking={"Brazil": 1750.5}, as_of="2021-01-01", staleness_cutoff="2020-12-10"
+    )
+    assert res.value is None
+
+
+def test_when_as_of_is_after_cutoff_then_confederation_is_still_populated():
+    res = resolve_ranking(
+        "Brazil", ranking={"Brazil": 1750.5}, as_of="2021-01-01", staleness_cutoff="2020-12-10"
+    )
+    assert res.confederation == "CONMEBOL"
+
+
+def test_when_as_of_equals_cutoff_then_ranking_is_not_stale():
+    """Boundary: as_of == staleness_cutoff is fresh, not stale (only as_of > cutoff is stale)."""
+    res = resolve_ranking(
+        "France", ranking={"France": 1850.0}, as_of="2020-12-10", staleness_cutoff="2020-12-10"
+    )
+    assert res.used_fallback is False
+    assert res.value == 1850.0
+
+
+def test_when_as_of_is_before_cutoff_then_fallback_is_not_taken():
+    res = resolve_ranking(
+        "France", ranking={"France": 1850.0}, as_of="2020-06-01", staleness_cutoff="2020-12-10"
+    )
+    assert res.used_fallback is False
+    assert res.value == 1850.0
+
+
+def test_when_team_is_absent_from_ranking_dict_then_used_fallback_is_true():
+    res = resolve_ranking(
+        "Japan", ranking={"France": 1800.0}, as_of="2020-06-01", staleness_cutoff="2020-12-10"
+    )
+    assert res.used_fallback is True
+
+
+def test_when_team_is_absent_from_ranking_dict_then_value_is_none():
+    res = resolve_ranking(
+        "Japan", ranking={"France": 1800.0}, as_of="2020-06-01", staleness_cutoff="2020-12-10"
+    )
+    assert res.value is None
+
+
+def test_when_team_is_absent_from_ranking_dict_then_confederation_is_populated():
+    res = resolve_ranking(
+        "Japan", ranking={"France": 1800.0}, as_of="2020-06-01", staleness_cutoff="2020-12-10"
+    )
+    assert res.confederation == "AFC"
+
+
+def test_when_ranking_is_none_and_team_is_afc_then_confederation_is_afc():
+    res = resolve_ranking("Japan", ranking=None, as_of="2020-12-10", staleness_cutoff="2020-12-10")
+    assert res.confederation == "AFC"
+
+
+# ── Property-based: staleness invariant ────────────────────────────────────
+
+
+@given(
+    st.dates(
+        min_value=__import__("datetime").date(2021, 1, 1),
+        max_value=__import__("datetime").date(2030, 12, 31),
+    ).map(str)
+)
+@settings(max_examples=100)
+def test_when_as_of_is_strictly_after_cutoff_then_used_fallback_is_always_true(as_of: str) -> None:
+    """Invariant: any ISO date after 2020-12-10 always triggers fallback for a known team."""
+    res = resolve_ranking(
+        "France", ranking={"France": 1850.0}, as_of=as_of, staleness_cutoff="2020-12-10"
+    )
+    assert res.used_fallback is True
+    assert res.value is None
+    assert res.confederation is not None
