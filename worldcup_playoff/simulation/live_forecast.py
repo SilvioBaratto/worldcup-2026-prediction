@@ -154,9 +154,15 @@ def _fetch_state_and_abilities(cfg: Any) -> tuple[TournamentState, TeamAbilities
     """
     from worldcup_playoff.data.live import build_state_from_results, fetch_tournament_state
     from worldcup_playoff.data.martj42_loader import load_martj42_results
-    from worldcup_playoff.simulation.poisson import fit_dixon_coles
+    from worldcup_playoff.simulation.poisson import blend_abilities_with_elo, fit_dixon_coles
     df = load_martj42_results(cfg.martj42)
     abilities = fit_dixon_coles(df, cfg.poisson)
+    weight = getattr(cfg.poisson, "elo_prior_weight", 0.0)
+    if weight > 0.0:
+        from worldcup_playoff.data.elo import compute_elo
+        elo = compute_elo(df, getattr(cfg, "elo", None))
+        abilities = blend_abilities_with_elo(abilities, elo.final_ratings, weight)
+        logger.info("Blended Dixon-Coles abilities with Elo prior (weight=%.2f).", weight)
     try:
         state = fetch_tournament_state()
     except Exception:

@@ -35,6 +35,60 @@ class TeamAbilities:
     intercept: float
 
 
+def blend_abilities_with_elo(
+    abilities: TeamAbilities,
+    elo_ratings: dict[str, float],
+    weight: float,
+) -> TeamAbilities:
+    """Shrink Dixon-Coles attack/defence toward an Elo-implied strength prior.
+
+    The fitted abilities are MLE estimates on raw goals, so teams that ran up
+    large scorelines (e.g. in the current group stage) get extreme abilities
+    while reputable sides with modest recent margins are understated. Blending
+    toward an Elo prior re-injects long-run team strength.
+
+    For every team present in both ``abilities`` and ``elo_ratings``, the Elo
+    rating is standardized across that shared set and rescaled to the spread of
+    the fitted abilities, yielding a prior on the same log-rate scale. Each
+    team's attack and defence are then blended ``(1 - weight) * fitted + weight
+    * prior``. ``weight <= 0`` returns the abilities unchanged; teams without an
+    Elo rating are never touched. The prior is balanced (one Elo z-score shifts
+    attack and defence equally), so it nudges overall quality without inventing
+    an attack/defence skew. ``home_adv``, ``rho`` and ``intercept`` are kept.
+    """
+    if weight <= 0.0:
+        return abilities
+    shared = [t for t in abilities.attack if t in elo_ratings]
+    if len(shared) < 2:
+        return abilities
+    elos = np.array([elo_ratings[t] for t in shared], dtype=float)
+    elo_mean, elo_std = float(elos.mean()), float(elos.std())
+    if elo_std == 0.0:
+        return abilities
+
+    atk = np.array([abilities.attack[t] for t in shared], dtype=float)
+    dfc = np.array([abilities.defence[t] for t in shared], dtype=float)
+    atk_mean, atk_std = float(atk.mean()), float(atk.std())
+    dfc_mean, dfc_std = float(dfc.mean()), float(dfc.std())
+
+    new_attack = dict(abilities.attack)
+    new_defence = dict(abilities.defence)
+    for team in shared:
+        z = (elo_ratings[team] - elo_mean) / elo_std
+        attack_prior = atk_mean + z * atk_std
+        defence_prior = dfc_mean + z * dfc_std
+        new_attack[team] = (1.0 - weight) * abilities.attack[team] + weight * attack_prior
+        new_defence[team] = (1.0 - weight) * abilities.defence[team] + weight * defence_prior
+
+    return TeamAbilities(
+        attack=new_attack,
+        defence=new_defence,
+        home_adv=abilities.home_adv,
+        rho=abilities.rho,
+        intercept=abilities.intercept,
+    )
+
+
 @dataclass(frozen=True)
 class _PreparedData:
     teams: list[str]

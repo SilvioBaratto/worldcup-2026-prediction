@@ -248,12 +248,22 @@ class PoissonConfig(BaseModel):
     home_adv_init: float = 0.25
     random_seed: int = 42
     optimizer_maxiter: int = 200
+    # Shrink fitted attack/defence toward an Elo-implied strength prior:
+    # 0.0 = pure Dixon-Coles (unchanged), 1.0 = pure Elo-shaped abilities.
+    elo_prior_weight: float = 0.0
 
     @field_validator("half_life_days")
     @classmethod
     def half_life_days_must_be_positive(cls, v: float) -> float:
         if v <= 0:
             raise ValueError("half_life_days must be positive")
+        return v
+
+    @field_validator("elo_prior_weight")
+    @classmethod
+    def elo_prior_weight_in_unit_interval(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("elo_prior_weight must be in [0, 1]")
         return v
 
     @field_validator("max_goals")

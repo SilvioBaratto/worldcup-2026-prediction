@@ -136,12 +136,29 @@ def _train_hybrid(
 
 def _backtest(
     config: Path = typer.Option("config/default.toml", "--config", "-c"),
+    tune_prior: bool = typer.Option(
+        False, "--tune-prior",
+        help="Sweep poisson.elo_prior_weight over past WCs (RPS/log-loss/Brier) "
+        "and report the best weight, instead of the RF-hybrid backtest.",
+    ),
     verbose: int = typer.Option(0, "--verbose", "-v", count=True),
 ) -> None:
     """Run time-aware WC backtest (RPS / log-loss / Brier) vs bookmaker + legacy."""
     _setup_logging(verbose)
     import worldcup_playoff.models.evaluation as _evaluation  # noqa: PLC0415
     cfg = _safe_load_config(config)
+    if tune_prior:
+        with _console.status("[bold]Tuning elo_prior_weight over WC2014/18/22..."):
+            table = _evaluation.run_prior_tuning(cfg=cfg, root=_root(config))
+        if table is not None and not table.empty:
+            _console.print(table.to_string())
+            best = table["rps"].idxmin()
+            _console.print(
+                f"[green]Best elo_prior_weight = {best} (RPS {table['rps'].min():.5f})[/green]"
+            )
+        else:
+            _console.print("[yellow]Prior tuning skipped (martj42 results unavailable).[/yellow]")
+        return
     with _console.status("[bold]Running backtest..."):
         result = _evaluation.run_backtest(cfg=cfg, root=_root(config))
     if result is not None and not result.empty:

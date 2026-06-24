@@ -20,12 +20,59 @@ from worldcup_playoff.simulation.poisson import (
     DixonColesEstimator,
     ScorelineSampler,
     TeamAbilities,
+    blend_abilities_with_elo,
     decay_weight,
     dixon_coles_tau,
     lambdas,
     score_matrix,
 )
 from worldcup_playoff.config import AppConfig, PoissonConfig
+
+
+def _abilities() -> TeamAbilities:
+    # B is the weak side on raw goals; the Elo prior says it is actually strong.
+    return TeamAbilities(
+        attack={"A": 0.5, "B": -0.5, "C": 0.0},
+        defence={"A": 0.4, "B": -0.4, "C": 0.0},
+        home_adv=0.25,
+        rho=-0.1,
+        intercept=0.1,
+    )
+
+
+class TestBlendAbilitiesWithElo:
+    _ELO = {"A": 1500.0, "B": 2000.0, "C": 1750.0}
+
+    def test_when_weight_is_zero_then_abilities_are_unchanged(self):
+        ab = _abilities()
+        assert blend_abilities_with_elo(ab, self._ELO, 0.0) is ab
+
+    def test_when_team_lacks_elo_then_its_ability_is_untouched(self):
+        ab = _abilities()
+        out = blend_abilities_with_elo(ab, {"A": 1500.0, "B": 2000.0}, 1.0)
+        assert out.attack["C"] == ab.attack["C"]
+        assert out.defence["C"] == ab.defence["C"]
+
+    def test_when_blended_then_high_elo_team_attack_is_pulled_up(self):
+        ab = _abilities()
+        out = blend_abilities_with_elo(ab, self._ELO, 0.6)
+        # B has the lowest fitted attack but the highest Elo → must rise.
+        assert out.attack["B"] > ab.attack["B"]
+        assert out.defence["B"] > ab.defence["B"]
+
+    def test_when_blended_then_home_adv_rho_intercept_are_preserved(self):
+        ab = _abilities()
+        out = blend_abilities_with_elo(ab, self._ELO, 0.7)
+        assert (out.home_adv, out.rho, out.intercept) == (ab.home_adv, ab.rho, ab.intercept)
+
+    def test_when_fewer_than_two_shared_teams_then_abilities_unchanged(self):
+        ab = _abilities()
+        assert blend_abilities_with_elo(ab, {"A": 1500.0}, 1.0) is ab
+
+    @pytest.mark.parametrize("weight", [-0.1, 1.5])
+    def test_when_weight_out_of_unit_interval_then_config_rejects_it(self, weight):
+        with pytest.raises(ValidationError):
+            PoissonConfig(elo_prior_weight=weight)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

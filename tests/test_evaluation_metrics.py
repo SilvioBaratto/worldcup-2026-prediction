@@ -219,3 +219,92 @@ def test_when_valid_probability_vector_then_log_loss_is_nonnegative(args):
     """log-loss ≥ 0 for any valid (strictly positive) probability vector and any outcome."""
     probs, y_true = args
     assert multiclass_log_loss(y_true, probs) >= -1e-9
+
+
+# ---------------------------------------------------------------------------
+# Elo-prior-weight tuning backtest (Dixon-Coles + Elo path)
+# ---------------------------------------------------------------------------
+
+import pandas as pd  # noqa: E402
+
+from worldcup_playoff.config import AppConfig  # noqa: E402
+from worldcup_playoff.models.evaluation import (  # noqa: E402
+    _outcome,
+    _wdl_probs,
+    backtest_elo_prior_weight,
+)
+from worldcup_playoff.simulation.poisson import TeamAbilities  # noqa: E402
+
+
+class TestOutcome:
+    def test_home_win_is_class_zero(self):
+        assert _outcome(2, 1) == 0
+
+    def test_draw_is_class_one(self):
+        assert _outcome(1, 1) == 1
+
+    def test_away_win_is_class_two(self):
+        assert _outcome(0, 3) == 2
+
+
+class TestWdlProbs:
+    def _abilities(self) -> TeamAbilities:
+        return TeamAbilities(
+            attack={"Strong": 0.8, "Weak": -0.8},
+            defence={"Strong": 0.6, "Weak": -0.6},
+            home_adv=0.25,
+            rho=-0.1,
+            intercept=0.1,
+        )
+
+    def test_probs_sum_to_one(self):
+        p = _wdl_probs(self._abilities(), "Strong", "Weak", max_goals=10)
+        assert math.isclose(sum(p), 1.0, abs_tol=1e-9)
+
+    def test_stronger_home_team_favoured(self):
+        p = _wdl_probs(self._abilities(), "Strong", "Weak", max_goals=10)
+        assert p[0] > p[2]  # P(home win) > P(away win)
+
+
+def _synthetic_results(seed: int = 0) -> pd.DataFrame:
+    """Deterministic martj42-schema frame: tiered teams 2010-2022 + a 2022 WC block."""
+    rng = np.random.default_rng(seed)
+    strength = {"A": 2.2, "B": 1.6, "C": 1.2, "D": 0.8, "E": 0.5, "F": 0.3}
+    teams = list(strength)
+    rows = []
+    for year in range(2010, 2022):
+        for _ in range(40):
+            h, a = rng.choice(teams, size=2, replace=False)
+            rows.append({
+                "DATE": f"{year}-03-15", "HOME_TEAM": h, "AWAY_TEAM": a,
+                "HOME_GOALS": int(rng.poisson(strength[h])),
+                "AWAY_GOALS": int(rng.poisson(strength[a])),
+                "TOURNAMENT": "Friendly", "NEUTRAL": False,
+            })
+    for h, a in [("A", "F"), ("B", "E"), ("C", "D"), ("A", "B")]:
+        rows.append({
+            "DATE": "2022-06-20", "HOME_TEAM": h, "AWAY_TEAM": a,
+            "HOME_GOALS": int(rng.poisson(strength[h])),
+            "AWAY_GOALS": int(rng.poisson(strength[a])),
+            "TOURNAMENT": "FIFA World Cup", "NEUTRAL": True,
+        })
+    return pd.DataFrame(rows)
+
+
+class TestBacktestEloPriorWeight:
+    def test_returns_weight_indexed_metrics(self):
+        cfg = AppConfig()
+        table = backtest_elo_prior_weight(
+            _synthetic_results(), cfg, weights=(0.0, 0.5, 1.0), years=[2022]
+        )
+        assert list(table.index) == [0.0, 0.5, 1.0]
+        assert {"rps", "log_loss", "brier"}.issubset(table.columns)
+        assert table["rps"].between(0.0, 1.0).all()
+        assert np.isfinite(table[["rps", "log_loss", "brier"]].to_numpy()).all()
+
+    def test_empty_when_no_matching_world_cup(self):
+        cfg = AppConfig()
+        table = backtest_elo_prior_weight(
+            _synthetic_results(), cfg, weights=(0.0, 1.0), years=[1990]
+        )
+        assert table.empty

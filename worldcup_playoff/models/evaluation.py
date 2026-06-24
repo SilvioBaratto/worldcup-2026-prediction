@@ -218,6 +218,130 @@ def run_backtest(cfg: Any = None, root: Any = None) -> "pd.DataFrame | None":
     return backtest_hybrid(matches, *_sklearn_pair(seed), odds=combined_odds)
 
 
+# ── Elo-prior-weight tuning (Dixon-Coles + Elo simulation path) ────────────────
+
+_WC_TOURNAMENT: str = "FIFA World Cup"
+_DEFAULT_PRIOR_WEIGHTS: tuple[float, ...] = (0.0, 0.3, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
+
+
+def _outcome(home_goals: int, away_goals: int) -> int:
+    """Ordered 3-class outcome from the home perspective: 0=win, 1=draw, 2=loss."""
+    return 0 if home_goals > away_goals else (1 if home_goals == away_goals else 2)
+
+
+def _wdl_probs(abilities: Any, home: str, away: str, max_goals: int) -> list[float]:
+    """Neutral-venue (P_home_win, P_draw, P_away_win) from the Dixon-Coles pmf."""
+    from worldcup_playoff.simulation.poisson import lambdas, score_matrix
+
+    lh, la = lambdas(abilities, home, away, neutral=True)
+    mat = score_matrix(lh, la, abilities.rho, max_goals)
+    hw = float(np.tril(mat, -1).sum())  # home goals > away goals
+    aw = float(np.triu(mat, 1).sum())   # away goals > home goals
+    return [hw, 1.0 - hw - aw, aw]
+
+
+def backtest_elo_prior_weight(
+    results: pd.DataFrame,
+    cfg: Any,
+    weights: "list[float] | tuple[float, ...]" = _DEFAULT_PRIOR_WEIGHTS,
+    years: list[int] | None = None,
+) -> pd.DataFrame:
+    """Tune ``poisson.elo_prior_weight`` by match-level RPS over past World Cups.
+
+    For each WC year, fits Dixon-Coles + Elo on all matches **before** that
+    tournament (so there is no leakage), then for each candidate weight blends
+    the abilities and scores every WC match's neutral-venue W/D/L probability
+    against the actual result. Returns a DataFrame indexed by ``weight`` with
+    pooled ``rps`` / ``log_loss`` / ``brier`` plus per-year ``rps_<year>``
+    columns. Lower RPS is better.
+
+    Expects the coerced martj42 schema (``DATE``, ``HOME_TEAM``, ``AWAY_TEAM``,
+    ``HOME_GOALS``, ``AWAY_GOALS``, ``TOURNAMENT``).
+    """
+    from worldcup_playoff.data.elo import compute_elo
+    from worldcup_playoff.simulation.poisson import blend_abilities_with_elo, fit_dixon_coles
+
+    target_years = years or _DEFAULT_WC_YEARS
+    max_goals = cfg.poisson.max_goals
+    df = results.copy()
+    df["DATE"] = pd.to_datetime(df["DATE"], errors="coerce")
+
+    # Fit Dixon-Coles + Elo once per year (independent of the blend weight).
+    fitted: dict[int, tuple[Any, dict[str, float], list[tuple[str, str, int]]]] = {}
+    for year in target_years:
+        train = df[df["DATE"] < pd.Timestamp(f"{year}-05-01")]
+        wc = df[
+            (df["TOURNAMENT"] == _WC_TOURNAMENT)
+            & (df["DATE"].dt.year == year)
+            & df["HOME_GOALS"].notna()
+            & df["AWAY_GOALS"].notna()
+        ]
+        if train.empty or wc.empty:
+            continue
+        abilities = fit_dixon_coles(train, cfg.poisson)
+        elo = compute_elo(train, getattr(cfg, "elo", None)).final_ratings
+        matches = [
+            (r.HOME_TEAM, r.AWAY_TEAM, _outcome(int(r.HOME_GOALS), int(r.AWAY_GOALS)))
+            for r in wc.itertuples(index=False)
+            if r.HOME_TEAM in abilities.attack and r.AWAY_TEAM in abilities.attack
+        ]
+        if matches:
+            fitted[year] = (abilities, elo, matches)
+
+    rows: list[dict[str, float]] = []
+    for weight in weights:
+        per_year: dict[int, float] = {}
+        y_true_all: list[int] = []
+        y_pred_all: list[list[float]] = []
+        for year, (abilities, elo, matches) in fitted.items():
+            blended = blend_abilities_with_elo(abilities, elo, weight)
+            yt = [o for _, _, o in matches]
+            yp = [_wdl_probs(blended, h, a, max_goals) for h, a, _ in matches]
+            per_year[year] = rank_probability_score(np.array(yt), np.array(yp))
+            y_true_all.extend(yt)
+            y_pred_all.extend(yp)
+        if not y_true_all:
+            continue
+        yt_arr, yp_arr = np.array(y_true_all), np.array(y_pred_all)
+        row: dict[str, float] = {
+            "weight": float(weight),
+            "rps": rank_probability_score(yt_arr, yp_arr),
+            "log_loss": multiclass_log_loss(yt_arr, yp_arr),
+            "brier": brier_score(yt_arr, yp_arr),
+        }
+        row.update({f"rps_{year}": r for year, r in per_year.items()})
+        rows.append(row)
+    if not rows:
+        return pd.DataFrame(columns=["rps", "log_loss", "brier"]).rename_axis("weight")
+    return pd.DataFrame(rows).set_index("weight")
+
+
+def run_prior_tuning(
+    cfg: Any = None,
+    root: Any = None,
+    weights: "list[float] | tuple[float, ...] | None" = None,
+) -> "pd.DataFrame | None":
+    """High-level CLI entry: load martj42 results and tune ``elo_prior_weight``.
+
+    Returns a weight-indexed DataFrame of RPS / log-loss / Brier, or None when
+    the martj42 results cache is unavailable. ``root`` is accepted for signature
+    parity with :func:`run_backtest` (martj42 paths come from ``cfg.martj42``).
+    """
+    from worldcup_playoff.config import AppConfig
+    from worldcup_playoff.data.martj42_loader import load_martj42_results
+
+    resolved = cfg if cfg is not None else AppConfig()
+    try:
+        results = load_martj42_results(resolved.martj42)
+    except Exception:
+        return None
+    if results is None or results.empty:
+        return None
+    return backtest_elo_prior_weight(
+        results, resolved, weights=weights or _DEFAULT_PRIOR_WEIGHTS
+    )
+
+
 class ModelEvaluator:
     """Evaluates classifier performance."""
 
