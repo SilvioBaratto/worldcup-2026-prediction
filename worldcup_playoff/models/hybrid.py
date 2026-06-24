@@ -187,3 +187,34 @@ class HybridModel:
 def fit_hybrid(dataset: MatchDataset, config: HybridConfig | None = None) -> HybridModel:
     """Fit and return a HybridModel from a pre-split MatchDataset."""
     return HybridModel(config=config).fit(dataset)
+
+
+# ─── High-level CLI entry ─────────────────────────────────────────────────────
+
+
+def _load_features(root: Any, features_path: str = "dataset/features.csv") -> "pd.DataFrame | None":
+    from pathlib import Path
+    try:
+        return pd.read_csv(Path(root) / features_path)
+    except (FileNotFoundError, OSError):
+        return None
+
+
+def _make_dataset(features: "pd.DataFrame", test_size: float) -> MatchDataset:
+    from worldcup_playoff.models.dataset import build_dataset
+    from worldcup_playoff.features.build import FEATURE_COLUMNS
+    feat_cols = [c for c in FEATURE_COLUMNS if c in features.columns]
+    return build_dataset(features, test_size, feat_cols)
+
+
+def train_hybrid(cfg: Any = None, root: Any = None) -> HybridModel | None:
+    """High-level CLI entry: load features from disk and fit a HybridModel.
+
+    Returns ``None`` when ``dataset/features.csv`` is unavailable.
+    """
+    from worldcup_playoff.config import AppConfig
+    resolved = cfg if cfg is not None else AppConfig()
+    features = _load_features(root or ".")
+    if features is None:
+        return None
+    return fit_hybrid(_make_dataset(features, resolved.hybrid.test_size), resolved.hybrid)

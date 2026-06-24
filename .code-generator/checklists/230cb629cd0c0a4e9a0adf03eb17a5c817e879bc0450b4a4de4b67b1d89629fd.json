@@ -1,7 +1,7 @@
 [
   {
-    "issue_number": 12,
-    "title": "feat: time-aware match dataset utility + Hybrid/OrderedLogit config models",
+    "issue_number": 16,
+    "title": "feat: Cycle 5 config groundwork \u2014 [rf]/[odds] sections, knockout sim params, TOML wiring",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,
@@ -9,8 +9,8 @@
     "professionalized": false
   },
   {
-    "issue_number": 13,
-    "title": "feat: Groll-style RF/GBM goal-based hybrid model (primary predictor)",
+    "issue_number": 17,
+    "title": "feat: group-stage simulation engine with FIFA tiebreaks (simulation/group_stage.py)",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,
@@ -18,8 +18,8 @@
     "professionalized": false
   },
   {
-    "issue_number": 14,
-    "title": "feat: Elo-diff ordered logit secondary model (statsmodels)",
+    "issue_number": 18,
+    "title": "feat: R32 resolution + single-elimination knockout sim with extra-time/penalties (simulation/knockout.py)",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,
@@ -27,8 +27,44 @@
     "professionalized": false
   },
   {
-    "issue_number": 15,
-    "title": "feat: models package no-key integration smoke test (hybrid + ordered logit + baseline)",
+    "issue_number": 19,
+    "title": "feat: ~100k Monte-Carlo live-forecast orchestrator + title odds (simulation/live_forecast.py)",
+    "tests_passed": true,
+    "committed": false,
+    "feature_done": false,
+    "runtime_verified": true,
+    "professionalized": false
+  },
+  {
+    "issue_number": 20,
+    "title": "feat: archived bookmaker odds scraper + de-vig + CSV cache (data/odds.py)",
+    "tests_passed": true,
+    "committed": false,
+    "feature_done": false,
+    "runtime_verified": true,
+    "professionalized": false
+  },
+  {
+    "issue_number": 21,
+    "title": "feat: probabilistic eval metrics (RPS/log-loss/Brier) + hybrid backtest vs bookmaker baseline",
+    "tests_passed": true,
+    "committed": false,
+    "feature_done": false,
+    "runtime_verified": true,
+    "professionalized": false
+  },
+  {
+    "issue_number": 22,
+    "title": "feat: CLI commands fetch-live, build-features, train-hybrid, backtest, forecast (cli.py)",
+    "tests_passed": true,
+    "committed": false,
+    "feature_done": false,
+    "runtime_verified": true,
+    "professionalized": false
+  },
+  {
+    "issue_number": 23,
+    "title": "feat: title-odds visualizations for the live forecast (visualization/plots.py)",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,

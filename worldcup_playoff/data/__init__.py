@@ -49,6 +49,7 @@ from worldcup_playoff.data.loader import (
     validate_matches_df,
     validate_teams_df,
 )
+from worldcup_playoff.data.odds import OddsScraper, de_vig, load_odds
 from worldcup_playoff.data.martj42_loader import (
     Martj42Loader,
     REQUIRED_MARTJ42_GOALSCORERS_COLUMNS,
@@ -107,6 +108,9 @@ __all__ = [
     "load_martj42_goalscorers",
     "load_martj42_results",
     "load_martj42_shootouts",
+    "OddsScraper",
+    "de_vig",
+    "load_odds",
     "normalize_series",
     "normalize_team",
     "validate_goalscorers_df",

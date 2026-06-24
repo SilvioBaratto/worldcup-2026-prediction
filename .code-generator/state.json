@@ -1,9 +1,9 @@
 {
   "mode": "multi-cycle",
   "started_at": "2026-06-23T18:24:44Z",
-  "updated_at": "2026-06-24T01:31:20Z",
+  "updated_at": "2026-06-24T04:04:17Z",
   "state_version": 2,
-  "current_cycle": 4,
+  "current_cycle": 5,
   "cycles": [
     {
       "id": 1,
@@ -756,8 +756,8 @@
       "name": "Model Training & Comparison",
       "milestone_number": 4,
       "milestone_title": "Cycle 4 \u2014 Groll Hybrid & Baselines",
-      "status": "open",
-      "phase": 65,
+      "status": "completed",
+      "phase": 7,
       "issues": [
         {
           "number": 12,
@@ -902,19 +902,30 @@
           "cache_write_1h": 132929,
           "compaction_events": 0,
           "clear_events": 0
+        },
+        "phase7": {
+          "input": 2487,
+          "output": 111,
+          "cache_read": 15328,
+          "cache_write": 10463,
+          "num_turns": 1,
+          "cache_write_5m": 0,
+          "cache_write_1h": 10463,
+          "compaction_events": 0,
+          "clear_events": 0
         }
       },
       "started_at": "2026-06-23T23:36:05Z",
-      "finished_at": null,
+      "finished_at": "2026-06-24T01:31:27Z",
       "cache_telemetry": {
-        "input": 30196,
-        "output": 300370,
-        "cache_read": 15686483,
-        "cache_write": 928989,
-        "cache_write_1h": 477234,
+        "input": 32683,
+        "output": 300481,
+        "cache_read": 15701811,
+        "cache_write": 939452,
+        "cache_write_1h": 487697,
         "cache_write_5m": 451755,
         "cache_hit_pct": 94.2,
-        "wall_seconds": 5488.871967376093
+        "wall_seconds": 5493.442882209085
       },
       "phase2_batch_id": null,
       "ollama_model": null,
@@ -999,11 +1010,136 @@
     {
       "id": 5,
       "name": "Evaluation, Simulation & Integration",
-      "milestone_number": null,
+      "milestone_number": 5,
       "milestone_title": "Cycle 5 \u2014 Tournament Simulation & Full Pipeline",
       "status": "open",
-      "phase": 0,
-      "issues": [],
+      "phase": 65,
+      "issues": [
+        {
+          "number": 16,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:config"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-24T01:43:56Z):\n> Scope and current-state analysis are accurate: `config/default.toml` does ship only `[hybrid]` and `[ordered_logit]` of the new sections (missing `[live]`/`[elo]`/`[poisson]`), and `RandomForestConfig`/`SimulationConfig` are exactly as described. Two concrete validator points before implementing:\n> \n> 1. `random_seed` \u2014 the criterion says `validated > 0`, but `0` is a valid seed for both `numpy.random.default_rng(0)` and the `numpy.random.SeedSequence` pattern issue #19 plans to derive sub-seeds from. A `> 0` guard would reject a legitimate seed and create a needless inconsistency with `PoissonConfig.random_seed` (which has no such guard). Validate `>= 0` instead.\n> \n> 2. `extra_time_factor` \u2014 give it an explicit range validator (`0.0 < v <= 1.0`). It scales the extra-time goal rate in #18; an unvalidated value of `0` silently disables ET scoring and a value `> 1` would make extra time higher-scoring than regulation. A bounded validator makes the misconfiguration fail loudly at load time.\n> \n> Everything else (new `OddsConfig`/`RFConfig`, `ConfigDict(extra=\"ignore\")`, keeping legacy `RandomForestConfig`, round-trip test) is well-specified.",
+          "title": "feat: Cycle 5 config groundwork \u2014 [rf]/[odds] sections, knockout sim params, TOML wiring"
+        },
+        {
+          "number": 17,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:simulation"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-24T01:43:57Z):\n> The v4-dict output contract is correctly reverse-engineered from `wc2026_bracket.py`: rows need `team.name`, `points`, `goalDifference`, `goalsFor`, and `position` (1=winner\u20264=fourth), since `resolve_r32` \u2192 `_get_row_at(table, pos)` locates rows by the `position` field and `rank_third_places` reads each group's position-3 row. Make sure the adapter sets `position` AFTER all tiebreaks resolve, and emits all 12 groups, or `rank_third_places`/`assign_thirds` will `KeyError`.\n> \n> Concrete tiebreak pitfall to specify in the acceptance criteria: the head-to-head rung is NOT a pairwise comparison. FIFA applies it as a mini-table recomputed over ONLY the tied teams (their points \u2192 GD \u2192 goals-for among each other). A naive pairwise `a beats b` sort is non-transitive for 3+ way ties (A>B, B>C, C>A is possible) and produces unstable/incorrect ordering. Implement H2H by: (a) isolate the tied subset, (b) recompute points/GD/GF using only matches among that subset, (c) re-rank; if still tied, fall to the seeded coin-flip. Add an explicit 3-way-tie test case, since that is exactly where a pairwise implementation passes the 2-way tests but breaks in production.",
+          "title": "feat: group-stage simulation engine with FIFA tiebreaks (simulation/group_stage.py)"
+        },
+        {
+          "number": 18,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:simulation"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-24T01:43:58Z):\n> R32 seeding via `resolve_r32` and the round-folding reuse from `tournament.py` are sound. One interface gap to call out for the extra-time path: `ScorelineSampler.sample(home, away, neutral, size, random_state)` computes its \u03bb internally from `TeamAbilities` and exposes no way to scale them \u2014 so you cannot honor `extra_time_factor` by calling `sample()` again. To sample ET goals at `\u03bb \u00d7 extra_time_factor` you must drop to the lower-level functions already in `poisson.py`: call `lambdas(abilities, home, away, neutral=True)`, multiply both rates by `extra_time_factor`, build a `score_matrix(lh*f, la*f, rho=abilities.rho, max_goals=...)`, and draw from it. Plan the resolver to take `TeamAbilities` (or the `lambdas`/`score_matrix` helpers), not just a `ScorelineSampler`, otherwise the ET requirement isn't implementable against the current API. Also specify that ET goals are ADDED to the drawn full-time score (not a replacement draw) before the penalty coin-flip check.",
+          "title": "feat: R32 resolution + single-elimination knockout sim with extra-time/penalties (simulation/knockout.py)"
+        },
+        {
+          "number": 19,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:simulation"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-24T01:43:59Z):\n> The orchestration shape (fit Dixon-Coles once, loop N, accumulate champion/round counts, reuse `RoundResult.probabilities`) is right, but there is a real RNG/perf hazard in the current sampler that this issue's seconds-to-minutes target depends on. `ScorelineSampler.sample` does `rng = np.random.default_rng(seed)` on EVERY call (poisson.py:251) and only accepts an `int` `random_state`. Consequences at ~100k tournaments \u00d7 ~50 matches (~5M calls): (1) constructing a fresh `default_rng` per draw is pure overhead and is the likely reason you'd miss the timing target; (2) more importantly, if the orchestrator reuses the same per-iteration seed across the many `sample()` calls within one tournament, every match in that tournament draws from an identically-seeded stream \u2192 correlated/duplicated scorelines, silently biasing the odds. The `SeedSequence.spawn` plan only fixes determinism across runs, not the intra-tournament correlation or the construction cost.\n> \n> Recommend extending `ScorelineSampler.sample` (and the #17/#18 resolvers) to accept an injected `np.random.Generator` and thread ONE generator through an entire tournament's draws, advancing it instead of re-seeding. Derive one child Generator per iteration from `SeedSequence(master).spawn(N)` for reproducible, decorrelated, parallel-safe streams. This is the same `Generator` the #17 coin-flip and #18 penalty rungs need, so unify on it rather than passing raw int seeds. Without this, the 'sum \u2248 1.0 / determinism' criteria can pass on small-N tests while the full run is both slow and statistically biased.",
+          "title": "feat: ~100k Monte-Carlo live-forecast orchestrator + title odds (simulation/live_forecast.py)"
+        },
+        {
+          "number": 20,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:medium",
+            "phase:implement",
+            "agent:python-pro",
+            "area:data"
+          ],
+          "reviewed": true,
+          "comments": "",
+          "title": "feat: archived bookmaker odds scraper + de-vig + CSV cache (data/odds.py)"
+        },
+        {
+          "number": 21,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:models"
+          ],
+          "reviewed": true,
+          "comments": "",
+          "title": "feat: probabilistic eval metrics (RPS/log-loss/Brier) + hybrid backtest vs bookmaker baseline"
+        },
+        {
+          "number": 22,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "area:cli",
+            "phase:implement",
+            "agent:python-pro"
+          ],
+          "reviewed": true,
+          "comments": "",
+          "title": "feat: CLI commands fetch-live, build-features, train-hybrid, backtest, forecast (cli.py)"
+        },
+        {
+          "number": 23,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:medium",
+            "phase:implement",
+            "agent:python-pro",
+            "area:visualization"
+          ],
+          "reviewed": true,
+          "comments": "",
+          "title": "feat: title-odds visualizations for the live forecast (visualization/plots.py)"
+        },
+        {
+          "number": 24,
+          "status": "closed",
+          "agent": "default",
+          "labels": [
+            "priority:high",
+            "phase:fix"
+          ],
+          "reviewed": false,
+          "comments": "",
+          "title": ""
+        }
+      ],
       "commit_sha": null,
       "depends_on": [
         1,
@@ -1030,31 +1166,124 @@
           "effort": "medium"
         }
       ],
-      "base_commit": null,
-      "token_usage": {},
-      "started_at": null,
+      "base_commit": "e4d98f51719ace89ca5b58f915391dd774c355f8",
+      "token_usage": {
+        "phase1": {
+          "input": 18144,
+          "output": 27282,
+          "cache_read": 1183615,
+          "cache_write": 88158,
+          "num_turns": 24,
+          "cache_write_5m": 0,
+          "cache_write_1h": 88158,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase2": {
+          "input": 136,
+          "output": 11609,
+          "cache_read": 169906,
+          "cache_write": 74777,
+          "num_turns": 7,
+          "cache_write_5m": 0,
+          "cache_write_1h": 74777,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase3_4": {
+          "input": 25,
+          "output": 43803,
+          "cache_read": 2916202,
+          "cache_write": 101548,
+          "num_turns": 30,
+          "cache_write_5m": 101548,
+          "cache_write_1h": 0,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase5": {
+          "input": 13428,
+          "output": 30602,
+          "cache_read": 993140,
+          "cache_write": 98694,
+          "num_turns": 26,
+          "cache_write_5m": 0,
+          "cache_write_1h": 98694,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase6": {
+          "input": 324,
+          "output": 11093,
+          "cache_read": 2868573,
+          "cache_write": 59549,
+          "num_turns": 46,
+          "cache_write_5m": 0,
+          "cache_write_1h": 59549,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "mav": {
+          "input": 98,
+          "output": 11180,
+          "cache_read": 827327,
+          "cache_write": 76599,
+          "num_turns": 14,
+          "cache_write_5m": 0,
+          "cache_write_1h": 76599,
+          "compaction_events": 0,
+          "clear_events": 0
+        }
+      },
+      "started_at": "2026-06-24T01:31:29Z",
       "finished_at": null,
       "cache_telemetry": {
-        "input": 0,
-        "output": 0,
-        "cache_read": 0,
-        "cache_write": 0,
-        "cache_write_1h": 0,
-        "cache_write_5m": 0,
-        "cache_hit_pct": 0.0,
-        "wall_seconds": 0
+        "input": 42210,
+        "output": 517809,
+        "cache_read": 28010882,
+        "cache_write": 1439657,
+        "cache_write_1h": 397777,
+        "cache_write_5m": 1041880,
+        "cache_hit_pct": 95.0,
+        "wall_seconds": 5939.349051543977
       },
       "phase2_batch_id": null,
       "ollama_model": null,
       "gemini_model": null,
       "codex_model": null,
-      "cache_prewarmed": false,
-      "cache_ttl_probe": null,
-      "phase6_5": null,
+      "cache_prewarmed": true,
+      "cache_ttl_probe": "1h",
+      "phase6_5": {
+        "attempt": 0,
+        "last_tier": "DONE",
+        "tiers_passed": [
+          "T0"
+        ],
+        "tiers_failed": [],
+        "tiers_skipped": [
+          "T1",
+          "T2",
+          "T3",
+          "T4"
+        ],
+        "skip_reasons": {
+          "T1": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+          "T2": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+          "T3": "no frontend",
+          "T4": "no docker"
+        }
+      },
       "vigil_triggered": false,
       "phase8": null,
       "phase4_bon": [],
-      "phase6_mav": null,
+      "phase6_mav": {
+        "aspects_passed": [
+          "acceptance_criteria",
+          "security"
+        ],
+        "aspects_failed": [],
+        "overall_pass": true
+      },
       "vg_config": null,
       "cycle5_decisions": [],
       "tool_search_enabled": false,
@@ -1066,10 +1295,30 @@
       "github_mode": true,
       "commit_enabled": true,
       "static_blocker": false,
-      "static_status": null,
+      "static_status": "scanned",
       "mutation_score": null,
-      "pbt_result": null,
-      "model_cost": {}
+      "pbt_result": {
+        "passed": 61,
+        "failed": 0
+      },
+      "model_cost": {
+        "phase3_4": {
+          "claude-haiku-4-5-20251001": {
+            "cost_usd": 0.0026469999999999996,
+            "input_tokens": 2557,
+            "output_tokens": 18,
+            "cache_read": 0,
+            "cache_write": 0
+          },
+          "claude-sonnet-4-6": {
+            "cost_usd": 3.94266405,
+            "input_tokens": 7534,
+            "output_tokens": 87486,
+            "cache_read": 5063061,
+            "cache_write": 181527
+          }
+        }
+      }
     }
   ],
   "phase": null,
@@ -1095,7 +1344,7 @@
     }
   },
   "session_mode": "shared",
-  "client_alive_at": "2026-06-23T23:36:05+00:00",
+  "client_alive_at": "2026-06-24T01:31:29+00:00",
   "phase2_batch_id": null,
   "repo": {
     "host": "github.com",

@@ -186,6 +186,10 @@ def _to_results_df(matches: list[LiveMatch]) -> pd.DataFrame:
     return df
 
 
+# Public alias used by the CLI layer and its test fixtures.
+fetch_live_data = fetch_tournament_state
+
+
 def live_fixtures_to_df(
     state: TournamentState, *, include_played: bool = False
 ) -> pd.DataFrame:

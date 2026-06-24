@@ -5,4 +5,4 @@
 **Findings:** 0
 ## Fix Hint
 
-All five Cycle-4 acceptance criteria are covered: AC1 (goal-based hybrid) by #13, AC2 (time-aware no-shuffle splits) by #12/#13/#14, AC3 (determinism) by #12/#13/#14/#15, AC4 (no-key pipeline) by #15, and AC5 (new modules with tests + suite stays green) by #13/#14/#15. No duplications, ambiguities, or in-scope coverage gaps; constitution unavailable so no constitution checks were possible. Proceed to implementation.
+All five Cycle-5 acceptance criteria are covered: backtest accuracy (#20, #21), 100k deterministic Monte-Carlo forecast (#19), no-key `forecast` command (#22, #19), graceful odds scraper caching (#20), and preserved command surface/PNG/tests (#22, #23). No duplications, ambiguities, or constitution violations detected; proceed to implementation.

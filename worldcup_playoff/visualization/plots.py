@@ -25,6 +25,12 @@ import numpy as np
 import seaborn as sns
 
 from worldcup_playoff.config import BracketConfig, Matchup, VisualizationConfig
+from worldcup_playoff.visualization.forecast_plots import (  # noqa: E402
+    plot_round_advancement,
+    plot_title_odds,
+)
+
+__all__ = ["ResultPlotter", "plot_title_odds", "plot_round_advancement"]
 
 if TYPE_CHECKING:
     # Only used for type annotations; not imported at runtime to avoid cycles.

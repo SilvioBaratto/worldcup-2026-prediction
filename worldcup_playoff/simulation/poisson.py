@@ -238,6 +238,19 @@ class ScorelineSampler:
         self._abilities = abilities
         self._cfg = config or PoissonConfig()
 
+    def __call__(
+        self,
+        home: str,
+        away: str,
+        rng: np.random.Generator,
+    ) -> tuple[int, int]:
+        """Draw one (home_goals, away_goals) pair advancing the injected Generator."""
+        lh, la = lambdas(self._abilities, home, away, neutral=False)
+        mat = score_matrix(lh, la, rho=self._abilities.rho, max_goals=self._cfg.max_goals)
+        g = self._cfg.max_goals + 1
+        idx = int(rng.choice(g * g, p=mat.ravel()))
+        return idx // g, idx % g
+
     def sample(
         self,
         home: str,

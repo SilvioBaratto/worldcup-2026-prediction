@@ -1855,3 +1855,549 @@ Right (strict JSON, deterministic, machine-parseable):
 2026-06-24 01:45:22,483 INFO msg #9: ResultMessage (tokens_in=2487 tokens_out=846 cache_read=16890 cache_write=30959 is_error=False subtype=success stop_reason=end_turn num_turns=1)
 2026-06-24 01:45:23,005 INFO SDK session complete.
 2026-06-24 01:45:23,009 INFO Phase analyze-gate complete: in=2487 cache_read=16890 cache_write=30959 out=846 total=51182
+2026-06-24 03:40:23,004 INFO SDK session starting (model=opus effort=high max_turns=None).
+2026-06-24 03:40:23,006 DEBUG SDK prompt (58772 chars):
+# Prompt — Analyze Coverage
+
+**Model:** `claude-opus-4-8`
+**Tools:** `Read`
+**Runtime placeholders:**
+- `# Cycle 5 — Evaluation, Simulation & Integration
+
+## Objective
+Deliver the live forecast end-to-end: extend the tournament simulator to condition on played WC2026 results and simulate the remainder, scrape historical odds as the backtest baseline, add RPS/log-loss/Brier evaluation, and expose the new config sections and CLI commands producing full title odds.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, matching or beating the bookmaker baseline, re-runnable after each matchday.
+
+## Preceding cycles
+Cycle 1 (data layer + bracket-slotting), Cycle 2 (Elo + Dixon-Coles scoreline sampler in `simulation/poisson.py`), Cycle 3 (`features/build.py`), Cycle 4 (`models/hybrid.py` primary, `models/ordered_logit.py` secondary, legacy baseline). Existing `simulation/tournament.py` (`TournamentSimulator`, `BracketSlot`, `RoundResult`) handles only fixed brackets; `models/evaluation.py` (`ModelEvaluator`) reports confusion matrix + classification report; `config.py` lacks the new sections; `cli.py` exposes `download/clean/train/fit/simulate/bracket/run`. `visualization/plots.py` (`ResultPlotter`) renders bracket + probability PNGs.
+
+## Following cycles
+None — this is the final integration cycle.
+
+## In scope
+- Extend `simulation/tournament.py`: ingest played WC2026 results as fixed; simulate remaining group matches with correct FIFA tiebreaks (goal-diff, goals-for, head-to-head, coin-flip); resolve Round of 32 from final standings via the Cycle-1 template; simulate knockout (draw → extra time `λ×0.33` → penalty coin-flip); run ~100,000 Monte Carlo tournaments → full title odds + per-round advancement for all 48 teams using the hybrid scoreline sampler.
+- `data/odds.py`: scrape archived WC2014/18/22 outright + match odds, de-vig (`p_i = (1/o_i)/Σ(1/o_j)`), cache to CSV; degrade gracefully on blocked sources.
+- Extend `models/evaluation.py`: RPS (primary), log-loss, Brier on time-aware splits; backtest the hybrid on WC2014/18/22 vs the scraped bookmaker baseline and vs the legacy classifier.
+- `config.py`: add `[poisson]`, `[elo]`, `[rf]`, `[odds]`, `[live]` Pydantic + TOML sections.
+- `cli.py`: add `fetch-live`, `build-features`, `train-hybrid`, `backtest`, `forecast` commands; keep existing `bracket`/PNG rendering and command surface.
+- Title-odds visualization additions in `plots.py`.
+
+## Out of scope
+- Re-deriving Elo, Poisson abilities, or features — consume Cycles 2–3 outputs.
+- Re-architecting model training — consume Cycle 4 artifacts.
+- Using bookmaker odds as a model feature — evaluation baseline only.
+
+## Acceptance criteria
+- Hybrid RPS ≈ or below the bookmaker baseline on WC2014/18/22 backtests (accuracy is the acceptance criterion).
+- ~100k Monte Carlo tournaments complete in seconds–low minutes; deterministic given a seed.
+- `forecast` runs no-key by default and is re-runnable after each matchday; football-data.org key (in `.env`) optional for live state.
+- Odds/Elo scrapers cache and degrade gracefully so a blocked source never breaks the forecast.
+- Typer command surface, PNG outputs, and the existing ~248 tests stay intact; every new module adds tests.
+` — canonical `requirements.md` content (post-`optimize`, post-`clarify`)
+- `[
+  {
+    "body": "## Goal\nAdd title-odds visualizations to the plotter so the live forecast renders as PNGs \u2014 a horizontal title-probability bar chart (all 48 teams ranked) and a per-round advancement view \u2014 consistent with the existing bracket/probability charts.\n\n## Context\n`visualization/plots.py` (524 lines) holds `ResultPlotter`, which already renders bracket + probability PNGs using matplotlib with configurable `dpi`/`style`/`output_dir` from `VisualizationConfig` (`config.py:129-132`). It consumes the `RoundResult.probabilities` contract (`tournament.py:48-61`, `{team: count/n_simulations}`).\n\nThe live-forecast orchestrator (issue #19) returns a `ForecastResult` carrying full title odds (champion probability per team, 48 teams) and `{round: probabilities}` per-round advancement reusing that same `.probabilities` contract \u2014 so the new plots should duck-type against it. The file is already near the 500-600 line ceiling, so new plotting code may need to live in a sibling module to stay within limits.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `plot_title_odds(forecast_result, output_path)` renders a ranked horizontal bar chart of champion probabilities for all 48 teams and writes a PNG.\n- [ ] A per-round advancement visualization (e.g. bar/heatmap) renders from the `{round: probabilities}` contract and writes a PNG.\n- [ ] Reuses the existing `VisualizationConfig` style/dpi/output-dir handling; figures are closed (matplotlib Agg, no display).\n- [ ] Existing bracket/probability PNG outputs remain unchanged.\n- [ ] All tests pass; new/extended tests (`tests/test_forecast_plots.py` or `tests/test_bracket_viz.py`) feed a small synthetic forecast and assert a PNG is written to a tmp path.\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #19: feat: ~100k Monte-Carlo live-forecast orchestrator + title odds (simulation/live_forecast.py)\n\n## Implementation notes\n- **Modify:** `worldcup_playoff/visualization/plots.py` \u2014 add `plot_title_odds` + the advancement plot, reusing the existing style/dpi/savefig helpers. Because the file is near the line ceiling, **Create:** `worldcup_playoff/visualization/forecast_plots.py` if the additions would exceed ~500-600 lines, and keep the contract duck-typed against `ForecastResult`/`RoundResult.probabilities`.\n- **Create/Modify:** `tests/test_forecast_plots.py` (or extend `tests/test_bracket_viz.py`) \u2014 synthetic forecast \u2192 assert output PNG exists and the figure closes. Use the matplotlib Agg backend; no display.\n- Keep consistency with existing chart styling; do not alter existing bracket/probability rendering.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: visualization",
+        "id": "LA_kwDOTBxfPc8AAAACorPuBA",
+        "name": "area:visualization"
+      }
+    ],
+    "number": 23,
+    "state": "OPEN",
+    "title": "feat: title-odds visualizations for the live forecast (visualization/plots.py)"
+  },
+  {
+    "body": "## Goal\nExpose the new Cycle-5 capabilities as Typer commands \u2014 `fetch-live`, `build-features`, `train-hybrid`, `backtest`, `forecast` (live title odds) \u2014 without disturbing the existing `download/clean/train/fit/simulate/bracket/run` command surface or the PNG outputs.\n\n## Context\n`cli.py` (710 lines) is a Typer app; commands are declared with `@app.command()` and wired to `Pipeline`/config, sharing logging setup and a Rich `Progress` bar (see existing `simulate` at `cli.py:551-592` and `bracket` at `cli.py:595-644` for the pattern). There is **no** existing `forecast` command \u2014 it must be created from scratch following the `simulate` pattern.\n\nEach new command wires to a Cycle-5 module:\n- `fetch-live` \u2192 `data/live.py` `fetch_tournament_state(...)` (live WC2026 state; no-key falls back to martj42 schedule).\n- `build-features` \u2192 `features/build.py` `build_features(...)` (per-match covariates).\n- `train-hybrid` \u2192 `models/hybrid.py` `fit_hybrid(dataset, config)` (primary predictor; persist the fitted model).\n- `backtest` \u2192 issue #21 `backtest_hybrid` (RPS/log-loss/Brier vs bookmaker + legacy).\n- `forecast` \u2192 issue #19 live-forecast orchestrator \u2192 title odds + per-round advancement, then render PNGs via issue #23 plots.\n\n`forecast` must run **no-key by default** and be re-runnable after each matchday. The football-data.org key (in `.env`) is optional for live refinement.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] Five new `@app.command()`s registered: `fetch-live`, `build-features`, `train-hybrid`, `backtest`, `forecast`, each wired to its Cycle-5 module and reusing the existing logging/Progress helpers.\n- [ ] `forecast` runs no-key by default (martj42 schedule), accepts an optional config/seed/n-simulations, and prints/saves full title odds + per-round advancement; re-runnable.\n- [ ] Existing commands (`download/clean/train/fit/simulate/bracket/run`) remain registered and unchanged; existing PNG outputs intact.\n- [ ] All tests pass; `tests/test_cli.py` extended with `CliRunner` smoke tests for each new command (exit code 0) against monkeypatched module calls (no network, no heavy compute).\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #19: feat: ~100k Monte-Carlo live-forecast orchestrator + title odds (simulation/live_forecast.py)\n- #21: feat: probabilistic eval metrics (RPS/log-loss/Brier) + hybrid backtest vs bookmaker baseline\n\n## Implementation notes\n- **Modify:** `worldcup_playoff/cli.py` \u2014 add the five commands following the `simulate`/`bracket` pattern (`cli.py:551-644`), reusing the existing logging + Rich `Progress` helpers. If `cli.py` approaches the ~500-600 line ceiling, factor the new command bodies into a thin `worldcup_playoff/cli_forecast.py` and register them on the shared `app`.\n- **Modify:** `tests/test_cli.py` \u2014 add `CliRunner` smoke tests per command with module functions monkeypatched; snapshot/assert the full command list still includes the legacy commands.\n- Keep heavy compute (sims, fitting, scraping) inside the pipeline/modules; commands stay thin orchestration wrappers.\n- `forecast` no-key default is a hard requirement: a missing API key must degrade to the martj42 schedule, never error.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: cli",
+        "id": "LA_kwDOTBxfPc8AAAACopIF7g",
+        "name": "area:cli"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      }
+    ],
+    "number": 22,
+    "state": "OPEN",
+    "title": "feat: CLI commands fetch-live, build-features, train-hybrid, backtest, forecast (cli.py)"
+  },
+  {
+    "body": "## Goal\nAdd Ranked Probability Score (RPS, primary), multiclass log-loss, and Brier score on time-aware splits, then backtest the hybrid model on WC2014/2018/2022 \u2014 reporting metrics **vs the scraped bookmaker baseline** and **vs the legacy classifier**. Accuracy (hybrid RPS \u2248 or below the bookmaker baseline) is THE acceptance criterion of the whole cycle.\n\n## Context\n`models/evaluation.py` (68 lines) currently only has `ModelEvaluator.evaluate()` (confusion matrix + classification report, `evaluation.py:21-35`) and `plot_roc_curves()`. It needs probabilistic W/D/L metrics.\n\nInputs available:\n- `models/hybrid.py` `HybridModel.predict(features) -> GoalPrediction` (`hybrid.py:179-181`) yields `prob_home/prob_draw/prob_away`; `fit_hybrid(dataset, config)` builds it. `GoalPrediction` (`hybrid.py:44-53`).\n- `models/dataset.py` `chronological_split(df, test_size)` (`dataset.py:105-123`, no-shuffle, deterministic) and `build_dataset(...)` give time-aware splits; `outcome_label(home_goals, away_goals)` (`dataset.py:59-65`) maps to 0=away/1=draw/2=home.\n- `models/classifiers.py` legacy SVM/RF/NB classifier as the second baseline.\n- The de-vigged bookmaker probabilities come from `data/odds.py` (issue #20) \u2014 baseline only, never a feature.\n\nW/D/L is a 3-class ordinal outcome \u2192 RPS is the appropriate primary metric (cumulative squared error over ordered classes). Time-aware splits only: never shuffle chronological data. Backtest must still run if odds are missing (degrade gracefully \u2014 report hybrid vs legacy and skip the bookmaker column).\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] Pure metric functions added: `rank_probability_score` (ordered 3-class), `multiclass_log_loss`, `brier_score` (3-class W/D/L) \u2014 each unit-tested against hand-computed values on tiny known arrays.\n- [ ] A `backtest_hybrid` orchestrator slices played WC matches per tournament-year (2014/18/22) on time-aware splits, predicts W/D/L with the hybrid, and returns a comparison table vs the bookmaker baseline (from #20) and vs the legacy classifier.\n- [ ] RPS is reported as the primary metric; log-loss and Brier reported alongside.\n- [ ] Backtest degrades gracefully when odds are unavailable (skips the bookmaker column, still compares hybrid vs legacy).\n- [ ] All tests pass; new `tests/test_evaluation_metrics.py` (exact metric values) and `tests/test_backtest.py` (synthetic 2-tournament frame, stub hybrid + stub odds \u2192 comparison table).\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #16: feat: Cycle 5 config groundwork \u2014 [rf]/[odds] sections, knockout sim params, TOML wiring\n- #20: feat: archived bookmaker odds scraper + de-vig + CSV cache (data/odds.py)\n\n## Implementation notes\n- **Modify:** `worldcup_playoff/models/evaluation.py` \u2014 add the three pure metric functions (keep them small and import-light). If adding the backtest orchestration would push the file past ~500 lines, **Create:** `worldcup_playoff/models/backtest.py` for the `backtest_hybrid` orchestration and keep only the metrics in `evaluation.py`.\n- **Create:** `tests/test_evaluation_metrics.py` \u2014 assert exact RPS/log-loss/Brier on hand-computed arrays.\n- **Create:** `tests/test_backtest.py` \u2014 synthetic frame + stub hybrid/odds \u2192 assert the comparison table shape and the graceful-no-odds path.\n- Consume `chronological_split`/`build_dataset` from `models/dataset.py` \u2014 never shuffle. Bookmaker odds are a baseline only, never passed into model features.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: models",
+        "id": "LA_kwDOTBxfPc8AAAACoqtFUA",
+        "name": "area:models"
+      }
+    ],
+    "number": 21,
+    "state": "OPEN",
+    "title": "feat: probabilistic eval metrics (RPS/log-loss/Brier) + hybrid backtest vs bookmaker baseline"
+  },
+  {
+    "body": "## Goal\nScrape archived WC2014/2018/2022 outright + match odds, de-vig them to probabilities, and cache to CSV \u2014 used **only** as the backtest baseline to beat (never a model feature). Must degrade gracefully so a blocked source never breaks the forecast.\n\n## Context\nThe evaluation/backtest task (issue #21) needs a de-vigged bookmaker probability baseline. Odds source: per the data contract, historical **World Cup** outright/match odds (2014/18/22) must be scraped from archived sources (oddsportal/web-archive) and cached; de-vig is `p_i = (1/o_i) / \u03a3(1/o_j)`.\n\nResilience is a hard requirement: scrapers are fragile, so the loader must be **cache-first** and **never raise** into the forecast/eval path \u2014 a 403/blocked source falls back to the cached CSV (or an empty frame), never an exception. Mirror the cache-first pattern already used by `data/martj42_loader.py` (`Martj42Loader._fetch_raw`). Config comes from the new `[odds]` section (issue #16): `cache_dir`, `seasons`, source URL(s), `request_timeout`, `user_agent`, `enabled`/fallback flags.\n\n`pyproject.toml` currently lists deps `numpy, pandas, scikit-learn, scipy, statsmodels, fitter, matplotlib, requests` (lines 13-21) \u2014 **`beautifulsoup4` is missing** and must be added for HTML parsing. Team names must be normalized via `data/crosswalk.normalize_team` so odds rows join to historical/forecast team names.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `OddsScraper` (or loader functions) fetches archived WC2014/18/22 outright + match odds and parses them with BeautifulSoup.\n- [ ] De-vig implemented as `p_i = (1/o_i) / \u03a3(1/o_j)`; resulting probabilities per market sum to 1.0.\n- [ ] Cache-first: results written to / read from CSV under `[odds].cache_dir`; a cached read needs no network.\n- [ ] Graceful degradation: a blocked/raising source falls back to cache (or empty frame) and **never** propagates an exception.\n- [ ] Team names normalized via `crosswalk.normalize_team`.\n- [ ] `beautifulsoup4` added to `pyproject.toml` dependencies.\n- [ ] All tests pass; new `tests/test_odds.py` parses saved HTML fixtures (no live network), asserts de-vig sums to 1.0, and asserts a simulated 403/exception triggers cache/empty fallback without raising.\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #16: feat: Cycle 5 config groundwork \u2014 [rf]/[odds] sections, knockout sim params, TOML wiring\n\n## Implementation notes\n- **Create:** `worldcup_playoff/data/odds.py` \u2014 `OddsScraper` with cache-first read/write, per-source `try/except` \u2192 cache/empty fallback, de-vig helper, and crosswalk normalization. Consume `AppConfig.odds`.\n- **Modify:** `pyproject.toml:13-21` \u2014 add `beautifulsoup4>=4.12` to `dependencies`.\n- **Modify:** `worldcup_playoff/data/__init__.py` \u2014 export the public scraper/loader entry point.\n- **Create:** `tests/test_odds.py` \u2014 fixture HTML strings parsed offline; de-vig math; blocked-source fallback. Do NOT hit live network in tests.\n- Bookmaker odds are an evaluation baseline ONLY \u2014 do not feed them into `features/build.py` or `models/hybrid.py`.\n- Verify nothing here breaks no-key default operation: odds are optional; absence must not break the forecast.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: data",
+        "id": "LA_kwDOTBxfPc8AAAACopKxrQ",
+        "name": "area:data"
+      }
+    ],
+    "number": 20,
+    "state": "OPEN",
+    "title": "feat: archived bookmaker odds scraper + de-vig + CSV cache (data/odds.py)"
+  },
+  {
+    "body": "## Goal\nRun ~100,000 seeded Monte-Carlo tournaments (group-stage simulation + knockout) conditioned on played WC2026 results, and aggregate per-team **title odds** plus **per-round advancement probabilities** for all 48 teams. This is the central integration node that produces the live forecast.\n\n## Context\nThis orchestrator wires together the Cycle-5 simulation pieces:\n- `data/live.py` `fetch_tournament_state(client=None, competition=\"WC\")` (`live.py:151-158`) returns a `TournamentState` (played / remaining_group_fixtures / standings). It must run **no-key by default** \u2014 when no API key is present, fall back to the martj42 WC2026 schedule (martj42 already contains WC2026 fixtures with `tournament == \"FIFA World Cup\"`). The football-data.org key only refines live state.\n- `simulation/poisson.py` `fit_dixon_coles(df, config)` \u2192 `TeamAbilities`; `make_sampler(abilities, config)` \u2192 `ScorelineSampler` (`poisson.py:264-271`). Fit once on historical martj42 data, then reuse across all simulations.\n- The group-stage simulator (issue #17) produces final v4-shaped standings; the knockout simulator (issue #18) resolves R32 from those standings and folds to a champion.\n- `simulation/tournament.py` `RoundResult` (`tournament.py:31-61`) exposes `.probabilities = {team: count / n_simulations}` \u2014 reuse this contract so the plotter (issue #23) can consume per-round results unchanged.\n\nPerformance target: ~100k tournaments complete in seconds\u2013low minutes. Determinism: a master seed derives per-iteration sub-seeds so two runs with the same seed produce identical odds.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] Orchestrates: ingest `TournamentState` \u2192 fit/accept `TeamAbilities` once \u2192 loop N tournaments (group sim from #17 + knockout from #18) with per-iteration sub-seeds derived from a master seed \u2192 accumulate champion + round-reached counts.\n- [ ] Returns a `ForecastResult` value object with full title odds (champion probability per team, all 48 teams present) and `{round: probabilities}` per-round advancement reusing the `RoundResult.probabilities` contract.\n- [ ] Title-odds across all 48 teams sum to \u2248 1.0; per-round advancement counts match the number of slots in each round.\n- [ ] Runs **no-key by default** (martj42 WC2026 schedule); football-data.org key optional for live refinement; re-runnable after each matchday.\n- [ ] Deterministic: same master seed \u2192 identical odds across two runs.\n- [ ] ~100k tournaments complete in seconds\u2013low minutes (document the measured timing).\n- [ ] All tests pass; new `tests/test_live_forecast.py` runs a small-N forecast with a stub sampler asserting probability sanity, 48-team coverage, and seed reproducibility.\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #16: feat: Cycle 5 config groundwork \u2014 [rf]/[odds] sections, knockout sim params, TOML wiring\n- #17: feat: group-stage simulation engine with FIFA tiebreaks (simulation/group_stage.py)\n- #18: feat: R32 resolution + single-elimination knockout sim with extra-time/penalties (simulation/knockout.py)\n\n##... [truncated, 16393 bytes omitted]` — JSON array of Phase 1 issues, each with `issue_number`, `title`, `body`, `labels`
+- `(project constitution unavailable — analyze gate cannot flag constitution violations)` — project constitution / non-negotiable constraints
+- `# Cycle 5 — Evaluation, Simulation & Integration
+
+## Objective
+Deliver the live forecast end-to-end: extend the tournament simulator to condition on played WC2026 results and simulate the remainder, scrape historical odds as the backtest baseline, add RPS/log-loss/Brier evaluation, and expose the new config sections and CLI commands producing full title odds.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, matching or beating the bookmaker baseline, re-runnable after each matchday.
+
+## Preceding cycles
+Cycle 1 (data layer + bracket-slotting), Cycle 2 (Elo + Dixon-Coles scoreline sampler in `simulation/poisson.py`), Cycle 3 (`features/build.py`), Cycle 4 (`models/hybrid.py` primary, `models/ordered_logit.py` secondary, legacy baseline). Existing `simulation/tournament.py` (`TournamentSimulator`, `BracketSlot`, `RoundResult`) handles only fixed brackets; `models/evaluation.py` (`ModelEvaluator`) reports confusion matrix + classification report; `config.py` lacks the new sections; `cli.py` exposes `download/clean/train/fit/simulate/bracket/run`. `visualization/plots.py` (`ResultPlotter`) renders bracket + probability PNGs.
+
+## Following cycles
+None — this is the final integration cycle.
+
+## In scope
+- Extend `simulation/tournament.py`: ingest played WC2026 results as fixed; simulate remaining group matches with correct FIFA tiebreaks (goal-diff, goals-for, head-to-head, coin-flip); resolve Round of 32 from final standings via the Cycle-1 template; simulate knockout (draw → extra time `λ×0.33` → penalty coin-flip); run ~100,000 Monte Carlo tournaments → full title odds + per-round advancement for all 48 teams using the hybrid scoreline sampler.
+- `data/odds.py`: scrape archived WC2014/18/22 outright + match odds, de-vig (`p_i = (1/o_i)/Σ(1/o_j)`), cache to CSV; degrade gracefully on blocked sources.
+- Extend `models/evaluation.py`: RPS (primary), log-loss, Brier on time-aware splits; backtest the hybrid on WC2014/18/22 vs the scraped bookmaker baseline and vs the legacy classifier.
+- `config.py`: add `[poisson]`, `[elo]`, `[rf]`, `[odds]`, `[live]` Pydantic + TOML sections.
+- `cli.py`: add `fetch-live`, `build-features`, `train-hybrid`, `backtest`, `forecast` commands; keep existing `bracket`/PNG rendering and command surface.
+- Title-odds visualization additions in `plots.py`.
+
+## Out of scope
+- Re-deriving Elo, Poisson abilities, or features — consume Cycles 2–3 outputs.
+- Re-architecting model training — consume Cycle 4 artifacts.
+- Using bookmaker odds as a model feature — evaluation baseline only.
+
+## Acceptance criteria
+- Hybrid RPS ≈ or below the bookmaker baseline on WC2014/18/22 backtests (accuracy is the acceptance criterion).
+- ~100k Monte Carlo tournaments complete in seconds–low minutes; deterministic given a seed.
+- `forecast` runs no-key by default and is re-runnable after each matchday; football-data.org key (in `.env`) optional for live state.
+- Odds/Elo scrapers cache and degrade gracefully so a blocked source never breaks the forecast.
+- Typer command surface, PNG outputs, and the existing ~248 tests stay intact; every new module adds tests.
+` — current cycle's scope (In scope / Out of scope / Acceptance criteria); empty string in single-cycle mode
+
+---
+
+## Requirements
+
+# Cycle 5 — Evaluation, Simulation & Integration
+
+## Objective
+Deliver the live forecast end-to-end: extend the tournament simulator to condition on played WC2026 results and simulate the remainder, scrape historical odds as the backtest baseline, add RPS/log-loss/Brier evaluation, and expose the new config sections and CLI commands producing full title odds.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, matching or beating the bookmaker baseline, re-runnable after each matchday.
+
+## Preceding cycles
+Cycle 1 (data layer + bracket-slotting), Cycle 2 (Elo + Dixon-Coles scoreline sampler in `simulation/poisson.py`), Cycle 3 (`features/build.py`), Cycle 4 (`models/hybrid.py` primary, `models/ordered_logit.py` secondary, legacy baseline). Existing `simulation/tournament.py` (`TournamentSimulator`, `BracketSlot`, `RoundResult`) handles only fixed brackets; `models/evaluation.py` (`ModelEvaluator`) reports confusion matrix + classification report; `config.py` lacks the new sections; `cli.py` exposes `download/clean/train/fit/simulate/bracket/run`. `visualization/plots.py` (`ResultPlotter`) renders bracket + probability PNGs.
+
+## Following cycles
+None — this is the final integration cycle.
+
+## In scope
+- Extend `simulation/tournament.py`: ingest played WC2026 results as fixed; simulate remaining group matches with correct FIFA tiebreaks (goal-diff, goals-for, head-to-head, coin-flip); resolve Round of 32 from final standings via the Cycle-1 template; simulate knockout (draw → extra time `λ×0.33` → penalty coin-flip); run ~100,000 Monte Carlo tournaments → full title odds + per-round advancement for all 48 teams using the hybrid scoreline sampler.
+- `data/odds.py`: scrape archived WC2014/18/22 outright + match odds, de-vig (`p_i = (1/o_i)/Σ(1/o_j)`), cache to CSV; degrade gracefully on blocked sources.
+- Extend `models/evaluation.py`: RPS (primary), log-loss, Brier on time-aware splits; backtest the hybrid on WC2014/18/22 vs the scraped bookmaker baseline and vs the legacy classifier.
+- `config.py`: add `[poisson]`, `[elo]`, `[rf]`, `[odds]`, `[live]` Pydantic + TOML sections.
+- `cli.py`: add `fetch-live`, `build-features`, `train-hybrid`, `backtest`, `forecast` commands; keep existing `bracket`/PNG rendering and command surface.
+- Title-odds visualization additions in `plots.py`.
+
+## Out of scope
+- Re-deriving Elo, Poisson abilities, or features — consume Cycles 2–3 outputs.
+- Re-architecting model training — consume Cycle 4 artifacts.
+- Using bookmaker odds as a model feature — evaluation baseline only.
+
+## Acceptance criteria
+- Hybrid RPS ≈ or below the bookmaker baseline on WC2014/18/22 backtests (accuracy is the acceptance criterion).
+- ~100k Monte Carlo tournaments complete in seconds–low minutes; deterministic given a seed.
+- `forecast` runs no-key by default and is re-runnable after each matchday; football-data.org key (in `.env`) optional for live state.
+- Odds/Elo scrapers cache and degrade gracefully so a blocked source never breaks the forecast.
+- Typer command surface, PNG outputs, and the existing ~248 tests stay intact; every new module adds tests.
+
+
+---
+
+## Issues
+
+[
+  {
+    "body": "## Goal\nAdd title-odds visualizations to the plotter so the live forecast renders as PNGs \u2014 a horizontal title-probability bar chart (all 48 teams ranked) and a per-round advancement view \u2014 consistent with the existing bracket/probability charts.\n\n## Context\n`visualization/plots.py` (524 lines) holds `ResultPlotter`, which already renders bracket + probability PNGs using matplotlib with configurable `dpi`/`style`/`output_dir` from `VisualizationConfig` (`config.py:129-132`). It consumes the `RoundResult.probabilities` contract (`tournament.py:48-61`, `{team: count/n_simulations}`).\n\nThe live-forecast orchestrator (issue #19) returns a `ForecastResult` carrying full title odds (champion probability per team, 48 teams) and `{round: probabilities}` per-round advancement reusing that same `.probabilities` contract \u2014 so the new plots should duck-type against it. The file is already near the 500-600 line ceiling, so new plotting code may need to live in a sibling module to stay within limits.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `plot_title_odds(forecast_result, output_path)` renders a ranked horizontal bar chart of champion probabilities for all 48 teams and writes a PNG.\n- [ ] A per-round advancement visualization (e.g. bar/heatmap) renders from the `{round: probabilities}` contract and writes a PNG.\n- [ ] Reuses the existing `VisualizationConfig` style/dpi/output-dir handling; figures are closed (matplotlib Agg, no display).\n- [ ] Existing bracket/probability PNG outputs remain unchanged.\n- [ ] All tests pass; new/extended tests (`tests/test_forecast_plots.py` or `tests/test_bracket_viz.py`) feed a small synthetic forecast and assert a PNG is written to a tmp path.\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #19: feat: ~100k Monte-Carlo live-forecast orchestrator + title odds (simulation/live_forecast.py)\n\n## Implementation notes\n- **Modify:** `worldcup_playoff/visualization/plots.py` \u2014 add `plot_title_odds` + the advancement plot, reusing the existing style/dpi/savefig helpers. Because the file is near the line ceiling, **Create:** `worldcup_playoff/visualization/forecast_plots.py` if the additions would exceed ~500-600 lines, and keep the contract duck-typed against `ForecastResult`/`RoundResult.probabilities`.\n- **Create/Modify:** `tests/test_forecast_plots.py` (or extend `tests/test_bracket_viz.py`) \u2014 synthetic forecast \u2192 assert output PNG exists and the figure closes. Use the matplotlib Agg backend; no display.\n- Keep consistency with existing chart styling; do not alter existing bracket/probability rendering.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: visualization",
+        "id": "LA_kwDOTBxfPc8AAAACorPuBA",
+        "name": "area:visualization"
+      }
+    ],
+    "number": 23,
+    "state": "OPEN",
+    "title": "feat: title-odds visualizations for the live forecast (visualization/plots.py)"
+  },
+  {
+    "body": "## Goal\nExpose the new Cycle-5 capabilities as Typer commands \u2014 `fetch-live`, `build-features`, `train-hybrid`, `backtest`, `forecast` (live title odds) \u2014 without disturbing the existing `download/clean/train/fit/simulate/bracket/run` command surface or the PNG outputs.\n\n## Context\n`cli.py` (710 lines) is a Typer app; commands are declared with `@app.command()` and wired to `Pipeline`/config, sharing logging setup and a Rich `Progress` bar (see existing `simulate` at `cli.py:551-592` and `bracket` at `cli.py:595-644` for the pattern). There is **no** existing `forecast` command \u2014 it must be created from scratch following the `simulate` pattern.\n\nEach new command wires to a Cycle-5 module:\n- `fetch-live` \u2192 `data/live.py` `fetch_tournament_state(...)` (live WC2026 state; no-key falls back to martj42 schedule).\n- `build-features` \u2192 `features/build.py` `build_features(...)` (per-match covariates).\n- `train-hybrid` \u2192 `models/hybrid.py` `fit_hybrid(dataset, config)` (primary predictor; persist the fitted model).\n- `backtest` \u2192 issue #21 `backtest_hybrid` (RPS/log-loss/Brier vs bookmaker + legacy).\n- `forecast` \u2192 issue #19 live-forecast orchestrator \u2192 title odds + per-round advancement, then render PNGs via issue #23 plots.\n\n`forecast` must run **no-key by default** and be re-runnable after each matchday. The football-data.org key (in `.env`) is optional for live refinement.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] Five new `@app.command()`s registered: `fetch-live`, `build-features`, `train-hybrid`, `backtest`, `forecast`, each wired to its Cycle-5 module and reusing the existing logging/Progress helpers.\n- [ ] `forecast` runs no-key by default (martj42 schedule), accepts an optional config/seed/n-simulations, and prints/saves full title odds + per-round advancement; re-runnable.\n- [ ] Existing commands (`download/clean/train/fit/simulate/bracket/run`) remain registered and unchanged; existing PNG outputs intact.\n- [ ] All tests pass; `tests/test_cli.py` extended with `CliRunner` smoke tests for each new command (exit code 0) against monkeypatched module calls (no network, no heavy compute).\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #19: feat: ~100k Monte-Carlo live-forecast orchestrator + title odds (simulation/live_forecast.py)\n- #21: feat: probabilistic eval metrics (RPS/log-loss/Brier) + hybrid backtest vs bookmaker baseline\n\n## Implementation notes\n- **Modify:** `worldcup_playoff/cli.py` \u2014 add the five commands following the `simulate`/`bracket` pattern (`cli.py:551-644`), reusing the existing logging + Rich `Progress` helpers. If `cli.py` approaches the ~500-600 line ceiling, factor the new command bodies into a thin `worldcup_playoff/cli_forecast.py` and register them on the shared `app`.\n- **Modify:** `tests/test_cli.py` \u2014 add `CliRunner` smoke tests per command with module functions monkeypatched; snapshot/assert the full command list still includes the legacy commands.\n- Keep heavy compute (sims, fitting, scraping) inside the pipeline/modules; commands stay thin orchestration wrappers.\n- `forecast` no-key default is a hard requirement: a missing API key must degrade to the martj42 schedule, never error.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: cli",
+        "id": "LA_kwDOTBxfPc8AAAACopIF7g",
+        "name": "area:cli"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      }
+    ],
+    "number": 22,
+    "state": "OPEN",
+    "title": "feat: CLI commands fetch-live, build-features, train-hybrid, backtest, forecast (cli.py)"
+  },
+  {
+    "body": "## Goal\nAdd Ranked Probability Score (RPS, primary), multiclass log-loss, and Brier score on time-aware splits, then backtest the hybrid model on WC2014/2018/2022 \u2014 reporting metrics **vs the scraped bookmaker baseline** and **vs the legacy classifier**. Accuracy (hybrid RPS \u2248 or below the bookmaker baseline) is THE acceptance criterion of the whole cycle.\n\n## Context\n`models/evaluation.py` (68 lines) currently only has `ModelEvaluator.evaluate()` (confusion matrix + classification report, `evaluation.py:21-35`) and `plot_roc_curves()`. It needs probabilistic W/D/L metrics.\n\nInputs available:\n- `models/hybrid.py` `HybridModel.predict(features) -> GoalPrediction` (`hybrid.py:179-181`) yields `prob_home/prob_draw/prob_away`; `fit_hybrid(dataset, config)` builds it. `GoalPrediction` (`hybrid.py:44-53`).\n- `models/dataset.py` `chronological_split(df, test_size)` (`dataset.py:105-123`, no-shuffle, deterministic) and `build_dataset(...)` give time-aware splits; `outcome_label(home_goals, away_goals)` (`dataset.py:59-65`) maps to 0=away/1=draw/2=home.\n- `models/classifiers.py` legacy SVM/RF/NB classifier as the second baseline.\n- The de-vigged bookmaker probabilities come from `data/odds.py` (issue #20) \u2014 baseline only, never a feature.\n\nW/D/L is a 3-class ordinal outcome \u2192 RPS is the appropriate primary metric (cumulative squared error over ordered classes). Time-aware splits only: never shuffle chronological data. Backtest must still run if odds are missing (degrade gracefully \u2014 report hybrid vs legacy and skip the bookmaker column).\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] Pure metric functions added: `rank_probability_score` (ordered 3-class), `multiclass_log_loss`, `brier_score` (3-class W/D/L) \u2014 each unit-tested against hand-computed values on tiny known arrays.\n- [ ] A `backtest_hybrid` orchestrator slices played WC matches per tournament-year (2014/18/22) on time-aware splits, predicts W/D/L with the hybrid, and returns a comparison table vs the bookmaker baseline (from #20) and vs the legacy classifier.\n- [ ] RPS is reported as the primary metric; log-loss and Brier reported alongside.\n- [ ] Backtest degrades gracefully when odds are unavailable (skips the bookmaker column, still compares hybrid vs legacy).\n- [ ] All tests pass; new `tests/test_evaluation_metrics.py` (exact metric values) and `tests/test_backtest.py` (synthetic 2-tournament frame, stub hybrid + stub odds \u2192 comparison table).\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #16: feat: Cycle 5 config groundwork \u2014 [rf]/[odds] sections, knockout sim params, TOML wiring\n- #20: feat: archived bookmaker odds scraper + de-vig + CSV cache (data/odds.py)\n\n## Implementation notes\n- **Modify:** `worldcup_playoff/models/evaluation.py` \u2014 add the three pure metric functions (keep them small and import-light). If adding the backtest orchestration would push the file past ~500 lines, **Create:** `worldcup_playoff/models/backtest.py` for the `backtest_hybrid` orchestration and keep only the metrics in `evaluation.py`.\n- **Create:** `tests/test_evaluation_metrics.py` \u2014 assert exact RPS/log-loss/Brier on hand-computed arrays.\n- **Create:** `tests/test_backtest.py` \u2014 synthetic frame + stub hybrid/odds \u2192 assert the comparison table shape and the graceful-no-odds path.\n- Consume `chronological_split`/`build_dataset` from `models/dataset.py` \u2014 never shuffle. Bookmaker odds are a baseline only, never passed into model features.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FF0000",
+        "description": "High priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFhg",
+        "name": "priority:high"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: models",
+        "id": "LA_kwDOTBxfPc8AAAACoqtFUA",
+        "name": "area:models"
+      }
+    ],
+    "number": 21,
+    "state": "OPEN",
+    "title": "feat: probabilistic eval metrics (RPS/log-loss/Brier) + hybrid backtest vs bookmaker baseline"
+  },
+  {
+    "body": "## Goal\nScrape archived WC2014/2018/2022 outright + match odds, de-vig them to probabilities, and cache to CSV \u2014 used **only** as the backtest baseline to beat (never a model feature). Must degrade gracefully so a blocked source never breaks the forecast.\n\n## Context\nThe evaluation/backtest task (issue #21) needs a de-vigged bookmaker probability baseline. Odds source: per the data contract, historical **World Cup** outright/match odds (2014/18/22) must be scraped from archived sources (oddsportal/web-archive) and cached; de-vig is `p_i = (1/o_i) / \u03a3(1/o_j)`.\n\nResilience is a hard requirement: scrapers are fragile, so the loader must be **cache-first** and **never raise** into the forecast/eval path \u2014 a 403/blocked source falls back to the cached CSV (or an empty frame), never an exception. Mirror the cache-first pattern already used by `data/martj42_loader.py` (`Martj42Loader._fetch_raw`). Config comes from the new `[odds]` section (issue #16): `cache_dir`, `seasons`, source URL(s), `request_timeout`, `user_agent`, `enabled`/fallback flags.\n\n`pyproject.toml` currently lists deps `numpy, pandas, scikit-learn, scipy, statsmodels, fitter, matplotlib, requests` (lines 13-21) \u2014 **`beautifulsoup4` is missing** and must be added for HTML parsing. Team names must be normalized via `data/crosswalk.normalize_team` so odds rows join to historical/forecast team names.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] `OddsScraper` (or loader functions) fetches archived WC2014/18/22 outright + match odds and parses them with BeautifulSoup.\n- [ ] De-vig implemented as `p_i = (1/o_i) / \u03a3(1/o_j)`; resulting probabilities per market sum to 1.0.\n- [ ] Cache-first: results written to / read from CSV under `[odds].cache_dir`; a cached read needs no network.\n- [ ] Graceful degradation: a blocked/raising source falls back to cache (or empty frame) and **never** propagates an exception.\n- [ ] Team names normalized via `crosswalk.normalize_team`.\n- [ ] `beautifulsoup4` added to `pyproject.toml` dependencies.\n- [ ] All tests pass; new `tests/test_odds.py` parses saved HTML fixtures (no live network), asserts de-vig sums to 1.0, and asserts a simulated 403/exception triggers cache/empty fallback without raising.\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #16: feat: Cycle 5 config groundwork \u2014 [rf]/[odds] sections, knockout sim params, TOML wiring\n\n## Implementation notes\n- **Create:** `worldcup_playoff/data/odds.py` \u2014 `OddsScraper` with cache-first read/write, per-source `try/except` \u2192 cache/empty fallback, de-vig helper, and crosswalk normalization. Consume `AppConfig.odds`.\n- **Modify:** `pyproject.toml:13-21` \u2014 add `beautifulsoup4>=4.12` to `dependencies`.\n- **Modify:** `worldcup_playoff/data/__init__.py` \u2014 export the public scraper/loader entry point.\n- **Create:** `tests/test_odds.py` \u2014 fixture HTML strings parsed offline; de-vig math; blocked-source fallback. Do NOT hit live network in tests.\n- Bookmaker odds are an evaluation baseline ONLY \u2014 do not feed them into `features/build.py` or `models/hybrid.py`.\n- Verify nothing here breaks no-key default operation: odds are optional; absence must not break the forecast.",
+    "comments": [],
+    "labels": [
+      {
+        "color": "FBCA04",
+        "description": "Medium priority",
+        "id": "LA_kwDOTBxfPc8AAAACopIFtA",
+        "name": "priority:medium"
+      },
+      {
+        "color": "D4C5F9",
+        "description": "Phase: implement",
+        "id": "LA_kwDOTBxfPc8AAAACopII0g",
+        "name": "phase:implement"
+      },
+      {
+        "color": "7057FF",
+        "description": "Agent: python-pro",
+        "id": "LA_kwDOTBxfPc8AAAACopIKMQ",
+        "name": "agent:python-pro"
+      },
+      {
+        "color": "0052CC",
+        "description": "Area: data",
+        "id": "LA_kwDOTBxfPc8AAAACopKxrQ",
+        "name": "area:data"
+      }
+    ],
+    "number": 20,
+    "state": "OPEN",
+    "title": "feat: archived bookmaker odds scraper + de-vig + CSV cache (data/odds.py)"
+  },
+  {
+    "body": "## Goal\nRun ~100,000 seeded Monte-Carlo tournaments (group-stage simulation + knockout) conditioned on played WC2026 results, and aggregate per-team **title odds** plus **per-round advancement probabilities** for all 48 teams. This is the central integration node that produces the live forecast.\n\n## Context\nThis orchestrator wires together the Cycle-5 simulation pieces:\n- `data/live.py` `fetch_tournament_state(client=None, competition=\"WC\")` (`live.py:151-158`) returns a `TournamentState` (played / remaining_group_fixtures / standings). It must run **no-key by default** \u2014 when no API key is present, fall back to the martj42 WC2026 schedule (martj42 already contains WC2026 fixtures with `tournament == \"FIFA World Cup\"`). The football-data.org key only refines live state.\n- `simulation/poisson.py` `fit_dixon_coles(df, config)` \u2192 `TeamAbilities`; `make_sampler(abilities, config)` \u2192 `ScorelineSampler` (`poisson.py:264-271`). Fit once on historical martj42 data, then reuse across all simulations.\n- The group-stage simulator (issue #17) produces final v4-shaped standings; the knockout simulator (issue #18) resolves R32 from those standings and folds to a champion.\n- `simulation/tournament.py` `RoundResult` (`tournament.py:31-61`) exposes `.probabilities = {team: count / n_simulations}` \u2014 reuse this contract so the plotter (issue #23) can consume per-round results unchanged.\n\nPerformance target: ~100k tournaments complete in seconds\u2013low minutes. Determinism: a master seed derives per-iteration sub-seeds so two runs with the same seed produce identical odds.\n\n## Agent and skills\n- **Agents:** `python-pro`\n- **Active skills:** `solid-principles`, `python-expert`\n\n## Acceptance criteria\n- [ ] Orchestrates: ingest `TournamentState` \u2192 fit/accept `TeamAbilities` once \u2192 loop N tournaments (group sim from #17 + knockout from #18) with per-iteration sub-seeds derived from a master seed \u2192 accumulate champion + round-reached counts.\n- [ ] Returns a `ForecastResult` value object with full title odds (champion probability per team, all 48 teams present) and `{round: probabilities}` per-round advancement reusing the `RoundResult.probabilities` contract.\n- [ ] Title-odds across all 48 teams sum to \u2248 1.0; per-round advancement counts match the number of slots in each round.\n- [ ] Runs **no-key by default** (martj42 WC2026 schedule); football-data.org key optional for live refinement; re-runnable after each matchday.\n- [ ] Deterministic: same master seed \u2192 identical odds across two runs.\n- [ ] ~100k tournaments complete in seconds\u2013low minutes (document the measured timing).\n- [ ] All tests pass; new `tests/test_live_forecast.py` runs a small-N forecast with a stub sampler asserting probability sanity, 48-team coverage, and seed reproducibility.\n- [ ] SOLID, clean code (methods < 10 lines, classes < 50 lines, files < 500-600 lines), TDD\n\n## Dependencies\n- #16: feat: Cycle 5 config groundwork \u2014 [rf]/[odds] sections, knockout sim params, TOML wiring\n- #17: feat: group-stage simulation engine with FIFA tiebreaks (simulation/group_stage.py)\n- #18: feat: R32 resolution + single-elimination knockout sim with extra-time/penalties (simulation/knockout.py)\n\n##... [truncated, 16393 bytes omitted]
+
+---
+
+## Constitution
+
+(project constitution unavailable — analyze gate cannot flag constitution violations)
+
+---
+
+## Cycle Scope (current cycle only)
+
+# Cycle 5 — Evaluation, Simulation & Integration
+
+## Objective
+Deliver the live forecast end-to-end: extend the tournament simulator to condition on played WC2026 results and simulate the remainder, scrape historical odds as the backtest baseline, add RPS/log-loss/Brier evaluation, and expose the new config sections and CLI commands producing full title odds.
+
+## Project vision
+A Python CLI producing a live, in-tournament probabilistic forecast of the World Cup 2026 winner — full title odds plus round-by-round advancement for all 48 teams — accuracy-first, matching or beating the bookmaker baseline, re-runnable after each matchday.
+
+## Preceding cycles
+Cycle 1 (data layer + bracket-slotting), Cycle 2 (Elo + Dixon-Coles scoreline sampler in `simulation/poisson.py`), Cycle 3 (`features/build.py`), Cycle 4 (`models/hybrid.py` primary, `models/ordered_logit.py` secondary, legacy baseline). Existing `simulation/tournament.py` (`TournamentSimulator`, `BracketSlot`, `RoundResult`) handles only fixed brackets; `models/evaluation.py` (`ModelEvaluator`) reports confusion matrix + classification report; `config.py` lacks the new sections; `cli.py` exposes `download/clean/train/fit/simulate/bracket/run`. `visualization/plots.py` (`ResultPlotter`) renders bracket + probability PNGs.
+
+## Following cycles
+None — this is the final integration cycle.
+
+## In scope
+- Extend `simulation/tournament.py`: ingest played WC2026 results as fixed; simulate remaining group matches with correct FIFA tiebreaks (goal-diff, goals-for, head-to-head, coin-flip); resolve Round of 32 from final standings via the Cycle-1 template; simulate knockout (draw → extra time `λ×0.33` → penalty coin-flip); run ~100,000 Monte Carlo tournaments → full title odds + per-round advancement for all 48 teams using the hybrid scoreline sampler.
+- `data/odds.py`: scrape archived WC2014/18/22 outright + match odds, de-vig (`p_i = (1/o_i)/Σ(1/o_j)`), cache to CSV; degrade gracefully on blocked sources.
+- Extend `models/evaluation.py`: RPS (primary), log-loss, Brier on time-aware splits; backtest the hybrid on WC2014/18/22 vs the scraped bookmaker baseline and vs the legacy classifier.
+- `config.py`: add `[poisson]`, `[elo]`, `[rf]`, `[odds]`, `[live]` Pydantic + TOML sections.
+- `cli.py`: add `fetch-live`, `build-features`, `train-hybrid`, `backtest`, `forecast` commands; keep existing `bracket`/PNG rendering and command surface.
+- Title-odds visualization additions in `plots.py`.
+
+## Out of scope
+- Re-deriving Elo, Poisson abilities, or features — consume Cycles 2–3 outputs.
+- Re-architecting model training — consume Cycle 4 artifacts.
+- Using bookmaker odds as a model feature — evaluation baseline only.
+
+## Acceptance criteria
+- Hybrid RPS ≈ or below the bookmaker baseline on WC2014/18/22 backtests (accuracy is the acceptance criterion).
+- ~100k Monte Carlo tournaments complete in seconds–low minutes; deterministic given a seed.
+- `forecast` runs no-key by default and is re-runnable after each matchday; football-data.org key (in `.env`) optional for live state.
+- Odds/Elo scrapers cache and degrade gracefully so a blocked source never breaks the forecast.
+- Typer command surface, PNG outputs, and the existing ~248 tests stay intact; every new module adds tests.
+
+
+---
+
+## Prompt
+
+You are a senior reviewer running the Analyze gate. Emit a deterministic, machine-parseable JSON report. The orchestrator parses your output as JSON without an LLM round-trip, so the schema is non-negotiable.
+
+This gate runs after Phase 1 (issue creation) and before any Phase 3/4 implementation spend.
+
+### What requirements to check
+
+**When `Cycle Scope` section is non-empty** (multi-cycle mode):
+- Check the **Issues** against the `## Acceptance criteria` section inside **Cycle Scope only**. This is the authoritative checklist for this cycle.
+- The full **Requirements** document is background context for constitution checks — do NOT generate coverage-gap findings against the full `## Scope`, `### N.` subsections, or `## Global acceptance criteria` from it. Those belong to future cycles.
+- Only flag gaps for acceptance criteria explicitly listed in the Cycle Scope's `## Acceptance criteria` section.
+
+**When `Cycle Scope` section is empty** (single-cycle mode):
+- Check the **Issues** against the full **Requirements** document as normal, including all `## Global acceptance criteria` rows.
+
+### What to detect
+
+1. **Coverage gaps** (`coverage-gap`) — acceptance criteria in the **active checklist** (see above) with no covering issue.
+2. **Duplications** (`duplication`) — two or more issues whose scope substantially overlaps.
+3. **Ambiguities** (`ambiguity`) — issues whose acceptance criteria are missing, vague, or untestable.
+4. **Constitution violations** (`constitution-violation`) — any issue that would violate the **Constitution**.
+
+### Severity and verdict rules
+
+- `critical` — blocks the pipeline. Any `constitution-violation` MUST be `critical`. Coverage gaps for items in the **active checklist** that are squarely in scope for this cycle are `critical`.
+- `warning` — non-blocking. Coverage gaps for items outside this cycle's active checklist, most duplications.
+- `info` — observational; safe to ignore.
+- `verdict` is `blocked` when **any** finding has severity `critical`; otherwise `pass`.
+
+A constitution / non-negotiable violation MUST be severity `critical` and MUST force `verdict=blocked` — this rule cannot be relaxed.
+
+### Output format — strict JSON, machine-parseable
+
+Emit a single JSON object. No prose, no code fences outside this block, nothing before or after the object except the trailing fix hint described below.
+
+```json
+{
+  "verdict": "pass | blocked",
+  "findings": [
+    {
+      "category": "coverage-gap | duplication | ambiguity | constitution-violation",
+      "severity": "critical | warning | info",
+      "issues": [123, 124],
+      "anchor": "Goal 3 / ### 2. Auth / Global acceptance criteria #4",
+      "summary": "One-line description of the problem."
+    }
+  ],
+  "fix_hint": "Human-readable next step (one or two sentences)."
+}
+```
+
+- `verdict` is exactly `pass` or `blocked` — no other strings.
+- `findings` is an empty list (`[]`) when the cycle is clean. Do **not** omit the key.
+- `issues` is a list of integer issue numbers; use `[]` for findings not tied to a specific issue (e.g. a missing-coverage gap).
+- `anchor` references a section/bullet/line from `Requirements` or `Constitution` so the operator can locate the problem without re-reading everything.
+- `summary` is one short sentence.
+- `fix_hint` is the **human-readable fix hint** that closes the report. Place it inside the JSON object as the final key. Do not emit it as free prose outside the object — the parser will reject mixed output.
+
+### Wrong vs Right
+
+Wrong (free prose, ambiguous verdict, unparseable):
+- ~~"There seem to be some coverage gaps. I'd suggest looking at issues 4 and 5."~~
+
+Right (strict JSON, deterministic, machine-parseable):
+- `{"verdict": "blocked", "findings": [{"category": "constitution-violation", "severity": "critical", "issues": [12], "anchor": "Non-negotiable #1 (Max subscription only)", "summary": "Issue 12 adds ANTHROPIC_API_KEY env var, violating the Max-only constraint."}], "fix_hint": "Remove the API key path from issue 12 and rely on the Max subscription only."}`
+
+### Constraints
+
+- **YOLO mode**: act without asking for confirmation.
+- **Strict JSON only** — any prose outside the single JSON object breaks the downstream parser.
+- **Constitution violations are always `critical`** and **always force `verdict=blocked`** — this rule cannot be relaxed under any condition.
+- **Schema is rigid**: keys, types, and enum values are exactly as documented above. Do not add fields.
+- **The report ends with `fix_hint`** inside the JSON object — a human-readable, one- or two-sentence next step the operator can act on.
+- **Read-only**: this prompt has no write tools. Do not propose code edits inline — only summaries + anchors.
+- **Be conservative**: when a finding is borderline, prefer `warning` over `critical`. Reserve `critical` for true blockers (constitution violations + active-checklist coverage gaps for in-scope items).
+
+2026-06-24 03:40:23,366 INFO msg #1: session bound to model claude-opus-4-8 (SystemMessage ground truth)
+2026-06-24 03:40:23,366 DEBUG msg #1: SystemMessage subtype=init type='system' subtype='init' cwd='/Volumes/External SSD/worldcup-2026-prediction' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584' tools=['Task', 'AskUserQuestion', 'Bash', 'CronCreate', 'CronDelete', 'CronList', 'DesignSync', 'Edit', 'EnterPlanMode', 'EnterWorktree', 'ExitPlanMode', 'ExitWorktree', 'Glob', 'Grep', 'Monitor', 'NotebookEdit', 'PushNotification', 'Read', 'RemoteTrigger', 'ScheduleWakeup', 'Skill', 'TaskCreate', 'TaskGet', 'TaskList', 'TaskOutput', 'TaskStop', 'TaskUpdate', 'ToolSearch', 'WebFetch', 'WebSearch', 'Workflow', 'Write'] mcp_servers=[] model='claude-opus-4-8' permissionMode='bypassPermissions' slash_commands=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator', 'clear', 'compact', 'context', 'heapdump', 'init', 'reload-skills', 'review', 'security-review', 'usage-credits', 'extra-usage', 'usage', 'insights', 'goal', 'team-onboarding'] apiKeySource='none' claude_code_version='2.1.175' output_style='default' agents=['claude', 'Explore', 'general-purpose', 'Plan', 'statusline-setup'] skills=['deep-research', 'design-sync', 'update-config', 'verify', 'debug', 'code-review', 'simplify', 'batch', 'fewer-permission-prompts', 'loop', 'schedule', 'claude-api', 'run', 'run-skill-generator'] plugins=[] analytics_disabled=False product_feedback_disabled=False uuid='c51328eb-b7cd-47cf-b30a-bc2d999e10ea' fast_mode_state='off'
+2026-06-24 03:40:25,333 INFO msg #2: RateLimitEvent
+2026-06-24 03:40:25,333 INFO RateLimitEvent: overage_status=rejected status=allowed rate_limit_type=five_hour utilization=None decision=continue
+2026-06-24 03:40:26,166 DEBUG msg #3: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=50 estimated_tokens_delta=50 uuid='8d9293f9-4932-4f71-8267-bd3afcc15435' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:27,582 DEBUG msg #4: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=150 estimated_tokens_delta=100 uuid='c9707bbf-76a5-4ed4-a461-3b45f9ad010c' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:28,979 DEBUG msg #5: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=250 estimated_tokens_delta=100 uuid='2922cca2-41c3-4362-8867-d2a0a877ae89' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:30,467 DEBUG msg #6: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=400 estimated_tokens_delta=150 uuid='a649beda-deb7-45f1-965e-c85997e78c3b' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:31,861 DEBUG msg #7: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=500 estimated_tokens_delta=100 uuid='764f7779-0972-4637-8279-68607c0e4c45' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:33,338 DEBUG msg #8: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=650 estimated_tokens_delta=150 uuid='2ba89fc6-3552-4ece-9cb9-c8f892fd6ebe' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:34,767 DEBUG msg #9: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=700 estimated_tokens_delta=50 uuid='c30ad6d8-4c81-443b-9394-64c7254a4a7a' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:36,303 DEBUG msg #10: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=800 estimated_tokens_delta=100 uuid='54ff69d6-eb5a-4d63-bffd-85c7084319ce' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:37,718 DEBUG msg #11: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=950 estimated_tokens_delta=150 uuid='0d1f9a3d-13c4-47e5-a4fc-a738a8742652' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:39,171 DEBUG msg #12: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1100 estimated_tokens_delta=150 uuid='512a8440-7410-4ef5-b6d0-aef643a22756' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:40,604 DEBUG msg #13: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1250 estimated_tokens_delta=150 uuid='6a8b3569-03d0-4d43-8c61-407728d56823' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:41,922 DEBUG msg #14: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1350 estimated_tokens_delta=100 uuid='c3d1b062-dbd3-4a2a-8fc2-2499b9f11960' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:43,369 DEBUG msg #15: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1500 estimated_tokens_delta=150 uuid='10f505eb-82e7-4692-965a-20d296d50087' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:45,216 DEBUG msg #16: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1650 estimated_tokens_delta=150 uuid='de175074-dd97-4150-9839-47f1f7ee14c3' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:46,748 DEBUG msg #17: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1750 estimated_tokens_delta=100 uuid='d486dd5d-6851-44c6-850a-1a40dbb004a8' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:48,039 DEBUG msg #18: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1850 estimated_tokens_delta=100 uuid='42a4a881-8b5c-4aea-83fd-79115b3067ef' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:49,513 DEBUG msg #19: SystemMessage subtype=thinking_tokens type='system' subtype='thinking_tokens' estimated_tokens=1950 estimated_tokens_delta=100 uuid='fa1f2619-16f0-466e-8735-68a9083c4271' session_id='1ba0c88f-e922-45fc-808d-02f72a3be584'
+2026-06-24 03:40:49,931 DEBUG msg #20: assistant (tool_use) thinking: 
+2026-06-24 03:40:51,459 INFO msg #21: assistant (406 chars)
+{
+  "verdict": "pass",
+  "findings": [],
+  "fix_hint": "All five Cycle-5 acceptance criteria are covered: backtest accuracy (#20, #21), 100k deterministic Monte-Carlo forecast (#19), no-key `forecast` command (#22, #19), graceful odds scraper caching (#20), and preserved command surface/PNG/tests (#22, #23). No duplications, ambiguities, or constitution violations detected; proceed to implementation."
+}
+2026-06-24 03:40:51,569 INFO msg #22: ResultMessage (tokens_in=2487 tokens_out=2184 cache_read=16890 cache_write=31075 is_error=False subtype=success stop_reason=end_turn num_turns=1)
+2026-06-24 03:40:51,824 INFO SDK session complete.
+2026-06-24 03:40:51,829 INFO Phase analyze-gate complete: in=2487 cache_read=16890 cache_write=31075 out=2184 total=52636

@@ -708,3 +708,12 @@ def run(
     plotter = ResultPlotter(cfg.visualization)
     plotter.plot_round_probabilities(rounds, output_path=plotter_dir / "probabilities.png")
     console.print(f"[green]Plot saved to {plotter_dir / 'probabilities.png'}[/green]")
+
+
+# ---------------------------------------------------------------------------
+# Cycle-5 commands (fetch-live, build-features, train-hybrid, backtest, forecast)
+# Registered here after ``app`` is defined to avoid a circular-import cycle.
+# ---------------------------------------------------------------------------
+from worldcup_playoff.cli_cycle5 import register as _register_cycle5  # noqa: E402
+
+_register_cycle5(app)

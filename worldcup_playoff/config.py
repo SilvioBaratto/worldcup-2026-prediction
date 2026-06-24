@@ -117,12 +117,28 @@ class SimulationConfig(BaseModel):
 
     n_simulations: int = 10000
     classifier: str = "naive_bayes"
+    extra_time_factor: float = 0.33
+    random_seed: int = 42
 
     @field_validator("n_simulations")
     @classmethod
     def n_simulations_must_be_positive(cls, v: int) -> int:
         if v < 1:
             raise ValueError("n_simulations must be at least 1")
+        return v
+
+    @field_validator("extra_time_factor")
+    @classmethod
+    def extra_time_factor_in_range(cls, v: float) -> float:
+        if not (0.0 < v <= 1.0):
+            raise ValueError("extra_time_factor must be in (0.0, 1.0]")
+        return v
+
+    @field_validator("random_seed")
+    @classmethod
+    def random_seed_must_be_non_negative(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("random_seed must be >= 0")
         return v
 
 
@@ -325,6 +341,60 @@ class OrderedLogitConfig(BaseModel):
         return v
 
 
+class OddsConfig(BaseModel):
+    """Configuration for the historical bookmaker odds scraper (backtest baseline only)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    cache_dir: Path = Path("dataset/odds")
+    seasons: list[int] = [2014, 2018, 2022]
+    source_url: str = "https://www.oddsportal.com"
+    request_timeout: int = 30
+    user_agent: str = "Mozilla/5.0 (compatible; worldcup-playoff/1.0)"
+    enabled: bool = True
+    fallback_to_cache: bool = True
+
+    @field_validator("request_timeout")
+    @classmethod
+    def request_timeout_must_be_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("request_timeout must be positive")
+        return v
+
+    @field_validator("seasons")
+    @classmethod
+    def seasons_must_be_non_empty(cls, v: list[int]) -> list[int]:
+        if not v:
+            raise ValueError("seasons must not be empty")
+        return v
+
+
+class RFConfig(BaseModel):
+    """Configuration for the Groll-hybrid Random-Forest tuning surface (distinct from legacy RF)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    n_estimators: int = 300
+    max_depth: int | None = None
+    min_samples_leaf: int = 1
+    test_size: float = 0.2
+    random_seed: int = 42
+
+    @field_validator("n_estimators")
+    @classmethod
+    def n_estimators_must_be_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("n_estimators must be positive")
+        return v
+
+    @field_validator("test_size")
+    @classmethod
+    def test_size_in_unit_interval(cls, v: float) -> float:
+        if not (0.0 < v < 1.0):
+            raise ValueError("test_size must be strictly between 0 and 1")
+        return v
+
+
 class AppConfig(BaseModel):
     data: DataConfig = DataConfig()
     features: FeaturesConfig = FeaturesConfig()
@@ -340,6 +410,8 @@ class AppConfig(BaseModel):
     poisson: PoissonConfig = PoissonConfig()
     hybrid: HybridConfig = HybridConfig()
     ordered_logit: OrderedLogitConfig = OrderedLogitConfig()
+    odds: OddsConfig = OddsConfig()
+    rf: RFConfig = RFConfig()
 
 
 class Matchup(BaseModel):

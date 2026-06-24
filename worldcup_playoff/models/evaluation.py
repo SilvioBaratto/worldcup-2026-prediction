@@ -1,4 +1,19 @@
-"""Model evaluation and comparison."""
+"""Model evaluation and comparison.
+
+Public API
+----------
+Pure metric functions (source-blind, no sklearn dependency):
+  rank_probability_score  — ordered 3-class RPS (primary)
+  multiclass_log_loss     — mean cross-entropy
+  brier_score             — mean multi-class Brier score
+
+Orchestration:
+  backtest_hybrid         — time-aware WC backtest vs bookmaker + legacy baselines
+
+Legacy (kept for pipeline compatibility):
+  ModelEvaluator          — confusion matrix + classification report
+  plot_roc_curves         — ROC curve visualisation
+"""
 
 from __future__ import annotations
 
@@ -7,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pandas as pd
 from sklearn.metrics import (
     RocCurveDisplay,
     classification_report,
@@ -14,6 +30,175 @@ from sklearn.metrics import (
 )
 
 logger = logging.getLogger(__name__)
+
+# ── Constants ────────────────────────────────────────────────────────────────
+
+_EPS: float = 1e-15
+_DEFAULT_WC_YEARS: list[int] = [2014, 2018, 2022]
+_META_COLS: frozenset[str] = frozenset(
+    {"date", "home_team", "away_team", "tournament", "outcome"}
+)
+
+# ── Pure metric functions ────────────────────────────────────────────────────
+
+
+def rank_probability_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """Mean RPS for ordered 3-class (Win/Draw/Loss) predictions.
+
+    RPS_i = (1/(J-1)) * Σ_{k=0}^{J-2} (CDF_pred_{i,k} − CDF_obs_{i,k})²
+    averaged over N matches (J=3 → divides by 2).
+    """
+    yt = np.asarray(y_true)
+    yp = np.asarray(y_pred, dtype=float)
+    cdf_pred = np.cumsum(yp, axis=1)[:, :-1]          # (N, J-1)
+    cutpoints = np.arange(yp.shape[1] - 1)            # [0, 1]
+    cdf_obs = (yt[:, np.newaxis] <= cutpoints).astype(float)
+    return float(np.mean(np.mean((cdf_pred - cdf_obs) ** 2, axis=1)))
+
+
+def multiclass_log_loss(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """Mean cross-entropy loss; clips probabilities to avoid log(0)."""
+    yt = np.asarray(y_true)
+    yp = np.clip(np.asarray(y_pred, dtype=float), _EPS, 1.0)
+    return float(-np.mean(np.log(yp[np.arange(len(yt)), yt])))
+
+
+def brier_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """Mean multi-class Brier score (mean squared error in probability space)."""
+    yt = np.asarray(y_true)
+    yp = np.asarray(y_pred, dtype=float)
+    one_hot = np.eye(yp.shape[1])[yt]
+    return float(np.mean(np.sum((yp - one_hot) ** 2, axis=1)))
+
+
+# ── Backtest helpers ─────────────────────────────────────────────────────────
+
+
+def _feature_cols(df: pd.DataFrame) -> list[str]:
+    return [c for c in df.columns if c not in _META_COLS]
+
+
+def _slice_year(df: pd.DataFrame, year: int) -> pd.DataFrame:
+    return df[pd.to_datetime(df["date"]).dt.year == year].reset_index(drop=True)
+
+
+def _pre_year(df: pd.DataFrame, year: int) -> pd.DataFrame:
+    return df[pd.to_datetime(df["date"]).dt.year < year].reset_index(drop=True)
+
+
+def _bookmaker_rps(year_matches: pd.DataFrame, odds: pd.DataFrame) -> float | None:
+    """Merge bookmaker odds onto year matches and return mean RPS; None if no overlap."""
+    key = ["date", "home_team", "away_team"]
+    merged = year_matches[key + ["outcome"]].merge(
+        odds[key + ["p_win", "p_draw", "p_loss"]], on=key, how="inner"
+    )
+    if merged.empty:
+        return None
+    return rank_probability_score(
+        merged["outcome"].to_numpy(),
+        merged[["p_win", "p_draw", "p_loss"]].to_numpy(),
+    )
+
+
+def _build_row(
+    year_matches: pd.DataFrame,
+    hybrid: Any,
+    legacy: Any,
+    feat_cols: list[str],
+    odds: pd.DataFrame | None,
+) -> dict[str, Any]:
+    X = year_matches[feat_cols].to_numpy()
+    y_true = year_matches["outcome"].to_numpy()
+    row: dict[str, Any] = {
+        "rps_hybrid": rank_probability_score(y_true, hybrid.predict_proba(X)),
+        "rps_legacy": rank_probability_score(y_true, legacy.predict_proba(X)),
+    }
+    if odds is not None:
+        bk = _bookmaker_rps(year_matches, odds)
+        if bk is not None:
+            row["rps_bookmaker"] = bk
+    return row
+
+
+def backtest_hybrid(
+    matches: pd.DataFrame,
+    hybrid: Any,
+    legacy: Any,
+    odds: pd.DataFrame | None = None,
+    years: list[int] | None = None,
+) -> pd.DataFrame:
+    """Time-aware WC backtest: train on pre-year data, evaluate on WC year.
+
+    Parameters
+    ----------
+    matches:  DataFrame with 'date', 'outcome', and feature columns.
+    hybrid:   Model with fit(X, y) and predict_proba(X) → (N, 3).
+    legacy:   Same protocol as hybrid (used as second baseline).
+    odds:     Optional bookmaker odds with 'date', 'home_team', 'away_team',
+              'p_win', 'p_draw', 'p_loss'. Skipped when None.
+    years:    WC years to backtest (default [2014, 2018, 2022]).
+
+    Returns
+    -------
+    DataFrame indexed by year with columns rps_hybrid, rps_legacy, and
+    (when odds are not None) rps_bookmaker.
+    """
+    eval_years = years if years is not None else _DEFAULT_WC_YEARS
+    feat_cols = _feature_cols(matches)
+    rows: dict[int, dict[str, Any]] = {}
+    for year in eval_years:
+        year_matches = _slice_year(matches, year)
+        if year_matches.empty:
+            continue
+        train = _pre_year(matches, year)
+        if not train.empty:
+            X_tr = train[feat_cols].to_numpy()
+            y_tr = train["outcome"].to_numpy()
+            hybrid.fit(X_tr, y_tr)
+            legacy.fit(X_tr, y_tr)
+        rows[year] = _build_row(year_matches, hybrid, legacy, feat_cols, odds)
+    result = pd.DataFrame.from_dict(rows, orient="index")
+    result.index.name = "year"
+    return result
+
+
+# ── High-level CLI entry ─────────────────────────────────────────────────────
+
+
+def _read_features(root: Any) -> "pd.DataFrame | None":
+    from pathlib import Path
+    try:
+        df = pd.read_csv(Path(root) / "dataset" / "features.csv")
+        return df if "outcome" in df.columns else None
+    except (FileNotFoundError, OSError):
+        return None
+
+
+def _sklearn_pair(seed: int = 42) -> tuple:
+    from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+    return (
+        GradientBoostingClassifier(random_state=seed),
+        RandomForestClassifier(n_estimators=10, random_state=seed),
+    )
+
+
+def run_backtest(cfg: Any = None, root: Any = None) -> "pd.DataFrame | None":
+    """High-level CLI entry: load features+targets and run time-aware WC backtest.
+
+    Returns ``None`` when ``dataset/features.csv`` is unavailable or lacks
+    an ``outcome`` column.  Delegates to ``backtest_hybrid`` with sklearn
+    classifiers compatible with its ``fit(X, y)`` / ``predict_proba(X)`` protocol.
+    """
+    from worldcup_playoff.config import AppConfig
+    resolved = cfg if cfg is not None else AppConfig()
+    matches = _read_features(root or ".")
+    if matches is None:
+        return None
+    seed = getattr(getattr(resolved, "hybrid", None), "random_seed", 42)
+    try:
+        return backtest_hybrid(matches, *_sklearn_pair(seed))
+    except Exception:
+        return None
 
 
 class ModelEvaluator:

@@ -71,6 +71,8 @@ candidates = [
 [simulation]
 n_simulations = 10000
 classifier = "naive_bayes"
+extra_time_factor = 0.33
+random_seed = 42
 
 [visualization]
 dpi = 80
@@ -98,3 +100,50 @@ features = ["elo_diff"]
 maxiter = 100
 test_size = 0.2
 random_seed = 42
+
+[live]
+competition = "WC"
+
+[elo]
+initial_rating = 1500.0
+home_advantage = 100.0
+k_friendly = 20
+k_qualifier = 30
+k_continental = 40
+k_world_cup = 60
+qualifier_keywords = ["qualification", "qualifying", "qualifier"]
+continental_keywords = [
+    "Copa America",
+    "UEFA European Championship",
+    "AFCON",
+    "Africa Cup of Nations",
+    "Asian Cup",
+    "Gold Cup",
+    "CONCACAF Gold Cup",
+    "Nations League",
+    "Copa del Rey",
+]
+world_cup_keywords = ["World Cup"]
+
+[poisson]
+half_life_days = 365.0
+max_goals = 10
+rho_init = -0.1
+home_adv_init = 0.25
+min_matches = 1
+random_seed = 42
+optimizer_maxiter = 200
+
+[rf]
+n_estimators = 300
+test_size = 0.2
+random_seed = 42
+
+[odds]
+cache_dir = "dataset/odds"
+seasons = [2014, 2018, 2022]
+source_url = "https://www.oddsportal.com"
+request_timeout = 30
+user_agent = "Mozilla/5.0 (compatible; worldcup-playoff/1.0)"
+enabled = true
+fallback_to_cache = true

@@ -1,0 +1,1 @@
+2026-06-24 05:30:56,517 INFO vigil: skipping boot probe — no entry_cmd available and no HTTP-service signal (non-service project; skip is legitimate)

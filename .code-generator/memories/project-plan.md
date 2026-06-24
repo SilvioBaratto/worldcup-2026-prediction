@@ -1,4 +1,8 @@
-- #12 [priority:high] feat: time-aware match dataset utility + Hybrid/OrderedLogit config models — agent: python-pro
-- #13 [priority:high] feat: Groll-style RF/GBM goal-based hybrid model (primary predictor) — agent: python-pro
-- #14 [priority:high] feat: Elo-diff ordered logit secondary model (statsmodels) — agent: python-pro
-- #15 [priority:medium] feat: models package no-key integration smoke test (hybrid + ordered logit + baseline) — agent: python-pro
+- #16 [priority:high] feat: Cycle 5 config groundwork — [rf]/[odds] sections, knockout sim params, TOML wiring — agent: python-pro
+- #17 [priority:high] feat: group-stage simulation engine with FIFA tiebreaks (simulation/group_stage.py) — agent: python-pro
+- #18 [priority:high] feat: R32 resolution + single-elimination knockout sim with extra-time/penalties (simulation/knockout.py) — agent: python-pro
+- #19 [priority:high] feat: ~100k Monte-Carlo live-forecast orchestrator + title odds (simulation/live_forecast.py) — agent: python-pro
+- #20 [priority:medium] feat: archived bookmaker odds scraper + de-vig + CSV cache (data/odds.py) — agent: python-pro
+- #21 [priority:high] feat: probabilistic eval metrics (RPS/log-loss/Brier) + hybrid backtest vs bookmaker baseline — agent: python-pro
+- #22 [priority:high] feat: CLI commands fetch-live, build-features, train-hybrid, backtest, forecast (cli.py) — agent: python-pro
+- #23 [priority:medium] feat: title-odds visualizations for the live forecast (visualization/plots.py) — agent: python-pro
