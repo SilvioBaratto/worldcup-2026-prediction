@@ -16,7 +16,7 @@ schema (``DATE``, ``HOME_GOALS``, ``AWAY_GOALS``). Sorting is applied to the
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pandas as pd
 
@@ -43,12 +43,15 @@ class MatchDataset:
     ----------
     train:        Played matches in the chronological training slice.
     test:         Played matches in the chronological test slice.
-    feature_cols: Column names to use as model inputs.
+    feature_cols: Column names to use as model inputs.  When omitted (empty
+                  list), the consuming model auto-derives the column set from
+                  the training frame by excluding the standard forbidden
+                  columns (targets / identity / metadata).
     """
 
     train: pd.DataFrame
     test: pd.DataFrame
-    feature_cols: list[str]
+    feature_cols: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

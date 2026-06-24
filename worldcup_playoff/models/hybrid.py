@@ -28,14 +28,23 @@ from worldcup_playoff.features.confederation import CONFEDERATIONS
 from worldcup_playoff.models.dataset import MatchDataset
 from worldcup_playoff.simulation.poisson import score_matrix
 
-__all__ = ["GoalPrediction", "HybridModel", "fit_hybrid"]
+__all__ = ["GoalPrediction", "HybridConfig", "HybridModel", "MatchDataset", "fit_hybrid"]
 
 # ─── Constants ───────────────────────────────────────────────────────────────
 
 _FORBIDDEN: frozenset[str] = frozenset(
-    {"home_goals", "away_goals", "date", "home_team", "away_team", "tournament"}
+    {
+        "home_goals",
+        "away_goals",
+        "y_outcome",
+        "y_margin",
+        "date",
+        "home_team",
+        "away_team",
+        "tournament",
+    }
 )
-_CONFED_COLS: frozenset[str] = frozenset({"home_confederation", "away_confederation"})
+_CONFED_COLS: frozenset[str] = frozenset({"home_confederation", "away_confederation", "confederation"})
 
 
 # ─── Value object ────────────────────────────────────────────────────────────
@@ -116,6 +125,13 @@ def derive_outcome_probs(
     return ph, pd_, pa
 
 
+def _to_frame(features: pd.DataFrame | dict[str, Any]) -> pd.DataFrame:
+    """Normalise a feature input (DataFrame or dict) to a single-row DataFrame."""
+    if isinstance(features, pd.DataFrame):
+        return features
+    return pd.DataFrame([features])
+
+
 def _make_prediction(lh: float, la: float, cfg: HybridConfig) -> GoalPrediction:
     ph, pd_, pa = derive_outcome_probs(lh, la, max_goals=cfg.max_goals, rho=cfg.rho)
     return GoalPrediction(ph, pd_, pa, lh, la, lh - la)
@@ -161,7 +177,11 @@ class HybridModel:
         self._gb_a: GradientBoostingRegressor | None = None
 
     def fit(self, dataset: MatchDataset) -> "HybridModel":
-        self._feature_cols = dataset.feature_cols
+        self._feature_cols = (
+            dataset.feature_cols
+            if dataset.feature_cols
+            else [c for c in dataset.train.columns if c not in _FORBIDDEN]
+        )
         self._sentinels = _fit_sentinels(dataset.train, self._feature_cols)
         X = build_design_matrix(dataset.train, self._feature_cols, self._sentinels)
         y_h = dataset.train["home_goals"].astype(float).values
@@ -170,13 +190,13 @@ class HybridModel:
         self._rf_a, self._gb_a = _fit_pair(self._cfg, X, y_a)
         return self
 
-    def predict_goals(self, features: dict[str, Any]) -> tuple[float, float]:
-        X = build_design_matrix(pd.DataFrame([features]), self._feature_cols, self._sentinels)
+    def predict_goals(self, features: pd.DataFrame | dict[str, Any]) -> tuple[float, float]:
+        X = build_design_matrix(_to_frame(features), self._feature_cols, self._sentinels)
         lh = max(0.0, float((self._rf_h.predict(X)[0] + self._gb_h.predict(X)[0]) / 2))  # type: ignore[union-attr]
         la = max(0.0, float((self._rf_a.predict(X)[0] + self._gb_a.predict(X)[0]) / 2))  # type: ignore[union-attr]
         return lh, la
 
-    def predict(self, features: dict[str, Any]) -> GoalPrediction:
+    def predict(self, features: pd.DataFrame | dict[str, Any]) -> GoalPrediction:
         lh, la = self.predict_goals(features)
         return _make_prediction(lh, la, self._cfg)
 

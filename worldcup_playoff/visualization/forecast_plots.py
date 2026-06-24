@@ -115,6 +115,11 @@ def _round_team_matrix(
     return np.array([[round_probs[r].get(t, 0.0) for r in rounds] for t in teams])
 
 
+def _escape_latex_special_chars(text: str) -> str:
+    """Escape LaTeX special characters to prevent mathtext parsing errors."""
+    return text.replace("$", r"\$")
+
+
 def _configure_heatmap(
     ax: matplotlib.axes.Axes,
     data: np.ndarray,
@@ -124,9 +129,9 @@ def _configure_heatmap(
     """Paint the heatmap image and configure axis labels; returns the image."""
     im = ax.imshow(data, aspect="auto", cmap="Blues")
     ax.set_xticks(range(len(rounds)))
-    ax.set_xticklabels(rounds, rotation=30, ha="right", fontsize=9)
+    ax.set_xticklabels([_escape_latex_special_chars(r) for r in rounds], rotation=30, ha="right", fontsize=9)
     ax.set_yticks(range(len(teams)))
-    ax.set_yticklabels(teams, fontsize=max(4, 8 - len(teams) // 10))
+    ax.set_yticklabels([_escape_latex_special_chars(t) for t in teams], fontsize=max(4, 8 - len(teams) // 10))
     return im
 
 
