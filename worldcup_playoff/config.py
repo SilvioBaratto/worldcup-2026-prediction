@@ -285,6 +285,46 @@ class FeatureBuildConfig(BaseModel):
         return v
 
 
+class HybridConfig(BaseModel):
+    """Configuration for the Groll-style RF/GBM goal-based hybrid model."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    rf_n_estimators: int = 300
+    rf_max_depth: int | None = None
+    gb_n_estimators: int = 200
+    gb_learning_rate: float = 0.05
+    max_goals: int = 10
+    rho: float = -0.1
+    test_size: float = 0.2
+    random_seed: int = 42
+
+    @field_validator("test_size")
+    @classmethod
+    def test_size_must_be_in_open_unit_interval(cls, v: float) -> float:
+        if not (0.0 < v < 1.0):
+            raise ValueError("test_size must be strictly between 0 and 1")
+        return v
+
+
+class OrderedLogitConfig(BaseModel):
+    """Configuration for the Elo-diff ordered logit secondary/fallback model."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    features: list[str] = ["elo_diff"]
+    maxiter: int = 100
+    test_size: float = 0.2
+    random_seed: int = 42
+
+    @field_validator("test_size")
+    @classmethod
+    def test_size_must_be_in_open_unit_interval(cls, v: float) -> float:
+        if not (0.0 < v < 1.0):
+            raise ValueError("test_size must be strictly between 0 and 1")
+        return v
+
+
 class AppConfig(BaseModel):
     data: DataConfig = DataConfig()
     features: FeaturesConfig = FeaturesConfig()
@@ -298,6 +338,8 @@ class AppConfig(BaseModel):
     live: LiveConfig = LiveConfig()
     elo: EloConfig = EloConfig()
     poisson: PoissonConfig = PoissonConfig()
+    hybrid: HybridConfig = HybridConfig()
+    ordered_logit: OrderedLogitConfig = OrderedLogitConfig()
 
 
 class Matchup(BaseModel):

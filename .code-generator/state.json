@@ -1,9 +1,9 @@
 {
   "mode": "multi-cycle",
   "started_at": "2026-06-23T18:24:44Z",
-  "updated_at": "2026-06-23T23:35:54Z",
+  "updated_at": "2026-06-24T01:31:20Z",
   "state_version": 2,
-  "current_cycle": 3,
+  "current_cycle": 4,
   "cycles": [
     {
       "id": 1,
@@ -489,8 +489,8 @@
       "name": "Feature Assembly",
       "milestone_number": 3,
       "milestone_title": "Cycle 3 \u2014 Football-Only Covariates",
-      "status": "open",
-      "phase": 65,
+      "status": "completed",
+      "phase": 7,
       "issues": [
         {
           "number": 7,
@@ -646,19 +646,30 @@
           "cache_write_1h": 129517,
           "compaction_events": 0,
           "clear_events": 0
+        },
+        "phase7": {
+          "input": 2469,
+          "output": 117,
+          "cache_read": 15328,
+          "cache_write": 10737,
+          "num_turns": 1,
+          "cache_write_5m": 0,
+          "cache_write_1h": 10737,
+          "compaction_events": 0,
+          "clear_events": 0
         }
       },
       "started_at": "2026-06-23T21:48:47Z",
-      "finished_at": null,
+      "finished_at": "2026-06-23T23:36:02Z",
       "cache_telemetry": {
-        "input": 10963,
-        "output": 397458,
-        "cache_read": 17425607,
-        "cache_write": 1353791,
-        "cache_write_1h": 445094,
+        "input": 13432,
+        "output": 397575,
+        "cache_read": 17440935,
+        "cache_write": 1364528,
+        "cache_write_1h": 455831,
         "cache_write_5m": 908697,
         "cache_hit_pct": 92.7,
-        "wall_seconds": 3833.156605707016
+        "wall_seconds": 3837.6830691650393
       },
       "phase2_batch_id": null,
       "ollama_model": null,
@@ -743,11 +754,68 @@
     {
       "id": 4,
       "name": "Model Training & Comparison",
-      "milestone_number": null,
+      "milestone_number": 4,
       "milestone_title": "Cycle 4 \u2014 Groll Hybrid & Baselines",
       "status": "open",
-      "phase": 0,
-      "issues": [],
+      "phase": 65,
+      "issues": [
+        {
+          "number": 12,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:models"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-23T23:47:07Z):\n> Solid foundation task \u2014 encoding, target derivation, and config wiring are well-specified. One concrete ordering footgun to pin down in `build_dataset`: the feature frame from `build_features` appends unplayed WC2026 fixtures with `home_goals`/`away_goals` as `<NA>`, and `sort_chronological` places them LAST (`na_position=\"last\"`). If `chronological_split` (last `floor(n*test_size)` rows) runs BEFORE `played_only`, the entire test slice will be these NA-target fixtures, which then get dropped \u2192 an empty or near-empty test set. Make the acceptance criterion explicit: `build_dataset` must apply `played_only` FIRST, then `chronological_split` on the played-only frame, so both train and test contain only played matches. Add a test asserting `len(test) > 0` and `test['home_goals'].notna().all()` on a frame that includes unplayed rows. Also confirm `chronological_split` enforces `train.date.max() <= test.date.min()` on string ISO dates \u2014 string comparison is only safe if dates are zero-padded `YYYY-MM-DD` (they are, per `_date_str`), but assert it rather than relying on lexical order implicitly.",
+          "title": "feat: time-aware match dataset utility + Hybrid/OrderedLogit config models"
+        },
+        {
+          "number": 13,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:models"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-23T23:47:08Z):\n> Goal-based hybrid design is sound and reusing `simulation.poisson.score_matrix` for the W/D/L simplex is the right call (it normalizes via `mat/mat.sum()`, so triangles sum to 1 with non-zero draw mass). Two concrete corrections for the confederation encoding:\n> \n> 1. The implementation note says to use a fixed ordering from `CONFEDERATION_MAP`, but that dict maps team\u2192confederation, not a category order. The fixed category list you want is the `CONFEDERATIONS` tuple in `features/confederation.py` (`('UEFA','CONMEBOL','CAF','AFC','CONCACAF','OFC')`). The design-matrix columns `home_confederation`/`away_confederation` already CONTAIN confederation strings, so one-hot them against `CONFEDERATIONS` \u2014 not against `CONFEDERATION_MAP`.\n> \n> 2. `resolve_ranking` returns `confederation=None` for unknown teams, so `home_confederation`/`away_confederation` can be `None`. A `None` must encode to an all-zero one-hot row (handled deterministically), not a NaN column \u2014 otherwise the 'no NaN columns' criterion breaks at WC2026 inference time.\n> \n> Also: `build_features` adds a `tournament` metadata column that is NOT in `FEATURE_COLUMNS`. `build_design_matrix` should select an explicit allow-list of numeric + encoded columns rather than 'drop targets/identity', otherwise the object-dtype `tournament` column leaks in as a non-numeric/NaN column.",
+          "title": "feat: Groll-style RF/GBM goal-based hybrid model (primary predictor)"
+        },
+        {
+          "number": 14,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:high",
+            "phase:implement",
+            "agent:python-pro",
+            "area:models"
+          ],
+          "reviewed": true,
+          "comments": "## Pre-fetched Issue Comments\n\n**SilvioBaratto** (2026-06-23T23:47:09Z):\n> Lazy-importing `OrderedModel` inside `fit` and documenting this as the W/D/L-only fallback are both correct. Two concrete implementation hazards to bake into acceptance:\n> \n> 1. `add_targets` produces `y_outcome` as nullable pandas `Int64`. statsmodels `OrderedModel` expects a plain numeric/categorical endog; passing `Int64` can raise or misbehave during the BFGS fit. Cast to a plain `np.int_`/`int` array (or `pd.Categorical` with ordered=True) before `OrderedModel(endog=..., exog=...)`. After `played_only`, `y_outcome` is guaranteed non-null, so the cast is safe.\n> \n> 2. `OrderedModel` parameterizes the intercept via its cut-point thresholds \u2014 do NOT prepend a constant/intercept column to `exog` (statsmodels raises on a constant in exog for OrderedModel). `exog = X[config.features]` with `config.features=['elo_diff']` is exactly right; just ensure no `add_constant` sneaks in.\n> \n> 3. For the monotonicity test, also guard the degenerate edge: with very few played rows or quasi-perfect separation, BFGS may not converge and coefficients blow up. Since this is the 'too few played rows' fallback, add a focused test on a small-but-separable synthetic frame and assert the fit produces finite coefficients.",
+          "title": "feat: Elo-diff ordered logit secondary model (statsmodels)"
+        },
+        {
+          "number": 15,
+          "status": "closed",
+          "agent": "python-pro",
+          "labels": [
+            "priority:medium",
+            "phase:implement",
+            "agent:python-pro",
+            "area:models"
+          ],
+          "reviewed": true,
+          "comments": "",
+          "title": "feat: models package no-key integration smoke test (hybrid + ordered logit + baseline)"
+        }
+      ],
       "commit_sha": null,
       "depends_on": [
         3
@@ -767,31 +835,124 @@
           "effort": "medium"
         }
       ],
-      "base_commit": null,
-      "token_usage": {},
-      "started_at": null,
+      "base_commit": "30d0a71856616dd04b2171107bbd8371c6932dbe",
+      "token_usage": {
+        "phase1": {
+          "input": 12474,
+          "output": 29504,
+          "cache_read": 1073329,
+          "cache_write": 95790,
+          "num_turns": 28,
+          "cache_write_5m": 0,
+          "cache_write_1h": 95790,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase2": {
+          "input": 136,
+          "output": 6286,
+          "cache_read": 172722,
+          "cache_write": 73091,
+          "num_turns": 11,
+          "cache_write_5m": 0,
+          "cache_write_1h": 73091,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase3_4": {
+          "input": 527,
+          "output": 203630,
+          "cache_read": 10944976,
+          "cache_write": 451755,
+          "num_turns": 162,
+          "cache_write_5m": 451755,
+          "cache_write_1h": 0,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase5": {
+          "input": 16868,
+          "output": 46182,
+          "cache_read": 2001273,
+          "cache_write": 142884,
+          "num_turns": 50,
+          "cache_write_5m": 0,
+          "cache_write_1h": 142884,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "phase6": {
+          "input": 149,
+          "output": 7150,
+          "cache_read": 876820,
+          "cache_write": 32540,
+          "num_turns": 26,
+          "cache_write_5m": 0,
+          "cache_write_1h": 32540,
+          "compaction_events": 0,
+          "clear_events": 0
+        },
+        "mav": {
+          "input": 42,
+          "output": 7618,
+          "cache_read": 617363,
+          "cache_write": 132929,
+          "num_turns": 9,
+          "cache_write_5m": 0,
+          "cache_write_1h": 132929,
+          "compaction_events": 0,
+          "clear_events": 0
+        }
+      },
+      "started_at": "2026-06-23T23:36:05Z",
       "finished_at": null,
       "cache_telemetry": {
-        "input": 0,
-        "output": 0,
-        "cache_read": 0,
-        "cache_write": 0,
-        "cache_write_1h": 0,
-        "cache_write_5m": 0,
-        "cache_hit_pct": 0.0,
-        "wall_seconds": 0
+        "input": 30196,
+        "output": 300370,
+        "cache_read": 15686483,
+        "cache_write": 928989,
+        "cache_write_1h": 477234,
+        "cache_write_5m": 451755,
+        "cache_hit_pct": 94.2,
+        "wall_seconds": 5488.871967376093
       },
       "phase2_batch_id": null,
       "ollama_model": null,
       "gemini_model": null,
       "codex_model": null,
-      "cache_prewarmed": false,
-      "cache_ttl_probe": null,
-      "phase6_5": null,
+      "cache_prewarmed": true,
+      "cache_ttl_probe": "1h",
+      "phase6_5": {
+        "attempt": 0,
+        "last_tier": "DONE",
+        "tiers_passed": [
+          "T0"
+        ],
+        "tiers_failed": [],
+        "tiers_skipped": [
+          "T1",
+          "T2",
+          "T3",
+          "T4"
+        ],
+        "skip_reasons": {
+          "T1": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+          "T2": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
+          "T3": "no frontend",
+          "T4": "no docker"
+        }
+      },
       "vigil_triggered": false,
       "phase8": null,
       "phase4_bon": [],
-      "phase6_mav": null,
+      "phase6_mav": {
+        "aspects_passed": [
+          "acceptance_criteria",
+          "security"
+        ],
+        "aspects_failed": [],
+        "overall_pass": true
+      },
       "vg_config": null,
       "cycle5_decisions": [],
       "tool_search_enabled": false,
@@ -803,10 +964,37 @@
       "github_mode": true,
       "commit_enabled": true,
       "static_blocker": false,
-      "static_status": null,
+      "static_status": "scanned",
       "mutation_score": null,
-      "pbt_result": null,
-      "model_cost": {}
+      "pbt_result": {
+        "passed": 40,
+        "failed": 0
+      },
+      "model_cost": {
+        "phase3_4": {
+          "claude-haiku-4-5-20251001": {
+            "cost_usd": 0.008703,
+            "input_tokens": 8388,
+            "output_tokens": 63,
+            "cache_read": 0,
+            "cache_write": 0
+          },
+          "claude-sonnet-4-6": {
+            "cost_usd": 9.1599876,
+            "input_tokens": 535,
+            "output_tokens": 204213,
+            "cache_read": 11126032,
+            "cache_write": 459563
+          },
+          "claude-opus-4-8": {
+            "cost_usd": 0.975101,
+            "input_tokens": 136,
+            "output_tokens": 6286,
+            "cache_read": 172722,
+            "cache_write": 73091
+          }
+        }
+      }
     },
     {
       "id": 5,
@@ -907,7 +1095,7 @@
     }
   },
   "session_mode": "shared",
-  "client_alive_at": "2026-06-23T21:48:47+00:00",
+  "client_alive_at": "2026-06-23T23:36:05+00:00",
   "phase2_batch_id": null,
   "repo": {
     "host": "github.com",

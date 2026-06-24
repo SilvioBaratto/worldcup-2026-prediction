@@ -1,5 +1,4 @@
-- #7 [priority:high] feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config — agent: python-pro
-- #8 [priority:high] feat: time-aware recent-form, rest-days, and goal-difference helpers (no forward leakage) — agent: python-pro
-- #9 [priority:high] feat: core per-match feature assembler over martj42 history (features/build.py) — agent: python-pro
-- #10 [priority:medium] feat: WC2026 current-state feature frame (no-key martj42 schedule + key-gated live adapter) — agent: python-pro
-- #11 [priority:medium] feat: features package public API, exports, and no-key integration smoke test — agent: python-pro
+- #12 [priority:high] feat: time-aware match dataset utility + Hybrid/OrderedLogit config models — agent: python-pro
+- #13 [priority:high] feat: Groll-style RF/GBM goal-based hybrid model (primary predictor) — agent: python-pro
+- #14 [priority:high] feat: Elo-diff ordered logit secondary model (statsmodels) — agent: python-pro
+- #15 [priority:medium] feat: models package no-key integration smoke test (hybrid + ordered logit + baseline) — agent: python-pro

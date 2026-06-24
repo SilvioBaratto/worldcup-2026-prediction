@@ -1,5 +1,5 @@
 {
-  "base_url": "http://127.0.0.1:57049",
+  "base_url": "http://127.0.0.1:58283",
   "entry_cmd": [],
   "requirements_hash": "230cb629cd0c0a4e9a0adf03eb17a5c817e879bc0450b4a4de4b67b1d89629fd",
   "scenarios": [],
@@ -20,7 +20,7 @@
       "enabled": false,
       "health_path": "/health",
       "pass_rate_threshold": 1.0,
-      "port": 57049,
+      "port": 58283,
       "runs": 1,
       "skip_reason": "no served HTTP surface in Tech Stack (CLI/library/frontend-only binds no port)",
       "tier_id": "T1",

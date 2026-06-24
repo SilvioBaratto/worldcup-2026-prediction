@@ -83,3 +83,18 @@ max_retries = 5
 backoff_base = 2.0
 timeout = 120
 use_custom_headers = true
+
+[hybrid]
+rf_n_estimators = 300
+gb_n_estimators = 200
+gb_learning_rate = 0.05
+max_goals = 10
+rho = -0.1
+test_size = 0.2
+random_seed = 42
+
+[ordered_logit]
+features = ["elo_diff"]
+maxiter = 100
+test_size = 0.2
+random_seed = 42

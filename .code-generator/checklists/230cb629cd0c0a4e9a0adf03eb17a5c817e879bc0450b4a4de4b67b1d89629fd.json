@@ -1,7 +1,7 @@
 [
   {
-    "issue_number": 7,
-    "title": "feat: static confederation map + FIFA-ranking fallback resolver + [features_build] config",
+    "issue_number": 12,
+    "title": "feat: time-aware match dataset utility + Hybrid/OrderedLogit config models",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,
@@ -9,8 +9,8 @@
     "professionalized": false
   },
   {
-    "issue_number": 8,
-    "title": "feat: time-aware recent-form, rest-days, and goal-difference helpers (no forward leakage)",
+    "issue_number": 13,
+    "title": "feat: Groll-style RF/GBM goal-based hybrid model (primary predictor)",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,
@@ -18,8 +18,8 @@
     "professionalized": false
   },
   {
-    "issue_number": 9,
-    "title": "feat: core per-match feature assembler over martj42 history (features/build.py)",
+    "issue_number": 14,
+    "title": "feat: Elo-diff ordered logit secondary model (statsmodels)",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,
@@ -27,17 +27,8 @@
     "professionalized": false
   },
   {
-    "issue_number": 10,
-    "title": "feat: WC2026 current-state feature frame (no-key martj42 schedule + key-gated live adapter)",
-    "tests_passed": true,
-    "committed": false,
-    "feature_done": false,
-    "runtime_verified": true,
-    "professionalized": false
-  },
-  {
-    "issue_number": 11,
-    "title": "feat: features package public API, exports, and no-key integration smoke test",
+    "issue_number": 15,
+    "title": "feat: models package no-key integration smoke test (hybrid + ordered logit + baseline)",
     "tests_passed": true,
     "committed": false,
     "feature_done": false,
