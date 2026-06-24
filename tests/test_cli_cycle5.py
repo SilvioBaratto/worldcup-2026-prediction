@@ -1,5 +1,13 @@
 """
-Source-blind CliRunner smoke tests for Issue #22 — Cycle-5 CLI surface.
+Source-blind CliRunner smoke tests for Cycle-5 CLI surface.
+
+Originally authored for Issue #22; extended in Issue #50 with:
+  - Fix for brittle ANSI option-presence tests (NO_COLOR=1 per-invocation).
+  - Tests for ``--output`` and ``--no-plots`` options on ``forecast``.
+  - Canonical CliRunner test: both PNGs written for a stub ForecastResult.
+  - Graceful-message test for the None/no-key branch.
+  - ``--no-plots`` suppresses PNG writing.
+  - ``backtest`` surfaces rps_bookmaker when stub odds are provided.
 
 Authored from acceptance criteria only; no implementation source was read.
 
@@ -10,6 +18,10 @@ Design choices recorded here:
   - Individual ``<command> --help`` tests are an additional registration
     guard: they always exit 0 for registered commands and never hit
     network or heavy compute, so they are safe even in CI.
+  - Option-presence assertions (``--config``, ``--seed``, ``--no-plots`` …)
+    pass ``env=_NO_ANSI`` so Rich does not inject ANSI escape codes that
+    break literal-substring matching on CI.  The options ARE present in the
+    help text; only the rendering differs.  See Issue #50 audit §A.
   - Patch targets for full-invocation smoke tests are derived from the
     project-structure in requirements.md.  The CLI is expected to delegate
     to those modules; deviating from the spec causes these tests to fail
@@ -22,11 +34,19 @@ Design choices recorded here:
   - Criterion 5 (SOLID / code-quality) is classified NOT VERIFIABLE by
     the oracle and is deliberately omitted.
 
-Dependencies: pytest, typer[all], hypothesis
+Dependencies: pytest, typer[all], hypothesis, matplotlib
 """
 
+from __future__ import annotations
+
 import os
+from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
+
+import matplotlib
+
+matplotlib.use("Agg")  # headless backend — must be set before any pyplot import
 
 import pytest
 from hypothesis import given, settings
@@ -35,6 +55,11 @@ from typer.testing import CliRunner
 
 
 runner = CliRunner()
+
+# Suppress Rich/Typer ANSI escapes so literal ``--option`` strings are testable.
+# See Issue #50 audit §A: without this, ``--config`` is rendered as separate
+# ANSI spans and the substring check fails on CI where Rich is fully functional.
+_NO_ANSI: dict[str, str] = {"NO_COLOR": "1"}
 
 
 def _app():
@@ -110,18 +135,47 @@ def test_when_existing_command_help_requested_it_exits_zero(cmd):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Criterion 2 — ``forecast`` options and no-key default
+# Criterion 2 — ``forecast`` options: --config / --seed / --n-simulations
+#
+# FIX (Issue #50 §A): pass env=_NO_ANSI so Rich does not colorize the ``--``
+# dashes into separate ANSI spans.  The literal ``--config`` substring then
+# matches on both local (broken Rich) and CI (working Rich) environments.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 
 @pytest.mark.parametrize("option", ["--config", "--seed", "--n-simulations"])
 def test_when_forecast_help_requested_expected_option_is_present(option):
     """forecast --help must advertise --config, --seed, and --n-simulations."""
-    result = runner.invoke(_app(), ["forecast", "--help"])
+    result = runner.invoke(_app(), ["forecast", "--help"], env=_NO_ANSI)
     assert result.exit_code == 0, result.output
     assert option in result.output, (
         f"Option '{option}' not found in forecast --help:\n{result.output}"
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Criterion 2 — ``forecast`` gains ``--output`` and ``--no-plots`` options
+# (Issue #50 additions)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.parametrize("option", ["--output", "--no-plots"])
+def test_when_forecast_help_requested_new_option_is_present(option):
+    """
+    forecast --help must list the --output and --no-plots options added in
+    Cycle 5 (Issue #50).  --output overrides cfg.visualization.output_dir;
+    --no-plots suppresses PNG rendering.
+    """
+    result = runner.invoke(_app(), ["forecast", "--help"], env=_NO_ANSI)
+    assert result.exit_code == 0, result.output
+    assert option in result.output, (
+        f"Option {option!r} not found in forecast --help:\n{result.output}"
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Criterion 2 — ``forecast`` no-key default and re-runnable
+# ═══════════════════════════════════════════════════════════════════════════════
 
 
 def test_when_forecast_invoked_without_api_key_it_exits_zero():
@@ -159,6 +213,132 @@ def test_when_forecast_rerun_both_invocations_exit_zero():
         second = runner.invoke(_app(), ["forecast"])
     assert first.exit_code == 0, f"First run failed:\n{first.output}"
     assert second.exit_code == 0, f"Second run failed:\n{second.output}"
+
+
+def test_when_forecast_returns_none_then_graceful_message_is_in_output():
+    """
+    The None / no-key branch must print a non-empty graceful message.
+
+    Criterion: "the None/no-key branch still prints the graceful message and
+    exits 0."  The message must be non-empty and must not be an exception
+    traceback.
+    """
+    with patch("worldcup_playoff.simulation.live_forecast.run_forecast", return_value=None):
+        result = runner.invoke(_app(), ["forecast"])
+    assert result.exit_code == 0, f"Expected exit 0, got {result.exit_code}:\n{result.output}"
+    stripped = result.output.strip()
+    assert len(stripped) > 0, (
+        "Expected a graceful message when forecast returns None, but stdout was empty"
+    )
+    assert "Traceback" not in stripped, "Expected a graceful message but got an exception traceback"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Criterion: forecast, on a non-None result, writes title_odds.png and
+#            advancement.png under --output via plot_title_odds /
+#            plot_round_advancement  (Issue #50 canonical CliRunner test)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def _make_stub_forecast_result() -> SimpleNamespace:
+    """
+    Minimal duck-typed ForecastResult for CLI tests.
+
+    Attributes mirror the ForecastResult contract verified in test_live_forecast.py:
+    ``champion_probabilities: dict[str, float]`` and
+    ``round_probabilities: dict[str, dict[str, float]]``.
+    Using SimpleNamespace keeps this test source-blind (no import from src/).
+    """
+    return SimpleNamespace(
+        champion_probabilities={
+            "Brazil": 0.40,
+            "France": 0.35,
+            "Spain": 0.25,
+        },
+        round_probabilities={
+            "Round of 32": {"Brazil": 0.9, "France": 0.85, "Spain": 0.8},
+            "Final": {"Brazil": 0.40, "France": 0.35, "Spain": 0.25},
+        },
+    )
+
+
+def test_when_forecast_called_with_stub_result_then_both_pngs_are_written(tmp_path: Path):
+    """
+    Canonical CliRunner test (Issue #50 criterion):
+    a stub ForecastResult must cause both title_odds.png and advancement.png to
+    be written under the --output directory.
+
+    ``run_forecast`` is patched at the source module so the CLI receives the
+    stub rather than hitting the live API.  The actual plot functions run on
+    the matplotlib Agg backend (set at module level) — this tests the full
+    CLI→plot pipeline without mocking visualization.
+
+    Patch: worldcup_playoff.simulation.live_forecast.run_forecast
+    (source-level; works when CLI uses module-qualified calls or lazy imports).
+    """
+    with patch(
+        "worldcup_playoff.simulation.live_forecast.run_forecast",
+        return_value=_make_stub_forecast_result(),
+    ):
+        result = runner.invoke(_app(), ["forecast", "--output", str(tmp_path)])
+
+    assert result.exit_code == 0, f"forecast exited {result.exit_code}:\n{result.output}"
+    assert (tmp_path / "title_odds.png").exists(), (
+        f"title_odds.png was not written to {tmp_path}.\nCLI output:\n{result.output}"
+    )
+    assert (tmp_path / "advancement.png").exists(), (
+        f"advancement.png was not written to {tmp_path}.\nCLI output:\n{result.output}"
+    )
+
+
+def test_when_forecast_returns_non_none_result_then_title_odds_png_is_written(tmp_path: Path):
+    """
+    forecast must write title_odds.png via plot_title_odds when result is not None.
+    One assertion per criterion — paired with the advancement test below.
+    """
+    with patch(
+        "worldcup_playoff.simulation.live_forecast.run_forecast",
+        return_value=_make_stub_forecast_result(),
+    ):
+        result = runner.invoke(_app(), ["forecast", "--output", str(tmp_path)])
+    assert result.exit_code == 0, f"forecast exited {result.exit_code}:\n{result.output}"
+    assert (tmp_path / "title_odds.png").exists(), (
+        "title_odds.png was not written even though forecast returned a non-None result"
+    )
+
+
+def test_when_forecast_returns_non_none_result_then_advancement_png_is_written(tmp_path: Path):
+    """
+    forecast must write advancement.png via plot_round_advancement when result is not None.
+    """
+    with patch(
+        "worldcup_playoff.simulation.live_forecast.run_forecast",
+        return_value=_make_stub_forecast_result(),
+    ):
+        result = runner.invoke(_app(), ["forecast", "--output", str(tmp_path)])
+    assert result.exit_code == 0, f"forecast exited {result.exit_code}:\n{result.output}"
+    assert (tmp_path / "advancement.png").exists(), (
+        "advancement.png was not written even though forecast returned a non-None result"
+    )
+
+
+def test_when_forecast_no_plots_flag_used_then_no_pngs_are_written(tmp_path: Path):
+    """
+    When --no-plots is passed, neither PNG must be written even when forecast
+    returns a non-None result.
+    """
+    with patch(
+        "worldcup_playoff.simulation.live_forecast.run_forecast",
+        return_value=_make_stub_forecast_result(),
+    ):
+        result = runner.invoke(_app(), ["forecast", "--output", str(tmp_path), "--no-plots"])
+    assert result.exit_code == 0, f"forecast --no-plots exited {result.exit_code}:\n{result.output}"
+    assert not (tmp_path / "title_odds.png").exists(), (
+        "title_odds.png must not be written when --no-plots is specified"
+    )
+    assert not (tmp_path / "advancement.png").exists(), (
+        "advancement.png must not be written when --no-plots is specified"
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -225,6 +405,46 @@ def test_when_forecast_invoked_it_exits_zero():
     ):
         result = runner.invoke(_app(), ["forecast"])
     assert result.exit_code == 0, result.output
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Criterion: backtest surfaces the bookmaker baseline when odds are available
+# (Issue #50, consumes #48)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+def test_when_backtest_invoked_with_stub_odds_then_bookmaker_baseline_is_surfaced():
+    """
+    backtest CLI must print/display the bookmaker baseline (rps_bookmaker) in
+    its output when stubbed match odds are available.
+
+    run_backtest is stubbed to return a DataFrame that already contains
+    rps_bookmaker; the CLI is expected to print or render this result so the
+    user can see the bookmaker baseline alongside the model metrics.
+
+    Patch: worldcup_playoff.models.evaluation.run_backtest.
+    """
+    import pandas as pd
+
+    bh_result = pd.DataFrame(
+        {
+            "rps_hybrid": [0.19],
+            "rps_legacy": [0.23],
+            "rps_bookmaker": [0.17],
+        },
+        index=[2018],
+    )
+    with patch(
+        "worldcup_playoff.models.evaluation.run_backtest",
+        return_value=bh_result,
+    ):
+        result = runner.invoke(_app(), ["backtest"])
+
+    assert result.exit_code == 0, f"backtest exited {result.exit_code}:\n{result.output}"
+    assert "rps_bookmaker" in result.output or "bookmaker" in result.output.lower(), (
+        "backtest CLI must surface the bookmaker baseline in its output when odds are available.\n"
+        f"Actual output:\n{result.output}"
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

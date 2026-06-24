@@ -1,7 +1,7 @@
 """
-Source-blind example tests for GroupStageSimulator (Issue #17).
+Source-blind example tests for GroupStageSimulator (Issues #17, #44).
 
-Derived ONLY from the acceptance criteria for issue #17 and requirements.md.
+Derived ONLY from the acceptance criteria for issues #17 and #44 and requirements.md.
 No implementation source was read during authoring — this is the TDD Red phase.
 
 Module target: worldcup_playoff.simulation.group_stage.GroupStageSimulator
@@ -9,7 +9,7 @@ Module target: worldcup_playoff.simulation.group_stage.GroupStageSimulator
 
 import random
 from dataclasses import dataclass, field
-from typing import List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from hypothesis import given, strategies as st
 
@@ -44,6 +44,11 @@ class GroupFixture:
 class TournamentState:
     played_matches: List[LiveMatch] = field(default_factory=list)
     remaining_group_fixtures: List[GroupFixture] = field(default_factory=list)
+    # Issue #44 — criterion 4: pre-computed v4 standings rows seed the table.
+    # Keys are group labels; values are lists of row dicts matching the
+    # football-data.org v4 table[] shape (position, team.name, points, goalsFor,
+    # goalsAgainst, goalDifference, playedGames, won, draw, lost).
+    standings: Dict[str, List[dict]] = field(default_factory=dict)
 
 
 class ScorelineSamplerSpy:
@@ -84,16 +89,18 @@ def _run(
     remaining: Union[tuple, list] = (),
     scorelines: Tuple[Tuple[int, int], ...] = ((1, 0),),
     seed: int = 42,
+    initial_standings: Optional[dict] = None,
 ):
     """Run the simulator; return (standings_dict, spy)."""
     state = TournamentState(
         played_matches=list(played),
         remaining_group_fixtures=list(remaining),
+        standings=initial_standings if initial_standings is not None else {},
     )
     spy = ScorelineSamplerSpy(scorelines=scorelines)
     rng = random.Random(seed)
-    standings = GroupStageSimulator(sampler=spy, rng=rng).simulate(state)
-    return standings, spy
+    result = GroupStageSimulator(sampler=spy, rng=rng).simulate(state)
+    return result, spy
 
 
 # ===========================================================================
@@ -393,6 +400,231 @@ class TestOutputShape:
 
 
 # ===========================================================================
+# Criterion 3 (Issue #44): simulate() covers all 12 WC2026 groups
+# ===========================================================================
+
+
+class TestTwelveGroupCoverage:
+    """WC2026 has 12 groups (A–L). simulate() must return an entry for each."""
+
+    def test_when_state_contains_twelve_groups_then_all_twelve_keys_present_in_output(self):
+        """
+        Issue #44 criterion 3: "returns a v4 standings dict for every group (12 groups)".
+        Provide one match per WC2026-style group label (GROUP_A … GROUP_L) and assert
+        that all 12 are present as top-level keys in the simulate() return value.
+        """
+        group_labels = [f"GROUP_{c}" for c in "ABCDEFGHIJKL"]
+        played = [
+            LiveMatch(label, f"Home_{label}", f"Away_{label}", 1, 0) for label in group_labels
+        ]
+        result, _ = _run(played=played)
+        missing = [lbl for lbl in group_labels if lbl not in result]
+        assert missing == [], f"simulate() must return a key for every group; missing: {missing}"
+        assert len(result) == 12, (
+            f"Expected exactly 12 group keys; got {len(result)}: {sorted(result.keys())}"
+        )
+
+    def test_when_twelve_groups_simulated_then_every_row_carries_position_points_goals(self):
+        """
+        Each row in every one of the 12 groups must carry position, points, and
+        goalsFor — the fields the downstream bracket-slotter uses to rank third-placed teams.
+        """
+        group_labels = [f"GROUP_{c}" for c in "ABCDEFGHIJKL"]
+        played = [LiveMatch(label, f"H_{label}", f"A_{label}", 1, 0) for label in group_labels]
+        result, _ = _run(played=played)
+        for label in group_labels:
+            for row in result[label]:
+                assert "position" in row, f"'position' missing in {label} row {row}"
+                assert "points" in row, f"'points' missing in {label} row {row}"
+                assert "goalsFor" in row, f"'goalsFor' missing in {label} row {row}"
+
+
+# ===========================================================================
+# Criterion 4 (Issue #44): state.standings seeds the table; no re-derivation
+# ===========================================================================
+
+
+class TestStandingsSeeding:
+    """
+    When TournamentState.standings carries pre-scored rows, the simulator must use
+    them as the starting table instead of deriving standings from played_matches.
+    """
+
+    def test_when_state_standings_provided_then_seeded_points_carry_into_final_output(self):
+        """
+        Provide state.standings with Spain at 3pts but NO played_matches for the group.
+        One remaining fixture produces a 0-0 draw (+1pt for each team).
+        If seeding works: Spain final = 4pts (3 seeded + 1 draw).
+        If re-derived from scratch: Spain final = 1pt (only the draw, no history).
+        """
+        seeded_standings = {
+            "SEED_A": [
+                {
+                    "team": {"name": "Spain"},
+                    "position": 1,
+                    "points": 3,
+                    "goalsFor": 2,
+                    "goalsAgainst": 0,
+                    "goalDifference": 2,
+                    "playedGames": 1,
+                    "won": 1,
+                    "draw": 0,
+                    "lost": 0,
+                },
+                {
+                    "team": {"name": "Morocco"},
+                    "position": 2,
+                    "points": 0,
+                    "goalsFor": 0,
+                    "goalsAgainst": 2,
+                    "goalDifference": -2,
+                    "playedGames": 1,
+                    "won": 0,
+                    "draw": 0,
+                    "lost": 1,
+                },
+            ]
+        }
+        # No played_matches — standings must come entirely from the seed.
+        # Remaining draw: Spain vs Morocco 0-0 → each gets +1pt.
+        result, _ = _run(
+            played=(),
+            remaining=(GroupFixture("SEED_A", "Spain", "Morocco"),),
+            scorelines=((0, 0),),
+            initial_standings=seeded_standings,
+        )
+        spain = next(e for e in result["SEED_A"] if e["team"]["name"] == "Spain")
+        assert spain["points"] == 4, (
+            f"Spain must have 4pts (3 seeded + 1 draw); got {spain['points']}. "
+            "If the simulator ignored state.standings and re-derived from played_matches "
+            "(which are empty), Spain would only have 1pt — this test proves seeding works."
+        )
+
+    def test_when_state_standings_provided_with_no_remaining_fixtures_then_seeded_rows_are_returned(
+        self,
+    ):
+        """
+        When the group is already complete (no remaining fixtures), the seeded
+        standings should flow through unchanged — every seeded team must appear in
+        the output with the same points and goal tallies.
+        """
+        seeded_standings = {
+            "SEED_B": [
+                {
+                    "team": {"name": "France"},
+                    "position": 1,
+                    "points": 7,
+                    "goalsFor": 5,
+                    "goalsAgainst": 1,
+                    "goalDifference": 4,
+                    "playedGames": 3,
+                    "won": 2,
+                    "draw": 1,
+                    "lost": 0,
+                },
+                {
+                    "team": {"name": "Australia"},
+                    "position": 2,
+                    "points": 4,
+                    "goalsFor": 3,
+                    "goalsAgainst": 3,
+                    "goalDifference": 0,
+                    "playedGames": 3,
+                    "won": 1,
+                    "draw": 1,
+                    "lost": 1,
+                },
+                {
+                    "team": {"name": "Denmark"},
+                    "position": 3,
+                    "points": 2,
+                    "goalsFor": 2,
+                    "goalsAgainst": 3,
+                    "goalDifference": -1,
+                    "playedGames": 3,
+                    "won": 0,
+                    "draw": 2,
+                    "lost": 1,
+                },
+                {
+                    "team": {"name": "Tunisia"},
+                    "position": 4,
+                    "points": 1,
+                    "goalsFor": 1,
+                    "goalsAgainst": 4,
+                    "goalDifference": -3,
+                    "playedGames": 3,
+                    "won": 0,
+                    "draw": 1,
+                    "lost": 2,
+                },
+            ]
+        }
+        result, _ = _run(
+            played=(),
+            remaining=(),
+            initial_standings=seeded_standings,
+        )
+        assert "SEED_B" in result, "Seeded group must appear in output even with no matches"
+        by_name = {e["team"]["name"]: e for e in result["SEED_B"]}
+        assert by_name["France"]["points"] == 7
+        assert by_name["Australia"]["points"] == 4
+        assert by_name["Denmark"]["points"] == 2
+        assert by_name["Tunisia"]["points"] == 1
+
+    def test_when_seeded_standings_and_played_matches_coexist_then_played_matches_are_not_double_counted(
+        self,
+    ):
+        """
+        Issue #44 edge case: if played_matches are ALSO present alongside state.standings,
+        the simulator must not double-count the played results.
+        Strategy: provide one played match whose contribution is already baked into
+        state.standings. The match adds 3pts if counted once, 6pts if double-counted.
+        """
+        # Spain beat Morocco 2-0 — already encoded in state.standings (Spain 3pts, Morocco 0pts).
+        played = [LiveMatch("SEED_C", "Spain", "Morocco", 2, 0)]
+        seeded = {
+            "SEED_C": [
+                {
+                    "team": {"name": "Spain"},
+                    "position": 1,
+                    "points": 3,
+                    "goalsFor": 2,
+                    "goalsAgainst": 0,
+                    "goalDifference": 2,
+                    "playedGames": 1,
+                    "won": 1,
+                    "draw": 0,
+                    "lost": 0,
+                },
+                {
+                    "team": {"name": "Morocco"},
+                    "position": 2,
+                    "points": 0,
+                    "goalsFor": 0,
+                    "goalsAgainst": 2,
+                    "goalDifference": -2,
+                    "playedGames": 1,
+                    "won": 0,
+                    "draw": 0,
+                    "lost": 1,
+                },
+            ]
+        }
+        result, _ = _run(
+            played=played,
+            remaining=(),
+            initial_standings=seeded,
+        )
+        spain = next(e for e in result["SEED_C"] if e["team"]["name"] == "Spain")
+        assert spain["points"] == 3, (
+            f"Spain must have exactly 3pts (the match is already in the seed); "
+            f"got {spain['points']} — double-counting played_matches when state.standings "
+            "is present would inflate this to 6pts."
+        )
+
+
+# ===========================================================================
 # Criterion 5: Deterministic given a seed
 # ===========================================================================
 
@@ -504,4 +736,59 @@ def test_when_n_remaining_fixtures_given_then_sampler_is_called_exactly_n_times(
 
     assert len(spy.calls) == n_remaining, (
         f"Expected {n_remaining} sampler calls; got {len(spy.calls)}"
+    )
+
+
+@given(seeded_points=st.integers(min_value=0, max_value=9))
+def test_when_any_seeded_points_value_then_draw_adds_exactly_one_point_on_top(seeded_points):
+    """
+    Property (Issue #44 criterion 4 — standings seeding invariant): for ANY integer
+    seeded_points (0–9), if state.standings seeds TeamA with that many points and
+    the single remaining fixture ends in a draw (0-0, +1pt per side), then TeamA's
+    final points must be seeded_points + 1 — the seeded value is always carried forward.
+
+    This invariant fails if the simulator re-derives standings from played_matches
+    (which are empty here), producing 1pt regardless of seeded_points.
+    """
+    seeded_standings: dict = {
+        "PROP_SEED": [
+            {
+                "team": {"name": "TeamA"},
+                "position": 1,
+                "points": seeded_points,
+                "goalsFor": seeded_points,
+                "goalsAgainst": 0,
+                "goalDifference": seeded_points,
+                "playedGames": seeded_points // 3,
+                "won": seeded_points // 3,
+                "draw": 0,
+                "lost": 0,
+            },
+            {
+                "team": {"name": "TeamB"},
+                "position": 2,
+                "points": 0,
+                "goalsFor": 0,
+                "goalsAgainst": seeded_points,
+                "goalDifference": -seeded_points,
+                "playedGames": seeded_points // 3,
+                "won": 0,
+                "draw": 0,
+                "lost": seeded_points // 3,
+            },
+        ]
+    }
+    state = TournamentState(
+        played_matches=[],
+        remaining_group_fixtures=[GroupFixture("PROP_SEED", "TeamA", "TeamB")],
+        standings=seeded_standings,
+    )
+    spy = ScorelineSamplerSpy(scorelines=((0, 0),))  # draw → +1pt each
+    result = GroupStageSimulator(sampler=spy, rng=random.Random(0)).simulate(state)
+
+    team_a = next(e for e in result["PROP_SEED"] if e["team"]["name"] == "TeamA")
+    expected = seeded_points + 1
+    assert team_a["points"] == expected, (
+        f"Seeded {seeded_points}pts + draw(1pt) must yield {expected}pts; "
+        f"got {team_a['points']} — seeded_points={seeded_points}"
     )

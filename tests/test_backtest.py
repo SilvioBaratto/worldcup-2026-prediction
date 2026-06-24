@@ -221,3 +221,209 @@ def test_when_backtest_runs_with_odds_then_all_rps_values_are_in_unit_interval(
         values = result[col].dropna()
         assert (values >= 0).all(), f"{col}: found negative RPS value"
         assert (values <= 1).all(), f"{col}: found RPS value > 1"
+
+
+# ---------------------------------------------------------------------------
+# run_backtest — orchestration tests
+# Issue #48 acceptance criteria:
+#   (1) run_backtest loads match odds across cfg.odds.seasons via
+#       odds.load_match_odds + to_match_probs, concatenates, passes odds=
+#       into backtest_hybrid.
+#   (2) When odds load empty (scraper blocked), odds=None is passed so
+#       rps_bookmaker is cleanly omitted (no crash).
+#   (5) New test asserts rps_bookmaker appears with stubbed match odds.
+#
+# Patch paths assume worldcup_playoff.models.evaluation imports the odds
+# module as:  from worldcup_playoff.data import odds  (module-qualified calls).
+# If the implementation uses `from worldcup_playoff.data.odds import …`
+# adjust the patch targets to worldcup_playoff.models.evaluation.<name>.
+# ---------------------------------------------------------------------------
+
+from unittest.mock import MagicMock, patch  # noqa: E402
+
+from worldcup_playoff.models.evaluation import run_backtest  # noqa: E402
+
+# ── Minimal features DataFrame returned by the _read_features mock ──────────
+# run_backtest calls _read_features(".")  which reads dataset/features.csv.
+# That file is not present in CI / unit-test runs, so every run_backtest test
+# must patch it.  The exact shape doesn't matter because backtest_hybrid is
+# also mocked in all of these tests.
+
+_MINIMAL_FEATURES = pd.DataFrame(
+    {
+        "date": pd.to_datetime(["2014-06-12", "2022-11-20"]),
+        "home_team": ["Brazil", "Qatar"],
+        "away_team": ["Croatia", "Ecuador"],
+        "tournament": ["FIFA World Cup"] * 2,
+        "outcome": [0, 2],
+        "elo_diff": [100.0, -200.0],
+    }
+)
+
+_PATCH_FEATURES = "worldcup_playoff.models.evaluation._read_features"
+
+
+def _make_raw_odds_df(year: int) -> pd.DataFrame:
+    """Minimal DataFrame as load_match_odds returns (de-vigged p_win/p_draw/p_loss)."""
+    return pd.DataFrame(
+        {
+            "date": pd.to_datetime([f"{year}-06-12", f"{year}-06-13"]),
+            "home_team": ["Brazil", "Germany"],
+            "away_team": ["Argentina", "France"],
+            "p_win": [0.40, 0.35],
+            "p_draw": [0.30, 0.30],
+            "p_loss": [0.30, 0.35],
+        }
+    )
+
+
+def _cfg(seasons=None):
+    cfg = MagicMock()
+    cfg.odds.seasons = seasons if seasons is not None else [2014, 2018, 2022]
+    return cfg
+
+
+# -- Criterion 1: load_match_odds is called once per configured season --------
+
+
+def test_when_seasons_configured_then_load_match_odds_is_called_once_per_season():
+    """
+    run_backtest must call load_match_odds for every entry in cfg.odds.seasons,
+    passing the tournament key "wc{year}" and the config object.
+    """
+    seasons = [2014, 2018, 2022]
+    cfg = _cfg(seasons=seasons)
+
+    with (
+        patch(_PATCH_FEATURES, return_value=_MINIMAL_FEATURES),
+        patch("worldcup_playoff.data.odds.load_match_odds") as mock_load,
+        patch("worldcup_playoff.models.evaluation.backtest_hybrid") as mock_bh,
+    ):
+        # load_match_odds(tournament: str, config: Any) — two positional args
+        mock_load.side_effect = lambda t, c: _make_raw_odds_df(int(t[2:]))
+        mock_bh.return_value = pd.DataFrame(
+            {"rps_hybrid": [0.20, 0.22, 0.18], "rps_legacy": [0.25, 0.27, 0.24]},
+            index=seasons,
+        )
+
+        run_backtest(cfg)
+
+    assert mock_load.call_count == len(seasons)
+    for s in seasons:
+        # Years are mapped to tournament keys before calling load_match_odds
+        mock_load.assert_any_call(f"wc{s}", cfg)
+
+
+# -- Criterion 1: concatenated odds are passed as odds= to backtest_hybrid ----
+
+
+def test_when_odds_loaded_then_backtest_hybrid_receives_non_none_odds_keyword():
+    """
+    After loading all seasons, run_backtest must pass a non-None DataFrame as the
+    odds= keyword argument to backtest_hybrid.
+    """
+    cfg = _cfg(seasons=[2018, 2022])
+
+    with (
+        patch(_PATCH_FEATURES, return_value=_MINIMAL_FEATURES),
+        patch("worldcup_playoff.data.odds.load_match_odds") as mock_load,
+        patch("worldcup_playoff.models.evaluation.backtest_hybrid") as mock_bh,
+    ):
+        mock_load.side_effect = lambda t, c: _make_raw_odds_df(int(t[2:]))
+        mock_bh.return_value = pd.DataFrame(
+            {"rps_hybrid": [0.20, 0.18], "rps_legacy": [0.25, 0.24]},
+            index=[2018, 2022],
+        )
+
+        run_backtest(cfg)
+
+    assert mock_bh.called, "backtest_hybrid must be called by run_backtest"
+    _, kwargs = mock_bh.call_args
+    odds_arg = kwargs.get("odds")
+    assert odds_arg is not None, (
+        "backtest_hybrid must receive a non-None odds= argument when odds are available"
+    )
+
+
+# -- Criterion 2: empty odds → odds=None, no crash ----------------------------
+
+
+def test_when_all_seasons_return_empty_odds_then_run_backtest_does_not_raise():
+    """
+    Scraper-blocked scenario (empty DataFrame for every season) must not crash.
+    """
+    cfg = _cfg(seasons=[2018])
+
+    with (
+        patch(_PATCH_FEATURES, return_value=_MINIMAL_FEATURES),
+        patch("worldcup_playoff.data.odds.load_match_odds", return_value=pd.DataFrame()),
+        patch(
+            "worldcup_playoff.models.evaluation.backtest_hybrid",
+            return_value=pd.DataFrame({"rps_hybrid": [0.20], "rps_legacy": [0.25]}, index=[2018]),
+        ),
+    ):
+        run_backtest(cfg)  # must not raise
+
+
+def test_when_all_seasons_return_empty_odds_then_backtest_hybrid_receives_none_for_odds():
+    """
+    When every season yields an empty DataFrame, run_backtest must pass odds=None
+    so backtest_hybrid can cleanly omit rps_bookmaker.
+    """
+    cfg = _cfg(seasons=[2018])
+
+    with (
+        patch(_PATCH_FEATURES, return_value=_MINIMAL_FEATURES),
+        patch("worldcup_playoff.data.odds.load_match_odds", return_value=pd.DataFrame()),
+        patch("worldcup_playoff.models.evaluation.backtest_hybrid") as mock_bh,
+    ):
+        mock_bh.return_value = pd.DataFrame(
+            {"rps_hybrid": [0.20], "rps_legacy": [0.25]}, index=[2018]
+        )
+        run_backtest(cfg)
+
+    _, kwargs = mock_bh.call_args
+    assert kwargs.get("odds") is None, (
+        "When all odds DataFrames are empty, backtest_hybrid must be called with odds=None"
+    )
+
+
+# -- Criterion 5: rps_bookmaker appears in output when stubbed odds provided --
+
+
+def test_when_run_backtest_called_with_stubbed_match_odds_then_rps_bookmaker_appears_in_output():
+    """
+    Criterion 5 — stubbing load_match_odds to return valid data must result in the
+    final output containing rps_bookmaker.
+    """
+    seasons = [2018]
+    cfg = _cfg(seasons=seasons)
+
+    bh_result = pd.DataFrame(
+        {
+            "rps_hybrid": [0.19],
+            "rps_legacy": [0.23],
+            "rps_bookmaker": [0.17],
+        },
+        index=seasons,
+    )
+
+    with (
+        patch(_PATCH_FEATURES, return_value=_MINIMAL_FEATURES),
+        patch("worldcup_playoff.data.odds.load_match_odds") as mock_load,
+        patch("worldcup_playoff.models.evaluation.backtest_hybrid", return_value=bh_result),
+    ):
+        mock_load.return_value = _make_raw_odds_df(2018)
+
+        result = run_backtest(cfg)
+
+    assert result is not None
+    if isinstance(result, pd.DataFrame):
+        assert "rps_bookmaker" in result.columns, (
+            "rps_bookmaker must appear in run_backtest output when stubbed match odds are provided"
+        )
+    else:
+        for year_data in result.values():
+            assert "rps_bookmaker" in year_data, (
+                "rps_bookmaker must appear in run_backtest output when stubbed match odds are provided"
+            )

@@ -174,7 +174,7 @@ def _read_features(root: Any) -> "pd.DataFrame | None":
         return None
 
 
-def _sklearn_pair(seed: int = 42) -> tuple:
+def _sklearn_pair(seed: int = 42) -> tuple[Any, Any]:
     from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
     return (
         GradientBoostingClassifier(random_state=seed),
@@ -182,23 +182,40 @@ def _sklearn_pair(seed: int = 42) -> tuple:
     )
 
 
+def _build_odds_frame(cfg: Any, odds_mod: Any) -> "pd.DataFrame | None":
+    """Load and concat match odds for all configured seasons; None when all empty/blocked."""
+    seasons = getattr(getattr(cfg, "odds", None), "seasons", [])
+    frames: list[pd.DataFrame] = []
+    for year in seasons:
+        try:
+            raw = odds_mod.load_match_odds(f"wc{year}", cfg)
+            if not raw.empty:
+                frames.append(raw)
+        except Exception:
+            logger.warning("Match odds unavailable for wc%d; skipping.", year)
+    return pd.concat(frames, ignore_index=True) if frames else None
+
+
 def run_backtest(cfg: Any = None, root: Any = None) -> "pd.DataFrame | None":
     """High-level CLI entry: load features+targets and run time-aware WC backtest.
 
-    Returns ``None`` when ``dataset/features.csv`` is unavailable or lacks
-    an ``outcome`` column.  Delegates to ``backtest_hybrid`` with sklearn
-    classifiers compatible with its ``fit(X, y)`` / ``predict_proba(X)`` protocol.
+    Loads bookmaker match odds for all seasons in cfg.odds.seasons (via
+    odds.load_match_odds) and passes them to backtest_hybrid so rps_bookmaker is
+    included when odds are available.  Passes odds=None when all scrapers are
+    blocked, so backtest_hybrid degrades gracefully.
+
+    Returns None when dataset/features.csv is unavailable or lacks an outcome column.
     """
     from worldcup_playoff.config import AppConfig
+    from worldcup_playoff.data import odds as _odds_mod
+
     resolved = cfg if cfg is not None else AppConfig()
     matches = _read_features(root or ".")
     if matches is None:
         return None
     seed = getattr(getattr(resolved, "hybrid", None), "random_seed", 42)
-    try:
-        return backtest_hybrid(matches, *_sklearn_pair(seed))
-    except Exception:
-        return None
+    combined_odds = _build_odds_frame(resolved, _odds_mod)
+    return backtest_hybrid(matches, *_sklearn_pair(seed), odds=combined_odds)
 
 
 class ModelEvaluator:

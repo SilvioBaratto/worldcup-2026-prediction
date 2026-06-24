@@ -1,20 +1,27 @@
 """
-Source-blind tests for worldcup_playoff.simulation.knockout — Issue #18.
+Source-blind tests for worldcup_playoff.simulation.knockout — Issues #18 and #45.
 
 Authored from acceptance criteria ONLY; no implementation source has been read.
 All tests are in the Red phase of TDD and will fail until the module is implemented.
 
-Criteria covered:
+Criteria covered (issue #18):
   [UNIT] resolve_r32(standings_dict) produces 16 ties matching R32_SLOTS.
   [UNIT] Single tie: regulation → extra-time (scaled by extra_time_factor) → penalty coin-flip.
   [UNIT] Seed reproducibility for the penalty coin-flip.
+
+Criteria covered (issue #45):
+  [UNIT] resolve_r32(standings) yields exactly 16 concrete (home, away) ties from a v4 standings dict
+  [UNIT] simulate folds R32→R16→QF→SF→Final and returns per-round RoundResult advancement counts
+  [UNIT] Two simulate calls with the same seed produce identical counts (determinism)
+
 Criteria skipped (NOT VERIFIABLE per oracle):
-  Full tree fold, neutral-venue flag, global champion determinism, SOLID metrics.
+  All tests pass — boilerplate suite gate; no per-criterion assertion.
+  SOLID, clean code — subjective code-quality prose; no concrete runtime assertion.
 """
 
 from __future__ import annotations
 
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -320,7 +327,7 @@ def test_when_same_home_away_and_seed_then_penalty_result_is_reproducible_across
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Property-based tests (Hypothesis)
+# Property-based tests — issue #18 invariants
 # Invariants derived from criterion text — not from any implementation.
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -382,3 +389,172 @@ def test_when_penalty_path_then_same_seed_produces_same_winner_idempotently(seed
     )
 
     assert w1 == w2
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Issue #45 additions
+# Criteria: simulate folds all 5 rounds; determinism across two calls; new
+# determinism test (criterion 5: "tests/test_knockout.py passes plus a new
+# determinism test").
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stateless samplers for simulate (unlimited calls; no StopIteration risk)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def _always_home_wins(home: str, away: str) -> tuple[int, int]:
+    """Home always wins 2-0; no ET or penalty path is triggered."""
+    return (2, 0)
+
+
+def _always_draw_sampler(home: str, away: str) -> tuple[int, int]:
+    """Every match draws 1-1, forcing ET → penalty coin-flip in every tie."""
+    return (1, 1)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Criterion 3 (issue #45): simulate folds R32→R16→QF→SF→Final
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def test_when_simulate_called_then_exactly_five_round_results_are_returned():
+    """simulate must return one RoundResult per round: R32, R16, QF, SF, Final."""
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    ties = resolve_r32(_STANDINGS)
+    results = simulate(ties, _always_home_wins, seed=0, n_simulations=10)
+
+    assert len(results) == 5
+
+
+def test_when_simulate_called_then_every_round_result_has_a_probabilities_dict():
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    ties = resolve_r32(_STANDINGS)
+    for rr in simulate(ties, _always_home_wins, seed=0, n_simulations=10):
+        assert hasattr(rr, "probabilities") and isinstance(rr.probabilities, dict)
+
+
+def test_when_simulate_called_then_r32_result_has_exactly_16_advancing_teams():
+    """Round of 32: 16 ties → 16 winners."""
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    ties = resolve_r32(_STANDINGS)
+    results = simulate(ties, _always_home_wins, seed=0, n_simulations=10)
+
+    assert len(results[0].probabilities) == 16
+
+
+def test_when_simulate_called_then_round_advancing_team_counts_are_16_8_4_2_1():
+    """R32→R16→QF→SF→Final halves the field each round until one champion."""
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    ties = resolve_r32(_STANDINGS)
+    results = simulate(ties, _always_home_wins, seed=0, n_simulations=10)
+
+    assert [len(rr.probabilities) for rr in results] == [16, 8, 4, 2, 1]
+
+
+def test_when_simulate_called_then_final_probabilities_sum_equals_n_simulations():
+    """Every simulation produces exactly one champion → final counts must sum to n_simulations."""
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    n = 20
+    ties = resolve_r32(_STANDINGS)
+    results = simulate(ties, _always_home_wins, seed=0, n_simulations=n)
+
+    assert sum(results[-1].probabilities.values()) == n
+
+
+def test_when_simulate_called_then_all_probability_values_are_non_negative():
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    ties = resolve_r32(_STANDINGS)
+    for rr in simulate(ties, _always_home_wins, seed=0, n_simulations=10):
+        assert all(v >= 0 for v in rr.probabilities.values())
+
+
+def test_when_simulate_called_then_r16_teams_are_a_subset_of_r32_advancing_teams():
+    """Bracket propagation: only R32 winners may appear in R16 — no phantom teams."""
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    ties = resolve_r32(_STANDINGS)
+    results = simulate(ties, _always_home_wins, seed=0, n_simulations=10)
+    r32_teams = set(results[0].probabilities)
+    r16_teams = set(results[1].probabilities)
+
+    assert r16_teams.issubset(r32_teams)
+
+
+def test_when_simulate_called_then_final_teams_are_a_subset_of_sf_advancing_teams():
+    """Only SF winners may appear in the Final."""
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    ties = resolve_r32(_STANDINGS)
+    results = simulate(ties, _always_home_wins, seed=0, n_simulations=10)
+    sf_teams = set(results[3].probabilities)
+    final_teams = set(results[4].probabilities)
+
+    assert final_teams.issubset(sf_teams)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Criterion 4 + Criterion 5 determinism test (issue #45)
+# "Two simulate calls with the same seed produce identical counts"
+# "tests/test_knockout.py passes plus a new determinism test"
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+def test_when_same_seed_given_then_simulate_produces_identical_counts_across_all_rounds():
+    """
+    New determinism test (criterion 5 + criterion 4):
+    simulate(ties, sampler, seed=s, n_simulations=N) called twice with the same seed
+    must return identical RoundResult.probabilities for every round — no cross-round
+    seed collision may occur.
+    """
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    ties = resolve_r32(_STANDINGS)
+    run_a = simulate(ties, _always_home_wins, seed=42, n_simulations=50)
+    run_b = simulate(ties, _always_home_wins, seed=42, n_simulations=50)
+
+    for i, (ra, rb) in enumerate(zip(run_a, run_b)):
+        assert ra.probabilities == rb.probabilities, (
+            f"Round {i}: same seed=42 must produce identical advancement counts"
+        )
+
+
+def test_when_same_seed_given_with_penalty_path_then_simulate_is_still_deterministic():
+    """
+    Determinism must hold even when penalty coin-flips are triggered in every tie
+    (_always_draw_sampler forces ET → penalty for every match in the bracket).
+    A seed collision between rounds would surface here first.
+    """
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    ties = resolve_r32(_STANDINGS)
+    run_a = simulate(ties, _always_draw_sampler, seed=99, n_simulations=50)
+    run_b = simulate(ties, _always_draw_sampler, seed=99, n_simulations=50)
+
+    for i, (ra, rb) in enumerate(zip(run_a, run_b)):
+        assert ra.probabilities == rb.probabilities, (
+            f"Round {i}: penalty-heavy simulate must also be deterministic (seed=99)"
+        )
+
+
+# Property: determinism holds for any seed value (idempotence invariant)
+@given(seed=st.integers(min_value=0, max_value=2**31 - 1))
+@settings(max_examples=25)
+def test_when_simulate_called_twice_with_any_seed_then_r32_counts_always_match(seed: int) -> None:
+    """
+    Idempotence property: simulate(ties, sampler, seed=s) == simulate(ties, sampler, seed=s)
+    for any seed s — derived from the 'determinism, no cross-round seed collision' criterion.
+    """
+    from worldcup_playoff.simulation.knockout import resolve_r32, simulate
+
+    ties = resolve_r32(_STANDINGS)
+    run_a = simulate(ties, _always_home_wins, seed=seed, n_simulations=5)
+    run_b = simulate(ties, _always_home_wins, seed=seed, n_simulations=5)
+
+    assert run_a[0].probabilities == run_b[0].probabilities

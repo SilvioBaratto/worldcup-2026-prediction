@@ -1,31 +1,55 @@
 """
-Tests for title-odds and per-round-advancement visualizations (Issue #23).
+Tests for visualization/forecast_plots.py  —  Issue #49.
 
-All assertions are derived directly from the acceptance criteria.
+SOURCE-BLIND: no implementation source was read.  All tests are derived from the
+acceptance criteria only (Red phase of TDD).
 
-Design choices:
-- `forecast_result` duck-types `ForecastResult` from `simulation/live_forecast.py`.
-  It carries `.champion_probabilities: dict[str, float]` (title odds) and
-  `.round_probabilities: dict[str, dict[str, float]]` (per-round advancement).
-- The per-round function `plot_round_advancement` accepts the
-  `{round: probabilities}` contract as `round_probs: dict[str, dict[str, float]]`
-  directly.
-- Both functions accept an optional `config: VisualizationConfig` keyword arg.
-- `VisualizationConfig` lives in `worldcup_playoff.config`.
+Prior contracts (from the Issue #23 iteration) are kept intact; new tests for
+Issue #49 are appended.
+
+Contracts / design choices recorded here
+-----------------------------------------
+- ``plot_title_odds(forecast_result, output_path, *, config=None) -> Path``
+    Writes a horizontal-bar PNG; the team with the highest probability is at the
+    **visual top** of the chart.  The result object exposes
+    ``.champion_probabilities: dict[str, float]`` or is itself a plain dict.
+
+- ``plot_round_advancement(round_probs, output_path, *, config=None) -> Path``
+    Writes a heatmap PNG; ``round_probs`` is ``{round_name: {team: prob}}``.
+    **Columns must follow ``WC_ROUND_ORDER`` intersected with the rounds present**
+    regardless of input key order.
+
+- ``WC_ROUND_ORDER`` — ordered tuple/list of canonical WC round names exported
+    from ``worldcup_playoff.visualization.forecast_plots``.
+
+- Both functions live in ``worldcup_playoff.visualization.forecast_plots``
+    (``ResultPlotter`` continues to live in ``worldcup_playoff.visualization.plots``).
+
+- Both functions use / tolerate the Agg (headless) backend.
+
+- ``VisualizationConfig`` is imported from ``worldcup_playoff.config``; fields
+    include ``dpi`` (int), ``style`` (str), and ``output_dir`` (str | Path).
 """
 
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import matplotlib
+import matplotlib.figure
 
 matplotlib.use("Agg")  # must be set before pyplot import; no display
 
 import matplotlib.pyplot as plt
+import pytest
 from hypothesis import given, settings, strategies as st
 
-from worldcup_playoff.visualization.plots import plot_round_advancement, plot_title_odds
+from worldcup_playoff.visualization.forecast_plots import (
+    WC_ROUND_ORDER,
+    plot_round_advancement,
+    plot_title_odds,
+)
 from worldcup_playoff.config import VisualizationConfig
 
 # ── synthetic fixtures ────────────────────────────────────────────────────────
@@ -102,7 +126,7 @@ def _uniform_round_probs() -> dict[str, dict[str, float]]:
 
 
 def _make_forecast_result(**overrides) -> SimpleNamespace:
-    """Minimal synthetic object duck-typing ForecastResult (champion_probabilities / round_probabilities)."""
+    """Minimal synthetic object duck-typing ForecastResult."""
     defaults: dict = {
         "champion_probabilities": _uniform_title_odds(),
         "round_probabilities": _uniform_round_probs(),
@@ -226,12 +250,112 @@ class TestNoFigureAccumulation:
         assert remaining == [], f"Open figures accumulated after repeated calls: {remaining}"
 
 
+# ── WC_ROUND_ORDER sanity ─────────────────────────────────────────────────────
+#
+# Issue #49 adds WC_ROUND_ORDER as a canonical ordering constant.
+
+
+def test_wc_round_order_is_a_non_empty_sequence_of_strings():
+    """WC_ROUND_ORDER must be exported and contain at least one non-empty string."""
+    assert len(WC_ROUND_ORDER) >= 1
+    assert all(isinstance(r, str) and r for r in WC_ROUND_ORDER)
+
+
+# ── Heatmap column order follows WC_ROUND_ORDER (the explicit Issue #49 requirement)
+
+
+@pytest.fixture()
+def capturing_savefig(monkeypatch):
+    """Spy on Figure.savefig; collect each Figure object at save time."""
+    captured: list[matplotlib.figure.Figure] = []
+    original = matplotlib.figure.Figure.savefig
+
+    def _spy(self, *args, **kwargs):
+        captured.append(self)
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(matplotlib.figure.Figure, "savefig", _spy)
+    return captured
+
+
+def _xtick_texts(fig: matplotlib.figure.Figure) -> list[str]:
+    """Force a draw and return non-empty x-tick label strings from the first axes."""
+    ax = fig.axes[0]
+    fig.canvas.draw()
+    return [t.get_text() for t in ax.get_xticklabels() if t.get_text()]
+
+
+def test_when_rounds_in_reverse_canonical_order_heatmap_columns_follow_wc_round_order(
+    tmp_path, capturing_savefig
+):
+    """Heatmap columns must be reordered to WC_ROUND_ORDER regardless of input key order.
+
+    This is the explicit assertion called out in criterion 5 of Issue #49.
+    """
+    present = list(WC_ROUND_ORDER)[:4]
+    # Deliberately supply rounds in reverse order so the function MUST reorder.
+    reversed_rounds = list(reversed(present))
+    round_probs = {r: {"Brazil": 0.5, "France": 0.4} for r in reversed_rounds}
+
+    output = tmp_path / "colorder.png"
+    plot_round_advancement(round_probs, output)
+
+    assert capturing_savefig, "plot_round_advancement must save at least one figure"
+    x_labels = _xtick_texts(capturing_savefig[-1])
+
+    expected = [r for r in WC_ROUND_ORDER if r in set(present)]
+    assert x_labels == expected, (
+        f"Expected column order {expected} (WC_ROUND_ORDER).\n"
+        f"Got: {x_labels}\n"
+        f"Input was in reversed order: {reversed_rounds}"
+    )
+
+
+def test_when_subset_of_rounds_present_absent_rounds_are_excluded_from_columns(
+    tmp_path, capturing_savefig
+):
+    """Only rounds present in the data should appear as columns (intersect semantics)."""
+    first = list(WC_ROUND_ORDER)[0]
+    last = list(WC_ROUND_ORDER)[-1]
+    round_probs = {
+        first: {"Brazil": 1.0, "France": 0.9},
+        last: {"Brazil": 0.1, "France": 0.05},
+    }
+    output = tmp_path / "subset_rounds.png"
+    plot_round_advancement(round_probs, output)
+
+    x_labels = _xtick_texts(capturing_savefig[-1])
+    assert x_labels == [first, last], f"Expected exactly [{first!r}, {last!r}], got {x_labels}"
+
+
+# ── VisualizationConfig: dpi is respected ────────────────────────────────────
+
+
+def test_when_higher_dpi_configured_output_png_is_larger(tmp_path):
+    """Higher DPI → more pixels → larger file (config.dpi must be respected)."""
+    lo_dir = tmp_path / "lo"
+    hi_dir = tmp_path / "hi"
+    lo_dir.mkdir()
+    hi_dir.mkdir()
+
+    path_lo = tmp_path / "lo" / "title.png"
+    path_hi = tmp_path / "hi" / "title.png"
+
+    cfg_lo = VisualizationConfig(dpi=50)
+    cfg_hi = VisualizationConfig(dpi=200)
+
+    plot_title_odds(_make_forecast_result(), path_lo, config=cfg_lo)
+    plot_title_odds(_make_forecast_result(), path_hi, config=cfg_hi)
+
+    assert path_hi.stat().st_size > path_lo.stat().st_size, (
+        "DPI 200 PNG should be larger in bytes than DPI 50 PNG"
+    )
+
+
 # ── Property-based tests ──────────────────────────────────────────────────────
 #
-# Both functions must be total (never-raise) over their stated domains.
-# Invariant derived from AC: "champion probabilities for all 48 teams" and
-# "renders from the {round: probabilities} contract" — any valid input in the
-# stated domain must be accepted without an exception.
+# 1. Both functions must be total (never-raise) over their stated domains.
+# 2. Column order must follow WC_ROUND_ORDER for ANY non-empty subset of rounds.
 
 
 @given(
@@ -257,10 +381,6 @@ def test_when_any_valid_title_odds_provided_then_plot_title_odds_does_not_raise(
 ) -> None:
     """Never-raises invariant: plot_title_odds is total over any non-empty dict
     of string→float probabilities in [0, 1].
-
-    Derived from the criterion: 'champion probabilities for all 48 teams' implies
-    the function must handle any valid distribution, not just the exact 48-team
-    fixture used in example tests.
     """
     forecast = SimpleNamespace(champion_probabilities=title_odds, round_probabilities={})
     with tempfile.TemporaryDirectory() as tmp:
@@ -282,11 +402,53 @@ def test_when_any_valid_round_probs_provided_then_plot_round_advancement_does_no
 ) -> None:
     """Never-raises invariant: plot_round_advancement is total over any
     non-empty mapping of round-name strings to probability dicts.
-
-    Derived from the criterion: 'renders from the {round: probabilities} contract'
-    implies the function must accept any non-empty round-name→probs mapping.
     """
     round_probs = {r: {"Team A": 0.5, "Team B": 0.5} for r in round_keys}
     with tempfile.TemporaryDirectory() as tmp:
         output = Path(tmp) / "prop_round_adv.png"
         plot_round_advancement(round_probs, output)
+
+
+@given(
+    st.lists(
+        st.sampled_from(list(WC_ROUND_ORDER)),
+        min_size=1,
+        max_size=len(list(WC_ROUND_ORDER)),
+        unique=True,
+    )
+)
+@settings(max_examples=25, deadline=None)
+def test_when_any_wc_round_subset_provided_heatmap_columns_follow_canonical_order(
+    rounds: list[str],
+) -> None:
+    """Ordering invariant: for any non-empty subset of WC_ROUND_ORDER, the heatmap
+    columns must follow the canonical WC_ROUND_ORDER (intersected with present rounds),
+    regardless of input key order.
+    """
+    round_probs = {r: {"Brazil": 0.5, "France": 0.4} for r in rounds}
+
+    captured: list[matplotlib.figure.Figure] = []
+    original = matplotlib.figure.Figure.savefig
+
+    def _spy(self, *args, **kwargs):
+        captured.append(self)
+        return original(self, *args, **kwargs)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        output = Path(tmp) / "prop_colorder.png"
+        with patch.object(matplotlib.figure.Figure, "savefig", _spy):
+            plot_round_advancement(round_probs, output)
+
+    if not captured:
+        return  # other tests verify the file-creation contract
+
+    fig = captured[-1]
+    ax = fig.axes[0]
+    fig.canvas.draw()
+
+    x_labels = [t.get_text() for t in ax.get_xticklabels() if t.get_text()]
+    expected = [r for r in WC_ROUND_ORDER if r in set(rounds)]
+
+    assert x_labels == expected, (
+        f"Input rounds={rounds!r}.\nExpected columns: {expected}\nGot: {x_labels}"
+    )

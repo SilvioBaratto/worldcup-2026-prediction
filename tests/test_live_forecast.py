@@ -1,16 +1,23 @@
 """
-Tests for simulation/live_forecast.py — Issue #19.
+Tests for simulation/live_forecast.py — Issue #19 / #47.
 
 Stubs inject controllable group-stage and knockout simulators so all tests
 are self-contained, deterministic, and network-free.  The constructor
 signatures for TournamentState and TeamAbilities match the real types from
 data.live and simulation.poisson respectively.
+
+Issue #47 additions (source-blind, criteria 4 & 5):
+  * TestNoKeyFallback — build_state_from_results reconstructs TournamentState
+    from a martj42 DataFrame so forecasts run without any API key.
+  * TestWcRoundOrder  — WC_ROUND_ORDER is exported; round_probabilities keys
+    are always a subset of it.
 """
 
 from __future__ import annotations
 
 import math
 
+import pandas as pd
 from hypothesis import given, settings, strategies as st
 
 from worldcup_playoff.data.live import GroupStanding, TableRow, TournamentState
@@ -49,15 +56,18 @@ def _fixed_group_sim(state: TournamentState, abilities: TeamAbilities, rng) -> l
 
 
 def _fixed_knockout_sim(qualified: list[str], abilities: TeamAbilities, rng) -> dict:
-    """Deterministic: always crowns qualified[0]; returns all five WC rounds."""
+    """Deterministic: always crowns qualified[0]; returns all five WC rounds.
+
+    Round keys use the canonical WC_ROUND_ORDER names so the subset test passes.
+    """
     return {
         "champion": qualified[0],
         "rounds": {
-            "round_of_32": {t: 1 for t in qualified},
-            "round_of_16": {t: 1 for t in qualified[:16]},
-            "quarter_finals": {t: 1 for t in qualified[:8]},
-            "semi_finals": {t: 1 for t in qualified[:4]},
-            "final": {t: 1 for t in qualified[:2]},
+            "R32": {t: 1 for t in qualified},
+            "R16": {t: 1 for t in qualified[:16]},
+            "QF": {t: 1 for t in qualified[:8]},
+            "SF": {t: 1 for t in qualified[:4]},
+            "Final": {t: 1 for t in qualified[:2]},
         },
     }
 
@@ -270,3 +280,130 @@ class TestProperties:
         """Coverage invariant: all 48 teams appear for any n_simulations >= 1."""
         result = _run_forecast(n=n, seed=3)
         assert len(result.champion_probabilities) == 48
+
+
+# ===========================================================================
+# Issue #47 Criterion 4 — No-key path: build_state_from_results fallback
+# ===========================================================================
+
+# Minimal martj42-schema fixture: 8 teams in 2 fully-played groups of 4.
+# Round-robin within each group (6 fixtures per group, home wins 1-0).
+# Uses the martj42 results.csv column set; neutral=True for WC venues.
+_NO_KEY_GROUPS: dict[str, list[str]] = {
+    "X": ["TeamX1", "TeamX2", "TeamX3", "TeamX4"],
+    "Y": ["TeamY1", "TeamY2", "TeamY3", "TeamY4"],
+}
+_NO_KEY_TEAMS: list[str] = [t for ts in _NO_KEY_GROUPS.values() for t in ts]
+
+
+def _make_minimal_wc_df() -> pd.DataFrame:
+    """8 teams, 2 groups, all round-robin matches played — martj42 schema."""
+    rows = []
+    for teams in _NO_KEY_GROUPS.values():
+        for i, home in enumerate(teams):
+            for j, away in enumerate(teams):
+                if i >= j:
+                    continue
+                rows.append(
+                    {
+                        "date": "2026-06-15",
+                        "home_team": home,
+                        "away_team": away,
+                        "home_score": 1,
+                        "away_score": 0,
+                        "tournament": "FIFA World Cup",
+                        "city": "New York",
+                        "country": "United States",
+                        "neutral": True,
+                    }
+                )
+    return pd.DataFrame(rows)
+
+
+class TestNoKeyFallback:
+    """Criterion 4: build_state_from_results reconstructs TournamentState from
+    a martj42 DataFrame so the no-key path works without any API key."""
+
+    def test_when_build_state_from_results_receives_minimal_wc_df_then_it_returns_non_none(
+        self,
+    ) -> None:
+        from worldcup_playoff.data.live import build_state_from_results
+
+        state = build_state_from_results(_make_minimal_wc_df())
+        assert state is not None
+
+    def test_when_build_state_from_results_receives_minimal_wc_df_then_it_returns_tournament_state(
+        self,
+    ) -> None:
+        from worldcup_playoff.data.live import build_state_from_results
+
+        state = build_state_from_results(_make_minimal_wc_df())
+        assert isinstance(state, TournamentState)
+
+    def test_when_state_from_build_state_from_results_is_passed_to_run_then_forecast_result_is_returned(
+        self,
+    ) -> None:
+        """The TournamentState produced by the no-key fallback is accepted by run()."""
+        from worldcup_playoff.data.live import build_state_from_results
+
+        state = build_state_from_results(_make_minimal_wc_df())
+        abilities = TeamAbilities(
+            attack={t: 0.0 for t in _NO_KEY_TEAMS},
+            defence={t: 0.0 for t in _NO_KEY_TEAMS},
+            home_adv=0.0,
+            rho=0.0,
+            intercept=0.0,
+        )
+
+        def _group_sim(st, ab, rng):  # noqa: ARG001
+            return _NO_KEY_TEAMS[:4]
+
+        def _knockout_sim(qualified, ab, rng):  # noqa: ARG001
+            return {"champion": qualified[0], "rounds": {}}
+
+        result = LiveForecaster(
+            group_simulator=_group_sim,
+            knockout_simulator=_knockout_sim,
+        ).run(state=state, abilities=abilities, n_simulations=3, seed=0)
+
+        assert isinstance(result, ForecastResult)
+
+
+# ===========================================================================
+# Issue #47 Criterion 5 — WC_ROUND_ORDER exported; round_probabilities keys
+#                          ⊆ WC_ROUND_ORDER
+# ===========================================================================
+
+
+class TestWcRoundOrder:
+    """WC_ROUND_ORDER is a public constant exported from the module; every key
+    that appears in round_probabilities must be one of its entries."""
+
+    def test_when_wc_round_order_is_imported_then_it_is_non_empty(self) -> None:
+        from worldcup_playoff.simulation.live_forecast import WC_ROUND_ORDER
+
+        assert len(WC_ROUND_ORDER) > 0, "WC_ROUND_ORDER must be a non-empty sequence"
+
+    def test_when_wc_round_order_is_imported_then_all_entries_are_strings(self) -> None:
+        from worldcup_playoff.simulation.live_forecast import WC_ROUND_ORDER
+
+        assert all(isinstance(r, str) for r in WC_ROUND_ORDER), (
+            "Every element of WC_ROUND_ORDER must be a str"
+        )
+
+    def test_when_wc_round_order_is_imported_then_it_supports_ordered_indexing(self) -> None:
+        """WC_ROUND_ORDER must be an ordered sequence (list/tuple), not a set."""
+        from worldcup_playoff.simulation.live_forecast import WC_ROUND_ORDER
+
+        first = WC_ROUND_ORDER[0]
+        assert isinstance(first, str)
+
+    def test_when_forecast_runs_then_round_probabilities_keys_are_subset_of_wc_round_order(
+        self,
+    ) -> None:
+        """round_probabilities keys ⊆ WC_ROUND_ORDER for any valid LiveForecaster.run() call."""
+        from worldcup_playoff.simulation.live_forecast import WC_ROUND_ORDER
+
+        result = _run_forecast(n=10)
+        extra = set(result.round_probabilities.keys()) - set(WC_ROUND_ORDER)
+        assert not extra, f"round_probabilities has keys not found in WC_ROUND_ORDER: {extra}"

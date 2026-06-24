@@ -16,12 +16,20 @@ from pathlib import Path
 from typing import Any
 
 import matplotlib.axes
+import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
 
 from worldcup_playoff.config import VisualizationConfig
+from worldcup_playoff.simulation.live_forecast import WC_ROUND_ORDER
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "WC_ROUND_ORDER",
+    "plot_title_odds",
+    "plot_round_advancement",
+]
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -37,7 +45,7 @@ def _apply_style(config: VisualizationConfig) -> None:
     plt.rcParams["figure.dpi"] = config.dpi
 
 
-def _save_and_close(fig: plt.Figure, output_path: Path | str) -> None:
+def _save_and_close(fig: matplotlib.figure.Figure, output_path: Path | str) -> None:
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, bbox_inches="tight")
@@ -74,7 +82,7 @@ def _build_title_odds_axes(
     ax.set_title("FIFA World Cup 2026 — Title Odds")
 
 
-def _build_title_odds_figure(items: list[tuple[str, float]]) -> plt.Figure:
+def _build_title_odds_figure(items: list[tuple[str, float]]) -> matplotlib.figure.Figure:
     n = len(items)
     fig, ax = plt.subplots(figsize=(10, max(6, n * 0.28)))
     _build_title_odds_axes(ax, items)
@@ -137,8 +145,8 @@ def _configure_heatmap(
 
 def _build_round_advancement_figure(
     round_probs: dict[str, dict[str, float]],
-) -> plt.Figure:
-    rounds = list(round_probs.keys())
+) -> matplotlib.figure.Figure:
+    rounds = [r for r in WC_ROUND_ORDER if r in round_probs]
     teams = sorted({t for probs in round_probs.values() for t in probs})
     fig, ax = plt.subplots(figsize=(max(6, len(rounds) * 1.5), max(6, len(teams) * 0.28)))
     if not rounds or not teams:

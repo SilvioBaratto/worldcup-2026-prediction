@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import random as _random
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -144,6 +144,93 @@ def _get_played(state: Any) -> list[Any]:
     return list(state.played)
 
 
+def _row_to_v4(row: Any) -> dict[str, Any]:
+    """Convert a Pydantic TableRow to a v4 standings row dict."""
+    return {
+        "team": {"name": row.team_name},
+        "points": row.points,
+        "goalsFor": row.goals_for,
+        "goalsAgainst": row.goals_against,
+        "goalDifference": row.goal_difference,
+    }
+
+
+def _get_standings(state: Any) -> dict[str, list[dict[str, Any]]]:
+    """Normalize state.standings to {group_label: [v4_row_dict]}.
+
+    Handles two forms:
+    - dict form (test stubs): already keyed by group label with v4 row dicts.
+    - list[GroupStanding] form (real TournamentState): Pydantic objects with
+      .group and .table attributes; empty tables are skipped so the fallback
+      to match-accumulation is preserved for the offline martj42 path.
+    """
+    raw = getattr(state, "standings", None)
+    if not raw:
+        return {}
+    if isinstance(raw, dict):
+        return dict(raw)
+    result: dict[str, list[dict[str, Any]]] = {}
+    for gs in raw:
+        label, table = getattr(gs, "group", None), getattr(gs, "table", [])
+        if label and table:
+            result[label] = [_row_to_v4(r) for r in table]
+    return result
+
+
+def _stats_from_seed(rows: list[dict[str, Any]]) -> dict[str, _TeamStats]:
+    """Build _TeamStats from v4 standings rows (aggregate stats, no match replay)."""
+    stats: dict[str, _TeamStats] = {}
+    for row in rows:
+        name = row["team"]["name"]
+        s = _TeamStats(name)
+        s.pts = row.get("points", 0)
+        s.gf = row.get("goalsFor", 0)
+        s.ga = row.get("goalsAgainst", 0)
+        stats[name] = s
+    return stats
+
+
+def _add_matches(stats: dict[str, _TeamStats], matches: list[_Match]) -> None:
+    """Accumulate match results into an existing stats dict in place."""
+    for home, away, hg, ag in matches:
+        stats.setdefault(home, _TeamStats(home))
+        stats.setdefault(away, _TeamStats(away))
+        stats[home].add(hg, ag)
+        stats[away].add(ag, hg)
+
+
+def _stats_for_group(
+    played: list[_Match],
+    remaining: list[_Match],
+    seed: list[dict[str, Any]] | None,
+) -> dict[str, _TeamStats]:
+    """Return team stats for one group, preferring seed over re-derivation.
+
+    When *seed* is provided it is used as the authoritative aggregate base
+    (e.g. official standings from the live API); only *remaining* fixtures are
+    accumulated on top.  *played* is kept for the H2H tiebreak match list but
+    NOT re-added to avoid double-counting against the seed.
+    When *seed* is None, stats are derived from played + remaining as usual.
+    """
+    if seed is None:
+        return _build_stats(played + remaining)
+    stats = _stats_from_seed(seed)
+    _add_matches(stats, remaining)
+    return stats
+
+
+def _append(
+    groups: dict[str, list[_Match]],
+    group: str,
+    home: str,
+    away: str,
+    hg: int,
+    ag: int,
+) -> None:
+    """Append a resolved match to the group registry."""
+    groups.setdefault(group, []).append((home, away, hg, ag))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # GroupStageSimulator
 # ─────────────────────────────────────────────────────────────────────────────
@@ -164,37 +251,40 @@ class GroupStageSimulator:
 
     def simulate(self, state: Any) -> dict[str, list[dict[str, Any]]]:
         """Return v4 standings dict keyed by group label."""
-        groups = self._collect(state)
-        return {g: self._table(ms) for g, ms in groups.items()}
+        seeded = _get_standings(state)
+        played_grps, remaining_grps = self._collect_split(state)
+        labels = set(played_grps) | set(remaining_grps) | set(seeded)
+        return {lbl: self._rank(lbl, played_grps, remaining_grps, seeded) for lbl in labels}
 
     def _sample_fixture(self, home: str, away: str) -> tuple[int, int]:
         """Draw one scoreline, using the injected numpy Generator when available."""
         if self._np_rng is not None:
-            return self._sampler(home, away, self._np_rng)
+            return cast("tuple[int, int]", self._sampler(home, away, self._np_rng))
         return _extract_scoreline(self._sampler.sample(home, away))
 
-    def _collect(self, state: Any) -> dict[str, list[_Match]]:
-        groups: dict[str, list[_Match]] = {}
+    def _collect_split(
+        self, state: Any
+    ) -> tuple[dict[str, list[_Match]], dict[str, list[_Match]]]:
+        """Split state into (played_by_group, remaining_by_group)."""
+        played: dict[str, list[_Match]] = {}
+        remaining: dict[str, list[_Match]] = {}
         for m in _get_played(state):
-            _append(groups, m.group, m.home_team, m.away_team, m.home_goals, m.away_goals)
+            _append(played, m.group, m.home_team, m.away_team, m.home_goals, m.away_goals)
         for f in state.remaining_group_fixtures:
             hg, ag = self._sample_fixture(f.home_team, f.away_team)
-            _append(groups, f.group, f.home_team, f.away_team, hg, ag)
-        return groups
+            _append(remaining, f.group, f.home_team, f.away_team, hg, ag)
+        return played, remaining
 
-    def _table(self, matches: list[_Match]) -> list[dict[str, Any]]:
-        stats = _build_stats(matches)
-        ranked = _rank_group(list(stats), stats, matches, self._rng)
+    def _rank(
+        self,
+        label: str,
+        played_grps: dict[str, list[_Match]],
+        remaining_grps: dict[str, list[_Match]],
+        seeded: dict[str, list[dict[str, Any]]],
+    ) -> list[dict[str, Any]]:
+        """Rank one group and emit v4 rows."""
+        played = played_grps.get(label, [])
+        remaining = remaining_grps.get(label, [])
+        stats = _stats_for_group(played, remaining, seeded.get(label))
+        ranked = _rank_group(list(stats), stats, played + remaining, self._rng)
         return [_to_v4_row(t, stats[t], pos + 1) for pos, t in enumerate(ranked)]
-
-
-def _append(
-    groups: dict[str, list[_Match]],
-    group: str,
-    home: str,
-    away: str,
-    hg: int,
-    ag: int,
-) -> None:
-    """Append a resolved match to the group registry."""
-    groups.setdefault(group, []).append((home, away, hg, ag))

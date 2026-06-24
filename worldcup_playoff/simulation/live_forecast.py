@@ -33,12 +33,16 @@ from worldcup_playoff.simulation.poisson import TeamAbilities
 
 logger = logging.getLogger(__name__)
 
+# Stable round order: used by visualisations to render columns R32 → Final.
+WC_ROUND_ORDER: tuple[str, ...] = ("R32", "R16", "QF", "SF", "Final")
+
 # Re-export so callers can import everything from one place.
 __all__ = [
     "ForecastResult",
     "LiveForecaster",
     "TournamentState",
     "TeamAbilities",
+    "WC_ROUND_ORDER",
 ]
 
 # ---------------------------------------------------------------------------
@@ -179,12 +183,13 @@ def _play_round(
 
 def _knockout_sim_fn(abilities: TeamAbilities, cfg: Any) -> _KnockoutSimFn:
     """Return a one-shot knockout callable wired to the real Dixon-Coles model."""
+    from typing import cast
     from worldcup_playoff.config import SimulationConfig, PoissonConfig
     from worldcup_playoff.simulation.knockout import _make_sampler
-    sim_cfg: SimulationConfig = getattr(cfg, "simulation", SimulationConfig())  # type: ignore[assignment]
-    pcfg: PoissonConfig = getattr(cfg, "poisson", PoissonConfig())  # type: ignore[assignment]
+    sim_cfg: SimulationConfig = cast(SimulationConfig, getattr(cfg, "simulation", SimulationConfig()))
+    pcfg: PoissonConfig = cast(PoissonConfig, getattr(cfg, "poisson", PoissonConfig()))
 
-    def _sim(qualified: list[str], ab: TeamAbilities, rng: np.random.Generator) -> dict:
+    def _sim(qualified: list[str], ab: TeamAbilities, rng: np.random.Generator) -> dict[str, Any]:
         sampler = _make_sampler(ab, pcfg, rng)
         pairs = [(qualified[i], qualified[i + 1]) for i in range(0, len(qualified), 2)]
         rounds: dict[str, dict[str, int]] = {}
@@ -286,7 +291,8 @@ class LiveForecaster:
     ) -> None:
         qualified = self._group_sim(state, abilities, rng)
         result = self._knockout_sim(qualified, abilities, rng)
-        champion_counts[result["champion"]] += 1
+        champ = result["champion"]
+        champion_counts[champ] = champion_counts.get(champ, 0) + 1
         _accumulate_rounds(round_counts, result.get("rounds", {}))
 
     def _to_result(

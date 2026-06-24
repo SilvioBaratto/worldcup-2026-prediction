@@ -9,6 +9,7 @@ All knockout matches are treated as neutral-venue fixtures.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any, Callable
 
 import numpy as np
@@ -26,10 +27,12 @@ logger = logging.getLogger(__name__)
 
 # Re-export for consumers who import from this module.
 __all__ = [
+    "KnockoutRound",
     "KnockoutSimulator",
     "R32_SLOTS",
     "resolve_r32",
     "resolve_tie",
+    "simulate",
 ]
 
 # Type alias for a scoreline sampler callable.
@@ -147,6 +150,84 @@ def resolve_tie(
     if h != a:
         return home if h > a else away
     return _penalty_flip(home, away, seed)
+
+
+# ---------------------------------------------------------------------------
+# Standalone simulate() — public functional API
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class KnockoutRound:
+    """Per-round winner counts from the standalone simulate() function.
+
+    ``probabilities`` holds integer advancement counts (not fractions) so that
+    ``sum(final.probabilities.values()) == n_simulations`` holds exactly.
+    """
+
+    probabilities: dict[str, int]
+
+
+def _play_round(
+    ties: list[tuple[str, str]],
+    sampler: _Sampler,
+    rng: np.random.Generator,
+    extra_time_factor: float,
+) -> list[str]:
+    """Resolve every tie in one round; derive penalty seeds from *rng*."""
+    return [
+        resolve_tie(h, a, sampler=sampler, extra_time_factor=extra_time_factor,
+                    seed=int(rng.integers(2**32)))
+        for h, a in ties
+    ]
+
+
+def _run_bracket(
+    ties: list[tuple[str, str]],
+    sampler: _Sampler,
+    rng: np.random.Generator,
+    extra_time_factor: float,
+) -> list[list[str]]:
+    """Play one full bracket; return per-round winner lists (R32 first)."""
+    current, all_rounds = ties, []
+    while True:
+        winners = _play_round(current, sampler, rng, extra_time_factor)
+        all_rounds.append(winners)
+        if len(winners) == 1:
+            return all_rounds
+        current = list(zip(winners[::2], winners[1::2]))
+
+
+def _accumulate(
+    round_winners: list[list[str]],
+    counts: list[dict[str, int]],
+) -> None:
+    """Increment per-team advancement counts for each round in-place."""
+    for r, winners in enumerate(round_winners):
+        if r >= len(counts):
+            counts.append({})
+        for w in winners:
+            counts[r][w] = counts[r].get(w, 0) + 1
+
+
+def simulate(
+    ties: list[tuple[str, str]],
+    sampler: _Sampler,
+    seed: int,
+    n_simulations: int = 1000,
+    extra_time_factor: float = 0.33,
+) -> list[KnockoutRound]:
+    """Run *n_simulations* single-elimination brackets; return per-round counts.
+
+    Each simulation uses an independent RNG seeded by ``seed + sim_idx`` so
+    repeated calls with the same *seed* are fully deterministic.  Penalty seeds
+    are derived from the per-simulation RNG to avoid any cross-round collision.
+    """
+    round_counts: list[dict[str, int]] = []
+    for sim_idx in range(n_simulations):
+        rng = np.random.default_rng(seed + sim_idx)
+        _accumulate(_run_bracket(ties, sampler, rng, extra_time_factor), round_counts)
+    return [KnockoutRound(probabilities=rc) for rc in round_counts]
 
 
 # ---------------------------------------------------------------------------

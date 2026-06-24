@@ -364,11 +364,21 @@ class OddsConfig(BaseModel):
             raise ValueError("request_timeout must be positive")
         return v
 
+    markets: list[str] = ["outright", "match"]
+    match_url_template: str = ""
+
     @field_validator("seasons")
     @classmethod
     def seasons_must_be_non_empty(cls, v: list[int]) -> list[int]:
         if not v:
             raise ValueError("seasons must not be empty")
+        return v
+
+    @field_validator("markets")
+    @classmethod
+    def markets_must_be_non_empty(cls, v: list[str]) -> list[str]:
+        if not v:
+            raise ValueError("markets must not be empty")
         return v
 
 

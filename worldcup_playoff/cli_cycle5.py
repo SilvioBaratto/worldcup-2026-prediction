@@ -40,7 +40,7 @@ def _safe_load_config(path: Path) -> Any:
         return AppConfig()
 
 
-def _load_feature_inputs(cfg: Any) -> tuple:
+def _load_feature_inputs(cfg: Any) -> tuple[Any, Any, Any]:
     """Return (df, elo_df, abilities) from the martj42 cache; empty values on failure."""
     import pandas as pd
     from worldcup_playoff.simulation.poisson import TeamAbilities  # noqa: PLC0415
@@ -150,6 +150,25 @@ def _backtest(
         _console.print("[yellow]Backtest skipped (features+targets dataset not found).[/yellow]")
 
 
+def _simulate_forecast(cfg: Any, seed: int, n_sims: int) -> Any:
+    """Run Monte Carlo forecast and return the result (or None on failure)."""
+    import worldcup_playoff.simulation.live_forecast as _lf  # noqa: PLC0415
+    with _console.status(f"[bold]Running {n_sims:,} Monte Carlo simulations..."):
+        return _lf.run_forecast(cfg, seed=seed, n_simulations=n_sims)
+
+
+def _write_forecast_plots(
+    result: Any, config: Path, cfg: Any, output: Path | None
+) -> None:
+    """Write title_odds.png and advancement.png to the resolved output directory."""
+    import worldcup_playoff.visualization.forecast_plots as _fp  # noqa: PLC0415
+    out_dir = Path(output) if output is not None else _root(config) / cfg.visualization.output_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    _fp.plot_title_odds(result, out_dir / "title_odds.png")
+    _fp.plot_round_advancement(result.round_probabilities, out_dir / "advancement.png")
+    _console.print(f"[green]Charts → {out_dir}[/green]")
+
+
 def _forecast(
     config: Path = typer.Option("config/default.toml", "--config", "-c"),
     seed: int = typer.Option(42, "--seed", help="Random seed for reproducibility."),
@@ -157,19 +176,23 @@ def _forecast(
         None, "--n-simulations", "-n",
         help="Override the number of Monte Carlo iterations.",
     ),
+    output: Path | None = typer.Option(
+        None, "--output", "-o",
+        help="Output directory for PNG charts; defaults to cfg.visualization.output_dir.",
+    ),
+    no_plots: bool = typer.Option(False, "--no-plots", help="Skip writing PNG charts."),
     verbose: int = typer.Option(0, "--verbose", "-v", count=True),
 ) -> None:
     """Run live WC2026 title-odds forecast (no API key required; uses martj42 schedule)."""
     _setup_logging(verbose)
-    import worldcup_playoff.simulation.live_forecast as _lf  # noqa: PLC0415
     cfg = _safe_load_config(config)
     n_sims = n_simulations if n_simulations is not None else cfg.simulation.n_simulations
-    with _console.status(f"[bold]Running {n_sims:,} Monte Carlo simulations..."):
-        result = _lf.run_forecast(cfg, seed=seed, n_simulations=n_sims)
-    if result is not None:
-        _print_forecast(result)
-    else:
-        _console.print("[yellow]Forecast unavailable (data or API unreachable).[/yellow]")
+    result = _simulate_forecast(cfg, seed, n_sims)
+    if result is None:
+        return _console.print("[yellow]Forecast unavailable (data or API unreachable).[/yellow]")
+    _print_forecast(result)
+    if not no_plots:
+        _write_forecast_plots(result, config, cfg, output)
 
 
 # ---------------------------------------------------------------------------

@@ -173,6 +173,17 @@ def test_when_third_place_combinations_imported_then_it_is_non_empty():
     assert len(THIRD_PLACE_COMBINATIONS) > 0
 
 
+def test_when_third_place_combinations_counted_then_all_495_combinations_are_present():
+    """C(12,8) = 495 — every 8-of-12 qualifying-thirds combo must admit a valid slot assignment.
+
+    This proves total coverage: no 100k-simulation run can ever sample a combination
+    absent from the dict and trigger a KeyError in assign_thirds / resolve_r32.
+    """
+    from worldcup_playoff.data import THIRD_PLACE_COMBINATIONS
+
+    assert len(THIRD_PLACE_COMBINATIONS) == 495
+
+
 def test_when_third_place_combinations_keys_examined_then_each_covers_exactly_8_groups():
     from worldcup_playoff.data import THIRD_PLACE_COMBINATIONS
 
