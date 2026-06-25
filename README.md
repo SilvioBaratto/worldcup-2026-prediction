@@ -1,6 +1,10 @@
 # FIFA World Cup 2026 Knockout Prediction
 
-Monte Carlo simulation of FIFA World Cup 2026 knockout outcomes using machine learning classifiers and statistical feature generation.
+Monte Carlo simulation of the FIFA World Cup 2026 — a live, key-free **title-odds forecast** for all 48 nations built on an Elo + Dixon-Coles bivariate-Poisson model, plus a legacy ML-classifier knockout bracket.
+
+![FIFA World Cup 2026 — predicted title odds](docs/title_odds.png)
+
+*Predicted champion probabilities for all 48 teams (seed 42, 10,000 simulations, `elo_prior_weight = 0.8`). See [Live Title-Odds Forecast](#live-title-odds-forecast) to regenerate.*
 
 ## Overview
 
@@ -13,6 +17,22 @@ This project predicts the FIFA World Cup 2026 knockout stage through a multi-sta
 5. **Visualization** — renders a bracket PNG and round-probability charts
 
 Unlike the NBA original this project is derived from, World Cup knockout ties are decided by a **single match** — extra time and penalties collapse into one win/loss outcome — so there is no best-of-N series to configure anywhere in the pipeline.
+
+## Live Title-Odds Forecast
+
+The **canonical** output is a live, in-tournament forecast of the World Cup 2026 winner — title odds for all 48 nations plus round-by-round advancement probabilities. It runs **without an API key**: team strengths come from the [martj42 international results](https://github.com/martj42/international_results) dataset (CC0, all nations 1872→present), and the WC2026 group state is reconstructed from the same cache when the live football-data.org API is unreachable.
+
+The engine is an Elo + Dixon-Coles bivariate-Poisson model (the same family the Opta supercomputer uses), conditioned on the group results played to date and run through ~10,000 Monte Carlo tournaments. The fitted attack/defence abilities — which on raw goals over-reward sides that ran up big group-stage scorelines — are blended toward an Elo strength prior (`poisson.elo_prior_weight`, default `0.8`) so reputable teams are not understated. The weight was tuned by match-level RPS over WC2014/18/22 (pure goals = 0.2195 RPS → `0.8` = 0.2082, ~5 % better).
+
+```bash
+# Live title-odds forecast (no API key required; renders PNG charts)
+worldcup-playoff forecast --seed 42 -n 10000 --output docs
+
+# Tune the Elo-prior blend weight by RPS / log-loss / Brier over past World Cups
+worldcup-playoff backtest --tune-prior
+```
+
+The `forecast` command writes `title_odds.png` (the leaderboard shown above) and `advancement.png` (per-round probabilities) to the `--output` directory.
 
 ## Installation
 
@@ -203,6 +223,37 @@ worldcup-playoff run --bracket config/playoff_2026.toml
 |------|---------|-------------|
 | `--bracket` / `-b` | `config/playoff_2026.toml` | Bracket TOML file |
 
+### Live Forecast (Elo + Dixon-Coles)
+
+#### `forecast`
+
+Run the live WC2026 title-odds forecast (no API key required; uses the martj42 schedule). Renders `title_odds.png` + `advancement.png`.
+
+```bash
+worldcup-playoff forecast --seed 42 -n 10000 --output docs
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--config` / `-c` | `config/default.toml` | Pipeline config (sets `poisson.elo_prior_weight`) |
+| `--seed` | `42` | Random seed (re-runnable; same seed → identical odds) |
+| `--n-simulations` / `-n` | config value | Monte Carlo iterations |
+| `--output` / `-o` | `cfg.visualization.output_dir` | Directory for PNG charts |
+| `--no-plots` | off | Skip writing PNG charts |
+
+#### `backtest`
+
+Run the time-aware WC backtest (RPS / log-loss / Brier) of the RF hybrid vs the bookmaker + legacy baselines. With `--tune-prior`, instead sweep `poisson.elo_prior_weight` over WC2014/18/22 through the Elo + Dixon-Coles path and report the best weight.
+
+```bash
+worldcup-playoff backtest                 # RF-hybrid backtest vs baselines
+worldcup-playoff backtest --tune-prior     # tune the Elo-prior blend weight
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--tune-prior` | off | Sweep `elo_prior_weight` over past WCs and report RPS/log-loss/Brier |
+
 ## Pipeline Architecture
 
 ```
@@ -371,7 +422,9 @@ Competition codes queried include the FIFA World Cup (`WC`), UEFA European Champ
 
 ## Results
 
-Run 10,000 simulations of the 2026 knockout bracket with Gaussian Naive Bayes and inspect the generated `output/plots/bracket.png` (per-team advancement probabilities and a champion banner) and `output/plots/probabilities.png` (a stacked area chart of advancement probability by team and round). Accuracy depends on the quality and completeness of the downloaded match statistics; the deterministic free-tier heuristics for shots/possession/pass accuracy reduce signal relative to a paid statistics feed.
+**Live forecast (canonical).** `worldcup-playoff forecast` produces the title-odds leaderboard shown at the top of this README (`docs/title_odds.png`) plus per-round advancement probabilities (`advancement.png`). With `elo_prior_weight = 0.8` the top tier — Argentina, Spain, France, England, Brazil — matches expert/bookmaker consensus, and the blend cuts backtest RPS over WC2014/18/22 from 0.2195 (pure goals) to 0.2082.
+
+**Legacy bracket.** `worldcup-playoff simulate`/`bracket` runs the older ML-classifier knockout and writes `output/plots/bracket.png` (per-team advancement + champion banner) and `output/plots/probabilities.png` (stacked area by team and round). This path is data-starved on the free football-data.org tier (most national teams have only a handful of matches), so its odds are far less reliable than the live forecast — prefer `forecast`.
 
 ## Testing
 
