@@ -182,6 +182,7 @@ class ResultPlotter:
         rounds: dict[int, Any],
         bracket: BracketConfig,
         output_path: Path | None = None,
+        slot_teams: dict[int, list[tuple[str, str]]] | None = None,
     ) -> None:
         """Render the knockout bracket as a PNG with per-team probabilities.
 
@@ -197,7 +198,7 @@ class ResultPlotter:
             output_path: Destination PNG path.  If *None* the figure is shown
                 interactively.
         """
-        slots_by_round = _build_round_slots(bracket.matchups)
+        slots_by_round = slot_teams or _build_round_slots(bracket.matchups)
         if not slots_by_round:
             logger.warning("plot_bracket called with empty matchup list — nothing to draw.")
             return

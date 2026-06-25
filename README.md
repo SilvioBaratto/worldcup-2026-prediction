@@ -2,9 +2,9 @@
 
 Monte Carlo simulation of the FIFA World Cup 2026 — a live, key-free **title-odds forecast** for all 48 nations built on an Elo + Dixon-Coles bivariate-Poisson model, plus a legacy ML-classifier knockout bracket.
 
-![FIFA World Cup 2026 — predicted title odds](docs/title_odds.png)
+![FIFA World Cup 2026 — forecast bracket with champion](docs/bracket.png)
 
-*Predicted champion probabilities for all 48 teams (seed 42, 10,000 simulations, `elo_prior_weight = 0.8`). See [Live Title-Odds Forecast](#live-title-odds-forecast) to regenerate.*
+*Representative knockout bracket with per-round advancement probabilities and the projected champion (seed 42, 10,000 simulations, `elo_prior_weight = 0.8`). The full ranked title-odds leaderboard (`docs/title_odds.png`) and a per-round heatmap are also produced. See [Live Title-Odds Forecast](#live-title-odds-forecast) to regenerate.*
 
 ## Overview
 
@@ -32,7 +32,7 @@ worldcup-playoff forecast --seed 42 -n 10000 --output docs
 worldcup-playoff backtest --tune-prior
 ```
 
-The `forecast` command writes `title_odds.png` (the leaderboard shown above) and `advancement.png` (per-round probabilities) to the `--output` directory.
+The `forecast` command writes three charts to the `--output` directory: `bracket.png` (the NBA-style knockout tree with per-round advancement % and a champion banner, shown above), `title_odds.png` (the ranked title-odds leaderboard), and `advancement.png` (a per-round probability heatmap).
 
 ## Installation
 
@@ -227,7 +227,7 @@ worldcup-playoff run --bracket config/playoff_2026.toml
 
 #### `forecast`
 
-Run the live WC2026 title-odds forecast (no API key required; uses the martj42 schedule). Renders `title_odds.png` + `advancement.png`.
+Run the live WC2026 title-odds forecast (no API key required; uses the martj42 schedule). Renders `bracket.png`, `title_odds.png`, and `advancement.png`.
 
 ```bash
 worldcup-playoff forecast --seed 42 -n 10000 --output docs
@@ -422,7 +422,7 @@ Competition codes queried include the FIFA World Cup (`WC`), UEFA European Champ
 
 ## Results
 
-**Live forecast (canonical).** `worldcup-playoff forecast` produces the title-odds leaderboard shown at the top of this README (`docs/title_odds.png`) plus per-round advancement probabilities (`advancement.png`). With `elo_prior_weight = 0.8` the top tier — Argentina, Spain, France, England, Brazil — matches expert/bookmaker consensus, and the blend cuts backtest RPS over WC2014/18/22 from 0.2195 (pure goals) to 0.2082.
+**Live forecast (canonical).** `worldcup-playoff forecast` produces the knockout bracket shown at the top of this README (`docs/bracket.png`), the ranked title-odds leaderboard (`docs/title_odds.png`), and a per-round advancement heatmap (`advancement.png`). With `elo_prior_weight = 0.8` the top tier — Argentina, Spain, France, England, Brazil — matches expert/bookmaker consensus, and the blend cuts backtest RPS over WC2014/18/22 from 0.2195 (pure goals) to 0.2082.
 
 **Legacy bracket.** `worldcup-playoff simulate`/`bracket` runs the older ML-classifier knockout and writes `output/plots/bracket.png` (per-team advancement + champion banner) and `output/plots/probabilities.png` (stacked area by team and round). This path is data-starved on the free football-data.org tier (most national teams have only a handful of matches), so its odds are far less reliable than the live forecast — prefer `forecast`.
 

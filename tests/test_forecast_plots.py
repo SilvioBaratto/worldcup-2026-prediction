@@ -452,3 +452,64 @@ def test_when_any_wc_round_subset_provided_heatmap_columns_follow_canonical_orde
     assert x_labels == expected, (
         f"Input rounds={rounds!r}.\nExpected columns: {expected}\nGot: {x_labels}"
     )
+
+
+# ---------------------------------------------------------------------------
+# plot_forecast_bracket — NBA-style knockout tree (appended)
+# ---------------------------------------------------------------------------
+
+from worldcup_playoff.visualization.forecast_plots import (  # noqa: E402
+    _forecast_slot_teams,
+    plot_forecast_bracket,
+)
+
+
+class TestForecastSlotTeams:
+    _R32 = [("A", "B"), ("C", "D"), ("E", "F"), ("G", "H")]
+    _PROBS = {
+        "R32": {"A": 0.6, "B": 0.4, "C": 0.7, "D": 0.3, "E": 0.55, "F": 0.45, "G": 0.8, "H": 0.2},
+        "R16": {"A": 0.3, "C": 0.4, "E": 0.25, "G": 0.5},
+        "QF": {"C": 0.2, "G": 0.3},
+    }
+
+    def test_round_zero_is_the_r32_draw(self):
+        slots = _forecast_slot_teams(self._R32, self._PROBS)
+        assert slots[0] == self._R32
+
+    def test_round_counts_halve_each_round(self):
+        slots = _forecast_slot_teams(self._R32, self._PROBS)
+        assert [len(slots[r]) for r in sorted(slots)] == [4, 2, 1]
+
+    def test_later_round_boxes_show_subbracket_favourites(self):
+        slots = _forecast_slot_teams(self._R32, self._PROBS)
+        # Each R16 box = favourite of each feeding R32 matchup:
+        # (A,B)->A, (C,D)->C, (E,F)->E, (G,H)->G  →  [(A,C),(E,G)]
+        assert slots[1] == [("A", "C"), ("E", "G")]
+        # Final box = favourite of each half by the next round's probs → (C, G)
+        assert slots[2] == [("C", "G")]
+
+
+class TestPlotForecastBracket:
+    def _result(self):
+        return SimpleNamespace(
+            champion_probabilities={"A": 0.4, "G": 0.6},
+            round_probabilities=TestForecastSlotTeams._PROBS,
+            representative_r32=tuple(TestForecastSlotTeams._R32),
+        )
+
+    def test_when_representative_draw_present_then_png_written(self, tmp_path):
+        out = tmp_path / "bracket.png"
+        plot_forecast_bracket(self._result(), out)
+        assert out.exists() and out.stat().st_size > 0
+
+    def test_when_no_representative_draw_then_noop(self, tmp_path):
+        out = tmp_path / "bracket.png"
+        plot_forecast_bracket(
+            SimpleNamespace(champion_probabilities={}, round_probabilities={}, representative_r32=()),
+            out,
+        )
+        assert not out.exists()
+
+    def test_no_open_figures_after_render(self, tmp_path):
+        plot_forecast_bracket(self._result(), tmp_path / "bracket.png")
+        assert plt.get_fignums() == []

@@ -86,6 +86,10 @@ class ForecastResult:
 
     champion_probabilities: dict[str, float]
     round_probabilities: dict[str, dict[str, float]]
+    #: A single representative Round-of-32 draw (16 (home, away) pairs) from one
+    #: deterministic group-stage resolution, used to lay out the bracket plot.
+    #: Empty when no qualifiers could be resolved.
+    representative_r32: tuple[tuple[str, str], ...] = ()
 
 
 # ---------------------------------------------------------------------------
@@ -285,7 +289,21 @@ class LiveForecaster:
         for child_seed in child_seeds:
             rng = np.random.default_rng(child_seed)
             self._run_one(state, abilities, rng, champion_counts, round_counts)
-        return self._to_result(champion_counts, round_counts, n_simulations)
+        representative = self._representative_r32(state, abilities, seed)
+        return self._to_result(champion_counts, round_counts, n_simulations, representative)
+
+    def _representative_r32(
+        self, state: TournamentState, abilities: TeamAbilities, seed: int
+    ) -> tuple[tuple[str, str], ...]:
+        """Resolve one deterministic Round-of-32 draw for the bracket layout."""
+        try:
+            rng = np.random.default_rng(np.random.SeedSequence(seed))
+            qualified = self._group_sim(state, abilities, rng)
+        except Exception:
+            return ()
+        return tuple(
+            (qualified[i], qualified[i + 1]) for i in range(0, len(qualified) - 1, 2)
+        )
 
     def _run_one(
         self,
@@ -306,6 +324,7 @@ class LiveForecaster:
         champion_counts: dict[str, int],
         round_counts: dict[str, dict[str, int]],
         n: int,
+        representative_r32: tuple[tuple[str, str], ...] = (),
     ) -> ForecastResult:
         champ_probs = _to_probabilities(champion_counts, n)
         round_probs = {
@@ -314,4 +333,5 @@ class LiveForecaster:
         return ForecastResult(
             champion_probabilities=champ_probs,
             round_probabilities=round_probs,
+            representative_r32=representative_r32,
         )

@@ -29,6 +29,7 @@ __all__ = [
     "WC_ROUND_ORDER",
     "plot_title_odds",
     "plot_round_advancement",
+    "plot_forecast_bracket",
 ]
 
 # ---------------------------------------------------------------------------
@@ -177,3 +178,76 @@ def plot_round_advancement(
     _apply_style(cfg)
     fig = _build_round_advancement_figure(round_probs)
     _save_and_close(fig, output_path)
+
+
+# ---------------------------------------------------------------------------
+# Forecast bracket: NBA-style knockout tree with per-round % + champion banner
+# ---------------------------------------------------------------------------
+
+
+def _favourite(teams: list[str], probs: dict[str, float]) -> str:
+    """Most-likely team in *teams* by advancement probability (name breaks ties)."""
+    return max(teams, key=lambda t: (probs.get(t, 0.0), t)) if teams else "TBD"
+
+
+def _forecast_slot_teams(
+    r32: list[tuple[str, str]],
+    round_probabilities: dict[str, dict[str, float]],
+) -> dict[int, list[tuple[str, str]]]:
+    """Round index -> (home, away) pairs.
+
+    Round 0 is the representative R32 draw. Each later-round box shows the
+    favourite of each of its two feeding sub-brackets (ranked by that round's
+    advancement probability), mirroring the NBA bracket where the likeliest team
+    fills each downstream slot.
+    """
+    slots: dict[int, list[tuple[str, str]]] = {0: [(h, a) for h, a in r32]}
+    under: list[list[str]] = [[h, a] for h, a in r32]
+    rnd = 1
+    while len(under) > 1:
+        name = WC_ROUND_ORDER[min(rnd, len(WC_ROUND_ORDER) - 1)]
+        probs = round_probabilities.get(name, {})
+        pairs: list[tuple[str, str]] = []
+        merged: list[list[str]] = []
+        for i in range(0, len(under) - 1, 2):
+            left, right = under[i], under[i + 1]
+            pairs.append((_favourite(left, probs), _favourite(right, probs)))
+            merged.append(left + right)
+        slots[rnd] = pairs
+        under = merged
+        rnd += 1
+    return slots
+
+
+def plot_forecast_bracket(
+    forecast_result: Any,
+    output_path: Path | str,
+    config: VisualizationConfig | None = None,
+    title: str = "FIFA World Cup 2026 — Forecast Bracket",
+) -> None:
+    """Render an NBA-style knockout bracket: per-round advancement % + champion.
+
+    Uses ``forecast_result.representative_r32`` for the tree topology and
+    ``round_probabilities`` for the percentages; each later-round box shows the
+    favourite of its feeding sub-bracket and the Final feeds a champion banner.
+    No-ops (logs a warning) when no representative draw is available.
+    """
+    from types import SimpleNamespace  # noqa: PLC0415
+
+    from worldcup_playoff.config import BracketConfig, Matchup  # noqa: PLC0415
+    from worldcup_playoff.visualization.plots import ResultPlotter  # noqa: PLC0415
+
+    r32 = [(h, a) for h, a in getattr(forecast_result, "representative_r32", ())]
+    if not r32:
+        logger.warning("Forecast bracket skipped: no representative R32 draw available.")
+        return
+    round_probs = forecast_result.round_probabilities
+    slot_teams = _forecast_slot_teams(r32, round_probs)
+    rounds = {
+        idx: SimpleNamespace(probabilities=round_probs.get(WC_ROUND_ORDER[idx], {}))
+        for idx in range(len(slot_teams))
+    }
+    bracket = BracketConfig(name=title, matchups=[Matchup(home=h, away=a) for h, a in r32])
+    ResultPlotter(_resolve_config(config)).plot_bracket(
+        rounds, bracket, Path(output_path), slot_teams=slot_teams
+    )

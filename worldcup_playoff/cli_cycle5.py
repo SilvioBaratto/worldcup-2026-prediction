@@ -177,10 +177,11 @@ def _simulate_forecast(cfg: Any, seed: int, n_sims: int) -> Any:
 def _write_forecast_plots(
     result: Any, config: Path, cfg: Any, output: Path | None
 ) -> None:
-    """Write title_odds.png and advancement.png to the resolved output directory."""
+    """Write bracket.png, title_odds.png and advancement.png to the output directory."""
     import worldcup_playoff.visualization.forecast_plots as _fp  # noqa: PLC0415
     out_dir = Path(output) if output is not None else _root(config) / cfg.visualization.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
+    _fp.plot_forecast_bracket(result, out_dir / "bracket.png", cfg.visualization)
     _fp.plot_title_odds(result, out_dir / "title_odds.png")
     _fp.plot_round_advancement(result.round_probabilities, out_dir / "advancement.png")
     _console.print(f"[green]Charts → {out_dir}[/green]")
