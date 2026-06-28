@@ -1,86 +1,89 @@
 name = "2026 FIFA World Cup — Knockout (Round of 32)"
 
-# 32 teams, 16 single-match ties. Adjacent matchups feed the next round, so the
-# list order defines the bracket tree (matchup 1 winner meets matchup 2 winner,
-# etc.). Replace with the real draw once the group stage concludes; this is a
-# plausible seeded field of likely qualifiers.
-
-[[matchups]]
-home = "Argentina"
-away = "Saudi Arabia"
-group = "Top"
-
-[[matchups]]
-home = "France"
-away = "Canada"
-group = "Top"
-
-[[matchups]]
-home = "Brazil"
-away = "South Korea"
-group = "Top"
-
-[[matchups]]
-home = "England"
-away = "Ecuador"
-group = "Top"
-
-[[matchups]]
-home = "Spain"
-away = "Japan"
-group = "Top"
-
-[[matchups]]
-home = "Portugal"
-away = "Nigeria"
-group = "Top"
-
-[[matchups]]
-home = "Netherlands"
-away = "Mexico"
-group = "Top"
+# REAL Round of 32, as set after the group stage (official FIFA bracket,
+# Wikipedia matches 73–88). 32 teams, 16 single-match ties.
+#
+# ORDER IS BRACKET ORDER, not FIFA match-number order: adjacent matchups feed the
+# next round (matchup 1 winner meets matchup 2 winner, 3 meets 4, …), so this
+# sequence reproduces the official R16 → QF → SF → Final tree (matches 89–104).
+# The trailing comment on each pair is the FIFA match number for cross-reference.
 
 [[matchups]]
 home = "Germany"
-away = "Senegal"
-group = "Top"
+away = "Paraguay"
+group = "M74"
 
 [[matchups]]
-home = "Italy"
-away = "United States"
-group = "Bottom"
+home = "France"
+away = "Sweden"
+group = "M77"
+
+[[matchups]]
+home = "South Africa"
+away = "Canada"
+group = "M73"
+
+[[matchups]]
+home = "Netherlands"
+away = "Morocco"
+group = "M75"
+
+[[matchups]]
+home = "Portugal"
+away = "Croatia"
+group = "M83"
+
+[[matchups]]
+home = "Spain"
+away = "Austria"
+group = "M84"
+
+[[matchups]]
+home = "United States"
+away = "Bosnia and Herzegovina"
+group = "M81"
 
 [[matchups]]
 home = "Belgium"
-away = "Australia"
-group = "Bottom"
+away = "Senegal"
+group = "M82"
 
 [[matchups]]
-home = "Croatia"
-away = "Morocco"
-group = "Bottom"
+home = "Brazil"
+away = "Japan"
+group = "M76"
 
 [[matchups]]
-home = "Uruguay"
-away = "Ghana"
-group = "Bottom"
+home = "Ivory Coast"
+away = "Norway"
+group = "M78"
+
+[[matchups]]
+home = "Mexico"
+away = "Ecuador"
+group = "M79"
+
+[[matchups]]
+home = "England"
+away = "DR Congo"
+group = "M80"
+
+[[matchups]]
+home = "Argentina"
+away = "Cabo Verde"
+group = "M86"
+
+[[matchups]]
+home = "Australia"
+away = "Egypt"
+group = "M88"
+
+[[matchups]]
+home = "Switzerland"
+away = "Algeria"
+group = "M85"
 
 [[matchups]]
 home = "Colombia"
-away = "Switzerland"
-group = "Bottom"
-
-[[matchups]]
-home = "Denmark"
-away = "Cameroon"
-group = "Bottom"
-
-[[matchups]]
-home = "Norway"
-away = "Egypt"
-group = "Bottom"
-
-[[matchups]]
-home = "Serbia"
-away = "Poland"
-group = "Bottom"
+away = "Ghana"
+group = "M87"

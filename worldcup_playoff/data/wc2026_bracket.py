@@ -12,10 +12,21 @@ Slot notation:
 from __future__ import annotations
 
 import logging
-from itertools import combinations
 from typing import Any, cast
 
+from worldcup_playoff.data.wc2026_annexc import THIRD_PLACE_COMBINATIONS
+
 logger = logging.getLogger(__name__)
+
+# Public surface (THIRD_PLACE_COMBINATIONS is re-exported from wc2026_annexc).
+__all__ = [
+    "GROUPS",
+    "R32_SLOTS",
+    "THIRD_PLACE_COMBINATIONS",
+    "assign_thirds",
+    "rank_third_places",
+    "resolve_r32",
+]
 
 # ---------------------------------------------------------------------------
 # Module-level constants
@@ -23,95 +34,41 @@ logger = logging.getLogger(__name__)
 
 GROUPS: tuple[str, ...] = tuple("ABCDEFGHIJKL")
 
-# Each entry: (placeholder_name, frozenset_of_eligible_source_groups)
-# Source: official FIFA WC2026 R32 bracket (matches 73–88).
-_THIRD_SLOT_CANDIDATES: tuple[tuple[str, frozenset[str]], ...] = (
-    ("3ABCDF", frozenset("ABCDF")),
-    ("3CDFGH", frozenset("CDFGH")),
-    ("3CEFHI", frozenset("CEFHI")),
-    ("3EHIJK", frozenset("EHIJK")),
-    ("3BEFIJ", frozenset("BEFIJ")),
-    ("3AEHIJ", frozenset("AEHIJ")),
-    ("3EFGIJ", frozenset("EFGIJ")),
-    ("3DEIJL", frozenset("DEIJL")),
-)
-
 # Official WC2026 R32 bracket template (matches 73–88, per FIFA/Wikipedia).
 # Tuple is immutable (frozen). Each entry: (home_slot, away_slot).
+#
+# ORDER MATTERS: the knockout simulators fold the bracket by pairing ADJACENT
+# entries (winner[0] vs winner[1], winner[2] vs winner[3], …) at every round, so
+# this list must be in true bracket-adjacency order — NOT FIFA match-number order.
+# FIFA numbers matches by kickoff date, which is not the bracket order: e.g. the
+# R16 pairs winners of M74 vs M77 and M73 vs M75, which are not adjacent by number.
+# The sequence below is laid out so adjacency reproduces the official
+# R16 → QF → SF → Final tree exactly (Wikipedia matches 89–104). The trailing
+# comment on each line is the FIFA match number for cross-reference.
 R32_SLOTS: tuple[tuple[str, str], ...] = (
-    ("2A", "2B"),  # M73
     ("1E", "3ABCDF"),  # M74  Germany (1E) vs best-3rd from A/B/C/D/F
-    ("1F", "2C"),  # M75
-    ("1C", "2F"),  # M76
-    ("1I", "3CDFGH"),  # M77  France (1I) vs best-3rd from C/D/F/G/H
-    ("2E", "2I"),  # M78
-    ("1A", "3CEFHI"),  # M79  Mexico (1A) vs best-3rd from C/E/F/H/I
-    ("1L", "3EHIJK"),  # M80
-    ("1D", "3BEFIJ"),  # M81  USA (1D) vs best-3rd from B/E/F/I/J
-    ("1G", "3AEHIJ"),  # M82
+    ("1I", "3CDFGH"),  # M77  France (1I) vs best-3rd from C/D/F/G/H   →R16 M89 (W74 v W77)
+    ("2A", "2B"),  # M73
+    ("1F", "2C"),  # M75                                              →R16 M90 (W73 v W75)
     ("2K", "2L"),  # M83
-    ("1H", "2J"),  # M84
-    ("1B", "3EFGIJ"),  # M85
+    ("1H", "2J"),  # M84                                              →R16 M93 (W83 v W84)
+    ("1D", "3BEFIJ"),  # M81  USA (1D) vs best-3rd from B/E/F/I/J
+    ("1G", "3AEHIJ"),  # M82  Belgium (1G) vs best-3rd from A/E/H/I/J →R16 M94 (W81 v W82)
+    ("1C", "2F"),  # M76
+    ("2E", "2I"),  # M78                                              →R16 M91 (W76 v W78)
+    ("1A", "3CEFHI"),  # M79  Mexico (1A) vs best-3rd from C/E/F/H/I
+    ("1L", "3EHIJK"),  # M80  England (1L) vs best-3rd from E/H/I/J/K →R16 M92 (W79 v W80)
     ("1J", "2H"),  # M86  Argentina (1J) vs runner-up H
-    ("1K", "3DEIJL"),  # M87
-    ("2D", "2G"),  # M88
+    ("2D", "2G"),  # M88                                              →R16 M95 (W86 v W88)
+    ("1B", "3EFGIJ"),  # M85  Switzerland (1B) vs best-3rd from E/F/G/I/J
+    ("1K", "3DEIJL"),  # M87  Colombia (1K) vs best-3rd from D/E/I/J/L →R16 M96 (W85 v W87)
 )
 
 
-# ---------------------------------------------------------------------------
-# Bipartite matching (private helpers)
-# ---------------------------------------------------------------------------
-
-
-def _augment(
-    slot: int,
-    adj: list[list[int]],
-    match: list[int],
-    seen: list[bool],
-) -> bool:
-    """Try to find an augmenting path for *slot*; update *match* in-place."""
-    for g in adj[slot]:
-        if not seen[g]:
-            seen[g] = True
-            if match[g] == -1 or _augment(match[g], adj, match, seen):
-                match[g] = slot
-                return True
-    return False
-
-
-def _bipartite_match(
-    qualifying: frozenset[str],
-    slots: tuple[tuple[str, frozenset[str]], ...],
-) -> dict[str, str] | None:
-    """Return slot→group assignment via augmenting paths, or None if impossible."""
-    groups = sorted(qualifying)
-    g_idx = {g: i for i, g in enumerate(groups)}
-    adj = [[g_idx[g] for g in cands if g in qualifying] for _, cands in slots]
-    match: list[int] = [-1] * len(groups)
-    n = sum(_augment(s, adj, match, [False] * len(groups)) for s in range(len(slots)))
-    if n < len(slots):
-        return None
-    slot_map = {match[i]: groups[i] for i in range(len(groups)) if match[i] != -1}
-    return {slots[s][0]: slot_map[s] for s in range(len(slots))}
-
-
-# ---------------------------------------------------------------------------
-# THIRD_PLACE_COMBINATIONS — computed once at import (pure, deterministic)
-# ---------------------------------------------------------------------------
-
-
-def _compute_third_place_combinations() -> dict[frozenset[str], dict[str, str]]:
-    """Enumerate all valid 8-of-12 qualifying-third combinations via bipartite matching."""
-    return {
-        frozenset(combo): m
-        for combo in combinations(GROUPS, 8)
-        if (m := _bipartite_match(frozenset(combo), _THIRD_SLOT_CANDIDATES)) is not None
-    }
-
-
-# Official lookup: qualifying-8-groups frozenset → {placeholder: group_letter}.
-# Covers every 8-of-12 combination that admits a valid slot assignment.
-THIRD_PLACE_COMBINATIONS: dict[frozenset[str], dict[str, str]] = _compute_third_place_combinations()
+# THIRD_PLACE_COMBINATIONS (qualifying-8-groups frozenset → {placeholder: group})
+# is the official FIFA Annex C lookup, imported verbatim from wc2026_annexc.
+# A generic bipartite matching only finds *a* feasible assignment, not FIFA's
+# chosen one, so the published 495-row table is used to follow the real draw.
 
 
 # ---------------------------------------------------------------------------

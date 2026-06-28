@@ -1,82 +1,83 @@
-# Auto-generated from WC 2026 standings
+# Real WC2026 Round of 32, derived from the official final group standings.
+# Bracket order (adjacent winners meet next round); FIFA match number in `group`.
 name = "FIFA World Cup 2026 Bracket"
 
 [[matchups]]
-home = "Uruguay"
-away = "Egypt"
-group = ""
+home = "Germany"
+away = "Paraguay"
+group = "M74"
 
 [[matchups]]
-home = "Germany"
-away = "Colombia"
-group = ""
+home = "France"
+away = "Sweden"
+group = "M77"
+
+[[matchups]]
+home = "South Africa"
+away = "Canada"
+group = "M73"
+
+[[matchups]]
+home = "Netherlands"
+away = "Morocco"
+group = "M75"
+
+[[matchups]]
+home = "Portugal"
+away = "Croatia"
+group = "M83"
 
 [[matchups]]
 home = "Spain"
 away = "Austria"
-group = ""
-
-[[matchups]]
-home = "Paraguay"
-away = "Morocco"
-group = ""
-
-[[matchups]]
-home = "Argentina"
-away = "Belgium"
-group = ""
-
-[[matchups]]
-home = "Ghana"
-away = "Senegal"
-group = ""
-
-[[matchups]]
-home = "Brazil"
-away = "Turkey"
-group = ""
-
-[[matchups]]
-home = "Portugal"
-away = "Tunisia"
-group = ""
-
-[[matchups]]
-home = "Japan"
-away = "Saudi Arabia"
-group = ""
-
-[[matchups]]
-home = "Mexico"
-away = "Croatia"
-group = ""
-
-[[matchups]]
-home = "England"
-away = "Czechia"
-group = ""
+group = "M84"
 
 [[matchups]]
 home = "United States"
-away = "Sweden"
-group = ""
+away = "Bosnia and Herzegovina"
+group = "M81"
 
 [[matchups]]
-home = "South Korea"
+home = "Belgium"
+away = "Senegal"
+group = "M82"
+
+[[matchups]]
+home = "Brazil"
+away = "Japan"
+group = "M76"
+
+[[matchups]]
+home = "Ivory Coast"
+away = "Norway"
+group = "M78"
+
+[[matchups]]
+home = "Mexico"
 away = "Ecuador"
-group = ""
+group = "M79"
 
 [[matchups]]
-home = "France"
-away = "Switzerland"
-group = ""
+home = "England"
+away = "DR Congo"
+group = "M80"
 
 [[matchups]]
-home = "South Africa"
-away = "New Zealand"
-group = ""
+home = "Argentina"
+away = "Cabo Verde"
+group = "M86"
 
 [[matchups]]
-home = "Algeria"
-away = "Australia"
-group = ""
+home = "Australia"
+away = "Egypt"
+group = "M88"
+
+[[matchups]]
+home = "Switzerland"
+away = "Algeria"
+group = "M85"
+
+[[matchups]]
+home = "Colombia"
+away = "Ghana"
+group = "M87"

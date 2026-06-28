@@ -15,7 +15,15 @@ logger = logging.getLogger(__name__)
 
 _FINISHED_STATUS = "FINISHED"
 _WC_TOURNAMENT = "FIFA World Cup"
-_RESULTS_COLS = ("DATE", "HOME_TEAM", "AWAY_TEAM", "HOME_GOALS", "AWAY_GOALS", "TOURNAMENT", "NEUTRAL")
+_RESULTS_COLS = (
+    "DATE",
+    "HOME_TEAM",
+    "AWAY_TEAM",
+    "HOME_GOALS",
+    "AWAY_GOALS",
+    "TOURNAMENT",
+    "NEUTRAL",
+)
 
 
 class LiveMatch(BaseModel):
@@ -185,8 +193,67 @@ def fetch_tournament_state(
 
 _GROUP_LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-# Knockout stage starts 2026-07-04; group stage is June 11 – July 3.
-_WC2026_KNOCKOUT_START = pd.Timestamp("2026-07-04")
+# Group stage is June 11 – June 27; the Round of 32 (knockout) starts June 28.
+# This cutoff must exclude knockout fixtures: R32 ties cross group boundaries, so
+# including them would merge the round-robin components and destroy group recovery.
+_WC2026_KNOCKOUT_START = pd.Timestamp("2026-06-28")
+
+# Official FIFA WC2026 group draw (team name -> group letter), keyed by the exact
+# martj42 spellings. Used to label the union-find-recovered components with their
+# real A–L identity so the knockout slotting (R32_SLOTS) follows the official
+# bracket instead of an arbitrary positional ordering. Any component whose teams
+# are absent from this map (e.g. synthetic test fixtures) falls back to a
+# positional label, preserving the offline behaviour for non-WC2026 data.
+WC2026_OFFICIAL_GROUPS: dict[str, str] = {
+    "Mexico": "A",
+    "South Africa": "A",
+    "South Korea": "A",
+    "Czech Republic": "A",
+    "Switzerland": "B",
+    "Canada": "B",
+    "Bosnia and Herzegovina": "B",
+    "Qatar": "B",
+    "Brazil": "C",
+    "Morocco": "C",
+    "Scotland": "C",
+    "Haiti": "C",
+    "United States": "D",
+    "Australia": "D",
+    "Paraguay": "D",
+    "Turkey": "D",
+    "Germany": "E",
+    "Ivory Coast": "E",
+    "Ecuador": "E",
+    "Curaçao": "E",
+    "Netherlands": "F",
+    "Japan": "F",
+    "Sweden": "F",
+    "Tunisia": "F",
+    "Belgium": "G",
+    "Egypt": "G",
+    "Iran": "G",
+    "New Zealand": "G",
+    "Spain": "H",
+    "Cabo Verde": "H",
+    "Uruguay": "H",
+    "Saudi Arabia": "H",
+    "France": "I",
+    "Norway": "I",
+    "Senegal": "I",
+    "Iraq": "I",
+    "Argentina": "J",
+    "Austria": "J",
+    "Algeria": "J",
+    "Jordan": "J",
+    "Colombia": "K",
+    "Portugal": "K",
+    "DR Congo": "K",
+    "Uzbekistan": "K",
+    "England": "L",
+    "Croatia": "L",
+    "Ghana": "L",
+    "Panama": "L",
+}
 
 _LOWERCASE_TO_UPPERCASE: dict[str, str] = {
     "date": "DATE",
@@ -236,11 +303,38 @@ def _reconstruct_groups(wc: pd.DataFrame) -> dict[str, str]:
     valid_comps = [teams for teams in comps.values() if len(teams) == 4]
 
     mapping: dict[str, str] = {}
-    for idx, teams in enumerate(sorted(valid_comps, key=min)):
-        label = _GROUP_LABELS[idx] if idx < len(_GROUP_LABELS) else f"G{idx}"
+    used: set[str] = set()
+    # First pass: assign each component its official A–L label when its teams
+    # match the real WC2026 draw, so the knockout bracket slotting is exact.
+    pending: list[list[str]] = []
+    for teams in sorted(valid_comps, key=min):
+        label = _official_group_label(teams)
+        if label is not None and label not in used:
+            used.add(label)
+            for team in teams:
+                mapping[team] = label
+        else:
+            pending.append(teams)
+    # Second pass: positional labels (skipping any already used) for the rest —
+    # preserves deterministic behaviour for non-WC2026 / synthetic fixtures.
+    free = (lbl for lbl in _GROUP_LABELS if lbl not in used)
+    for idx, teams in enumerate(pending):
+        label = next(free, f"G{idx}")
         for team in teams:
             mapping[team] = label
     return mapping
+
+
+def _official_group_label(teams: list[str]) -> str | None:
+    """Return the official WC2026 group letter shared by *teams*, else None.
+
+    None is returned when the teams map to no group or to more than one (i.e. the
+    component is not a real WC2026 group), so the caller falls back to a
+    positional label.
+    """
+    labels = {WC2026_OFFICIAL_GROUPS.get(t) for t in teams}
+    labels.discard(None)
+    return labels.pop() if len(labels) == 1 else None
 
 
 def build_state_from_results(df: pd.DataFrame) -> TournamentState:
@@ -314,8 +408,17 @@ def _match_to_row(m: LiveMatch) -> dict[str, Any]:
     }
 
 
-_ALIAS_COLS = ["date", "home_team", "away_team", "home_score", "away_score",
-               "tournament", "neutral", "city", "country"]
+_ALIAS_COLS = [
+    "date",
+    "home_team",
+    "away_team",
+    "home_score",
+    "away_score",
+    "tournament",
+    "neutral",
+    "city",
+    "country",
+]
 
 
 def _to_results_df(matches: list[LiveMatch]) -> pd.DataFrame:
