@@ -90,11 +90,12 @@ class ForecastResult:
     #: deterministic group-stage resolution, used to lay out the bracket plot.
     #: Empty when no qualifiers could be resolved.
     representative_r32: tuple[tuple[str, str], ...] = ()
-    #: Expected goals (xG) per representative slot pairing, keyed ``"HOME|AWAY"``
-    #: -> ``(xg_home, xg_away)`` — the Dixon-Coles goal rates λ, rounded to one
-    #: decimal. Preferred over the modal scoreline, whose mode collapses to 1-0
-    #: for almost every low-scoring match. Empty when no draw is available.
-    representative_xg: dict[str, tuple[float, float]] = field(default_factory=dict)
+    #: Most-likely scoreline per representative slot pairing, keyed ``"HOME|AWAY"``
+    #: -> ``(home_goals, away_goals)`` — the argmax of the Dixon-Coles score
+    #: matrix (the standard "most probable correct score"). Balanced ties resolve
+    #: to low scores (1-0 / 1-1) and mismatches to wider margins, as in real
+    #: football. Empty when no representative draw is available.
+    representative_scores: dict[str, tuple[int, int]] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -182,28 +183,30 @@ def forecast_slot_teams(
     return slots
 
 
-def _representative_xg(
+def _representative_scores(
     abilities: TeamAbilities,
     r32: tuple[tuple[str, str], ...],
     round_probabilities: dict[str, dict[str, float]],
-) -> dict[str, tuple[float, float]]:
-    """Expected goals (Dixon-Coles λ, 1 dp) for every representative slot pairing.
+    max_goals: int,
+) -> dict[str, tuple[int, int]]:
+    """Most-likely scoreline (Dixon-Coles argmax) for every representative pairing.
 
-    Expected goals are used instead of the modal scoreline because the mode of a
-    low-scoring match collapses to 1-0 almost everywhere, hiding the differences
-    between fixtures; the λ rates vary smoothly with team strength.
+    This is the standard "most probable correct score": the cell with the highest
+    probability in the joint score matrix. It varies with the matchup — close ties
+    land on 1-0/1-1, mismatches on wider margins — which is the honest model output.
     """
-    from worldcup_playoff.simulation.poisson import lambdas
+    from worldcup_playoff.simulation.poisson import modal_scoreline
     if not r32:
         return {}
     slots = forecast_slot_teams(list(r32), round_probabilities)
-    xg: dict[str, tuple[float, float]] = {}
+    scores: dict[str, tuple[int, int]] = {}
     for pairs in slots.values():
         for home, away in pairs:
             if home and away and home != "TBD" and away != "TBD":
-                lh, la = lambdas(abilities, home, away, neutral=True)
-                xg[f"{home}|{away}"] = (round(lh, 1), round(la, 1))
-    return xg
+                scores[f"{home}|{away}"] = modal_scoreline(
+                    abilities, home, away, max_goals=max_goals
+                )
+    return scores
 
 
 # ---------------------------------------------------------------------------
@@ -321,10 +324,11 @@ def run_forecast(
     result = LiveForecaster(
         _group_sim_fn(abilities), _knockout_sim_fn(abilities, resolved)
     ).run(state, abilities, n_simulations, seed)
-    xg = _representative_xg(
+    scores = _representative_scores(
         abilities, result.representative_r32, result.round_probabilities,
+        getattr(resolved.poisson, "max_goals", 10),
     )
-    return replace(result, representative_xg=xg)
+    return replace(result, representative_scores=scores)
 
 
 class LiveForecaster:
