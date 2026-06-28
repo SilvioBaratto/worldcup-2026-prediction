@@ -4,9 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FIFA World Cup 2026 Knockout Prediction — Monte Carlo simulation of World Cup 2026 knockout outcomes using ML classifiers (SVM, Random Forest, Gaussian Naive Bayes) trained on historical match statistics (2006 onward). Statistical distributions are fitted to each national team's recent performance, then thousands of knockout brackets are simulated by sampling synthetic match features and predicting outcomes.
+FIFA World Cup 2026 Knockout Prediction — a live, key-free **title-odds forecast** for all 48 nations. The engine is a statistical-probabilistic model (Elo + Dixon-Coles bivariate-Poisson, the family Opta / FiveThirtyEight use), **not** a trained ML classifier:
 
-The bracket runs Round of 32 → Round of 16 → Quarter-finals → Semi-finals → Final (48 teams qualify; 32 reach the knockout stage). Unlike the NBA project this is adapted from, **knockout ties are single matches** — extra time and penalties collapse into one win/loss outcome — so there is no best-of-N series anywhere in the code.
+1. Fit **Dixon-Coles** abilities (attack/defence/ρ, time-decayed) on historical international results and blend them toward an **Elo** strength prior (`poisson.elo_prior_weight`).
+2. Condition on the **real played group results**; derive the official **Round of 32** from final standings via FIFA's slotting rules + the 495-row **Annex C** third-place table.
+3. Run a **Monte-Carlo** simulation of the bracket; each tie resolves **regulation (Poisson) → extra time (λ × 0.33) → penalties (50/50)**.
+4. Aggregate title odds (`champion / N`) and per-round advancement, then render charts + a daily thumbnail.
+
+The bracket runs Round of 32 → Round of 16 → Quarter-finals → Semi-finals → Final. Knockout ties are **single matches** (ET + penalties collapse into one win/loss) — no best-of-N anywhere. Only the knockout is stochastic; the group stage is fixed to the real results.
 
 ## Commands
 
@@ -14,100 +19,87 @@ The bracket runs Round of 32 → Round of 16 → Quarter-finals → Semi-finals 
 # Install (editable, with dev tools)
 pip install -e ".[dev]"
 
-# Provide an API key (optional — unauthenticated works at the lower 10 req/min rate)
-export FOOTBALL_DATA_API_KEY="your-token-here"
+# Live title-odds forecast (no API key required; renders docs/*.png)
+worldcup-playoff forecast --seed 42 --output docs   # 100k tournaments (config default)
 
-# Run full pipeline (clean → train → fit → simulate → visualize)
-worldcup-playoff run --bracket config/playoff_2026.toml
+# Calibration: tune the Elo-prior blend weight over WC2014/18/22
+worldcup-playoff backtest --tune-prior
+worldcup-playoff backtest                            # RF-hybrid backtest vs bookmaker baseline
 
-# Individual steps
-worldcup-playoff clean
-worldcup-playoff train --classifier all          # or: svm, random-forest, naive-bayes
-worldcup-playoff fit
-worldcup-playoff simulate --bracket config/playoff_2026.toml --n-simulations 10000
-worldcup-playoff bracket --bracket config/playoff_2026.toml   # simulate + render PNG
+# Calibration utilities
+worldcup-playoff build-features
+worldcup-playoff train-hybrid
+worldcup-playoff fetch-live          # optional: pull live fixtures (needs API key)
 
-# Download datasets from football-data.org (rate-limited)
-worldcup-playoff download --seasons 2006-2026 --output-dir dataset/csv
-worldcup-playoff download --only matches,teams --seasons 2018-2026
-worldcup-playoff download --skip-details          # skip match_details.csv
+# Daily 1080x1920 prediction thumbnail → thumbnails/<date>.png
+python generate_thumbnail.py [--date 2026-06-29] [-o thumbnails/today.png]
 
-# Build individual datasets
-worldcup-playoff build-teams
-worldcup-playoff build-matches --start-year 2006 --end-year 2026
-worldcup-playoff build-match-details --matches-csv dataset/csv/matches.csv
-
-# Generate a knockout bracket from the competition's qualified teams
-worldcup-playoff generate-bracket --season 2026 --output config/playoff_2026.toml
-
-# Without installation
-python -m worldcup_playoff run --bracket config/playoff_2026.toml
-
-# Tests
+# Tests / lint / types
 pytest                            # all tests
-pytest tests/test_game.py         # single file
-pytest -k test_predict            # single test by name
+pytest -k forecast                # forecast-related tests
 pytest --cov=worldcup_playoff     # with coverage
+ruff check . && ruff format .
+mypy worldcup_playoff/
 
-# Linting & formatting
-ruff check .
-ruff format .
+# Optional API key (live fixtures only; the forecast works fully offline)
+export FOOTBALL_DATA_API_KEY="your-token-here"
 ```
 
 ## Architecture
 
-**Pipeline pattern**: `Pipeline` (in `pipeline.py`) orchestrates stages, each independently runnable via the Typer CLI (`cli.py`, exposed as the `worldcup-playoff` entry point `worldcup_playoff.cli:app`):
+The canonical path is the **live forecast** (`cli_cycle5._forecast` → `simulation/live_forecast.py::run_forecast`):
 
-1. **Clean** — `DataLoader` reads raw CSVs → `DataCleaner` merges `matches.csv` with `match_details.csv` on `MATCH_ID`, filters by date, drops draws, fixes zero percentages, adds the binary `HOME_WIN` target → produces `dataset/train_data.csv`
-2. **Train** — `ClassifierFactory` creates sklearn classifiers → `ClassifierTrainer` fits (temporal split, `shuffle=False`) → `ModelEvaluator` reports metrics → models saved to `output/models/*.joblib`
-3. **Fit** — `DistributionFitter` fits scipy distributions to each team's per-feature data (using the `fitter` library) → saved to `output/distributions.json`
-4. **Simulate** — `FeatureSampler` draws synthetic stats from the fitted distributions → `GamePredictor` predicts each single-match tie → `TournamentSimulator` runs N full brackets via Monte Carlo → `ResultPlotter` renders output
+1. **Abilities** — `data/martj42_loader` loads CC0 results → `simulation/poisson.fit_dixon_coles` → `poisson.blend_abilities_with_elo` with `data/elo.compute_elo`.
+2. **State** — `data/live.build_state_from_results` reconstructs the WC2026 group state (official A–L group labels) from the real results (live API via `data/client` when available, else the martj42 cache).
+3. **Bracket** — `simulation/group_stage` ranks the groups (FIFA tiebreaks) → `data/wc2026_bracket.resolve_r32` slots the official R32 using `data/wc2026_annexc` (Annex C table).
+4. **Simulate** — `simulation/knockout.resolve_tie` folds each tie (regulation → ET → penalties); `live_forecast.LiveForecaster` runs N seeded tournaments and aggregates probabilities.
+5. **Render** — `visualization/forecast_plots` (title odds, advancement, forecast bracket) + `visualization/plots.ResultPlotter` (bracket renderer); `generate_thumbnail.py` for the daily image.
+
+A secondary **backtest/calibration** path (`models/`, `features/`, `data/odds`) tunes `elo_prior_weight` by RPS/log-loss/Brier — it does not run during a normal forecast.
 
 ### Package layout
 
 ```
 worldcup_playoff/
-├── __main__.py         # Enables `python -m worldcup_playoff`
-├── cli.py              # Typer commands — all user-facing entry points (worldcup_playoff.cli:app)
-├── config.py           # Pydantic models (AppConfig, BracketConfig, Matchup) loaded from TOML
-├── pipeline.py         # Orchestrator — wires stages together, only class that touches all subpackages
-├── types.py            # Classifier Protocol (sklearn interface contract)
+├── __main__.py / cli.py     # Typer app; registers cli_cycle5 commands
+├── cli_cycle5.py            # forecast, backtest, train-hybrid, build-features, fetch-live
+├── config.py                # Pydantic config models (AppConfig + sub-configs)
 ├── data/
-│   ├── client.py       # FootballClient — rate-limited football-data.org v4 client with
-│   │                   #   circuit-breaker retry + session reset; X-Auth-Token from env
-│   ├── builders.py     # CSV builders (TeamsBuilder, MatchesBuilder, RankingBuilder,
-│   │                   #   PlayersBuilder, MatchDetailsBuilder) — each fetches from football-data.org
-│   ├── bracket_builder.py  # Generates a Round-of-32 bracket TOML from qualified teams
-│   ├── loader.py       # Reads local CSVs into DataFrames with column + dtype validation
-│   └── cleaner.py      # Merges matches + details, engineers features, filters dates, adds HOME_WIN
-├── models/
-│   ├── classifiers.py  # ClassifierFactory (creates SVM/RF/NB), ClassifierTrainer (fit/save/load)
-│   └── evaluation.py   # ModelEvaluator — classification report + confusion matrix + ROC curves
+│   ├── martj42_loader.py    # CC0 historical international results loader
+│   ├── elo.py               # World Football Elo engine
+│   ├── live.py              # WC2026 tournament-state adapter (+ official A–L group labels)
+│   ├── client.py            # rate-limited football-data.org v4 client (circuit breaker)
+│   ├── crosswalk.py         # team-name normalization
+│   ├── wc2026_bracket.py    # official group → R32 slotting (R32_SLOTS, resolve_r32)
+│   ├── wc2026_annexc.py     # official 495-row Annex C third-place table
+│   └── odds.py              # bookmaker odds scraper (backtest baseline)
 ├── simulation/
-│   ├── distributions.py # DistributionFitter (fitter→scipy), FeatureSampler, FittedDistribution dataclass
-│   ├── game.py          # GamePredictor — samples features, runs classifier, returns single-tie winner
-│   └── tournament.py    # TournamentSimulator — Monte Carlo bracket, BracketSlot tree, RoundResult
-└── visualization/
-    └── plots.py         # ResultPlotter — bracket PNG and round-probability charts
+│   ├── poisson.py           # Dixon-Coles + Elo blend + lambdas/score_matrix/modal/decisive
+│   ├── group_stage.py       # group-stage resolver (FIFA tiebreaks)
+│   ├── knockout.py          # tie resolver (reg → ET → penalties), RoundResult, KnockoutSimulator
+│   └── live_forecast.py     # Monte-Carlo forecast orchestrator (ForecastResult, LiveForecaster)
+├── features/                # covariates for calibration (build, confederation, timeaware)
+├── models/                  # dataset, RF/GBM hybrid, backtest evaluator
+└── visualization/           # forecast_plots + ResultPlotter (NBA-style bracket)
+generate_thumbnail.py        # daily 1080x1920 prediction thumbnail
 ```
 
 ### Key design choices
 
-- **Single-match ties throughout**: `GamePredictor.predict_tie(home, away)` runs one prediction per tie; `TournamentSimulator._play_tie` resolves a tie with a single call (no `_play_series` loop). `SimulationConfig` has no series-length fields.
-- **Dependency injection throughout**: `GamePredictor` receives classifier + sampler + distributions; `Pipeline` receives config objects. No global state.
-- **`Classifier` Protocol** in `types.py` — any object with `fit(X, y)` and `predict(X)` works.
-- **All config is Pydantic models** loaded from TOML (`config/default.toml` for pipeline params, `config/playoff_*.toml` for bracket matchups).
-- **`FootballClient`** uses a circuit-breaker pattern (3 consecutive failures → 60 s cooldown), exponential backoff with jitter, periodic session resets, and a 6 s default delay tuned for the free 10 req/min tier. The API key is read from `FOOTBALL_DATA_API_KEY` and sent as `X-Auth-Token`; the client still works unauthenticated.
-- **Deterministic feature heuristics**: `MatchDetailsBuilder` fills shots/possession/pass-accuracy with fixed formulae (`SHOTS = goals*5+7`, `SHOTS_ON_TARGET = max(goals+2, shots//3)`, `POSSESSION = 50.0`, `PASS_PCT = 75.0`) when the free tier omits them — never random, so output is reproducible. Paid-tier statistics override the heuristics.
-- **`RoundResult.probabilities`** are per-team advancement probabilities (counts / n_simulations), not normalized across teams — they sum to the number of ties in the round, not 1.0.
-- **Bracket tree** (`BracketSlot`) is built bottom-up from matchups via `build_bracket_tree`; adjacent winners pair into the next round. Matchup-list length must be a power of two (32-team knockout → 16 first-round matchups).
-- **Team identification by name**: `matches.csv` stores country names directly in `HOME_TEAM` / `AWAY_TEAM`, so the cleaner needs no numeric-ID-to-name mapping (unlike the NBA original). `DistributionFitter` aggregates per-team observations by combining `*_home` columns from home matches with `*_away` columns from away matches.
+- **Statistical, not ML**: title odds come from Dixon-Coles + Elo + Monte Carlo, not a trained classifier.
+- **Bracket order matters**: `R32_SLOTS` is in true bracket-adjacency order (NOT FIFA match-number order) so the knockout simulators — which pair adjacent winners — reproduce the official R16→Final tree.
+- **Official Annex C**: third-place slotting uses the verbatim 495-row FIFA table (`wc2026_annexc`), not a generic bipartite matching (which finds a feasible but not FIFA's chosen assignment).
+- **Neutral venue**: knockout `lambdas(..., neutral=True)` — no home advantage applied (hosts are not boosted). The `home_adv` parameter is only estimated during the fit.
+- **Penalties / ET**: extra time scores at λ × `extra_time_factor` (0.33); penalties are a 50/50 coin flip. The win % includes both; the displayed "predicted score" is the most-likely **decisive** scoreline (`decisive_scoreline`).
+- **Reproducible**: a fixed seed expands to N independent child seeds via `SeedSequence.spawn`, so the same seed yields identical odds.
+- **`RoundResult.probabilities`** are per-team advancement (counts / n_simulations) — they sum to the number of ties in the round, not 1.0.
+- **All config is Pydantic** loaded from TOML.
 
 ## Configuration
 
-- `config/default.toml` — pipeline parameters (data paths, 10 feature columns, classifier hyperparams, distribution candidates, simulation settings, client rate-limit config)
-- `config/playoff_2026.toml` — bracket definition (16 Round-of-32 matchups with `home` / `away` / `group`); adjacent matchups feed the next round, list length must be a power of two
-- Environment: `FOOTBALL_DATA_API_KEY` — optional football-data.org token (sent as `X-Auth-Token`)
+- `config/default.toml` — `[simulation]` (n_simulations=100000, extra_time_factor, seed), `[poisson]` (half-life, ρ, `elo_prior_weight`=0.8), `[elo]`, `[hybrid]`/`[rf]` + `[odds]` (calibration), `[client]`/`[live]`/`[martj42]` (data sources).
+- `config/playoff_2026*.toml` — the real Round of 32 bracket (reference; the forecast derives R32 from standings).
+- Environment: `FOOTBALL_DATA_API_KEY` — optional football-data.org token (live fixtures only).
 
 ## Tooling
 

@@ -9,7 +9,7 @@ All knockout matches are treated as neutral-venue fixtures.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 import numpy as np
@@ -21,15 +21,35 @@ from worldcup_playoff.simulation.poisson import (
     lambdas,
     score_matrix,
 )
-from worldcup_playoff.simulation.tournament import RoundResult
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RoundResult:
+    """Per-team advancement counts at a knockout round.
+
+    Each team's probability is its individual advancement probability
+    (``count / n_simulations``); for rounds with multiple concurrent ties the
+    probabilities across teams sum to the number of ties, not to 1.0.
+    """
+
+    counts: dict[str, int] = field(default_factory=dict)
+    n_simulations: int = 0
+
+    @property
+    def probabilities(self) -> dict[str, float]:
+        """Per-team advancement fractions (empty when no simulations run)."""
+        if self.n_simulations == 0:
+            return {}
+        return {k: v / self.n_simulations for k, v in self.counts.items()}
 
 # Re-export for consumers who import from this module.
 __all__ = [
     "KnockoutRound",
     "KnockoutSimulator",
     "R32_SLOTS",
+    "RoundResult",
     "resolve_r32",
     "resolve_tie",
     "simulate",

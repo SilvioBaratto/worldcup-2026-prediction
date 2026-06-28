@@ -10,7 +10,6 @@ import pandas as pd
 import pytest
 
 from worldcup_playoff.config import AppConfig, BracketConfig, Matchup
-from worldcup_playoff.simulation.distributions import FittedDistribution
 
 
 # ---------------------------------------------------------------------------
@@ -96,44 +95,6 @@ def sample_train_df() -> pd.DataFrame:
 def app_config() -> AppConfig:
     """Default AppConfig with no modifications."""
     return AppConfig()
-
-
-@pytest.fixture
-def sample_distributions() -> dict[str, list[FittedDistribution]]:
-    """Pre-built distributions for four national teams.
-
-    Five features each (goals, shots, shots-on-target, possession, pass-pct).
-    """
-    return {
-        "Brazil": [
-            FittedDistribution(name="norm", params=(1.8, 0.8)),
-            FittedDistribution(name="norm", params=(16.0, 3.0)),
-            FittedDistribution(name="norm", params=(5.0, 1.5)),
-            FittedDistribution(name="norm", params=(52.0, 5.0)),
-            FittedDistribution(name="norm", params=(77.0, 4.0)),
-        ],
-        "France": [
-            FittedDistribution(name="norm", params=(1.6, 0.7)),
-            FittedDistribution(name="norm", params=(15.0, 3.0)),
-            FittedDistribution(name="norm", params=(4.8, 1.4)),
-            FittedDistribution(name="norm", params=(51.0, 5.0)),
-            FittedDistribution(name="norm", params=(76.0, 4.0)),
-        ],
-        "Germany": [
-            FittedDistribution(name="norm", params=(1.7, 0.7)),
-            FittedDistribution(name="norm", params=(15.5, 2.8)),
-            FittedDistribution(name="norm", params=(4.9, 1.3)),
-            FittedDistribution(name="norm", params=(50.0, 5.0)),
-            FittedDistribution(name="norm", params=(76.5, 3.5)),
-        ],
-        "Argentina": [
-            FittedDistribution(name="norm", params=(1.5, 0.7)),
-            FittedDistribution(name="norm", params=(14.5, 2.5)),
-            FittedDistribution(name="norm", params=(4.6, 1.2)),
-            FittedDistribution(name="norm", params=(49.0, 5.0)),
-            FittedDistribution(name="norm", params=(75.0, 3.5)),
-        ],
-    }
 
 
 @pytest.fixture

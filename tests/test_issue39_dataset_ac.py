@@ -403,7 +403,7 @@ def test_when_build_dataset_called_then_feature_cols_are_stored_on_dataset():
 
 
 # ===========================================================================
-# AC4 — HybridConfig / OrderedLogitConfig in config.py, wired into AppConfig
+# AC4 — HybridConfig in config.py, wired into AppConfig
 # ===========================================================================
 
 
@@ -413,22 +413,10 @@ def test_when_config_imported_then_HybridConfig_is_accessible():
     assert HybridConfig is not None
 
 
-def test_when_config_imported_then_OrderedLogitConfig_is_accessible():
-    from worldcup_playoff.config import OrderedLogitConfig  # noqa: F401
-
-    assert OrderedLogitConfig is not None
-
-
 def test_when_AppConfig_created_then_hybrid_attribute_is_HybridConfig_instance():
     from worldcup_playoff.config import AppConfig, HybridConfig
 
     assert isinstance(AppConfig().hybrid, HybridConfig)
-
-
-def test_when_AppConfig_created_then_ordered_logit_attribute_is_OrderedLogitConfig_instance():
-    from worldcup_playoff.config import AppConfig, OrderedLogitConfig
-
-    assert isinstance(AppConfig().ordered_logit, OrderedLogitConfig)
 
 
 def test_when_HybridConfig_created_then_random_seed_attribute_exists():
@@ -437,22 +425,10 @@ def test_when_HybridConfig_created_then_random_seed_attribute_exists():
     assert hasattr(HybridConfig(), "random_seed")
 
 
-def test_when_OrderedLogitConfig_created_then_random_seed_attribute_exists():
-    from worldcup_playoff.config import OrderedLogitConfig
-
-    assert hasattr(OrderedLogitConfig(), "random_seed")
-
-
 def test_when_HybridConfig_created_then_random_seed_is_integer():
     from worldcup_playoff.config import HybridConfig
 
     assert isinstance(HybridConfig().random_seed, int)
-
-
-def test_when_OrderedLogitConfig_created_then_random_seed_is_integer():
-    from worldcup_playoff.config import OrderedLogitConfig
-
-    assert isinstance(OrderedLogitConfig().random_seed, int)
 
 
 def test_when_AppConfig_loaded_from_toml_with_hybrid_section_then_random_seed_is_used(
@@ -472,23 +448,6 @@ def test_when_AppConfig_loaded_from_toml_with_hybrid_section_then_random_seed_is
     assert cfg.hybrid.random_seed == 7
 
 
-def test_when_AppConfig_loaded_from_toml_with_ordered_logit_section_then_random_seed_is_used(
-    tmp_path,
-):
-    """OrderedLogitConfig.random_seed round-trips through TOML loading."""
-    import tomllib
-
-    from worldcup_playoff.config import AppConfig
-
-    toml_bytes = b"[ordered_logit]\nrandom_seed = 99\n"
-    cfg_file = tmp_path / "cfg.toml"
-    cfg_file.write_bytes(toml_bytes)
-    with open(cfg_file, "rb") as f:
-        raw = tomllib.load(f)
-    cfg = AppConfig.model_validate(raw)
-    assert cfg.ordered_logit.random_seed == 99
-
-
 def test_when_AppConfig_loaded_from_empty_toml_then_HybridConfig_defaults_are_applied(
     tmp_path,
 ):
@@ -503,22 +462,6 @@ def test_when_AppConfig_loaded_from_empty_toml_then_HybridConfig_defaults_are_ap
         raw = tomllib.load(f)
     cfg = AppConfig.model_validate(raw)
     assert isinstance(cfg.hybrid, HybridConfig)
-
-
-def test_when_AppConfig_loaded_from_empty_toml_then_OrderedLogitConfig_defaults_are_applied(
-    tmp_path,
-):
-    """An empty TOML must still produce a valid AppConfig with OrderedLogitConfig defaults."""
-    import tomllib
-
-    from worldcup_playoff.config import AppConfig, OrderedLogitConfig
-
-    cfg_file = tmp_path / "empty.toml"
-    cfg_file.write_bytes(b"")
-    with open(cfg_file, "rb") as f:
-        raw = tomllib.load(f)
-    cfg = AppConfig.model_validate(raw)
-    assert isinstance(cfg.ordered_logit, OrderedLogitConfig)
 
 
 # ===========================================================================

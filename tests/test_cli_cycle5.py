@@ -102,37 +102,6 @@ def test_when_new_command_help_requested_it_exits_zero(cmd):
     assert result.exit_code == 0, f"'{cmd} --help' exited {result.exit_code}:\n{result.output}"
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Criterion 3 — existing commands must remain registered and unchanged
-# ═══════════════════════════════════════════════════════════════════════════════
-
-EXISTING_COMMANDS = [
-    "download",
-    "clean",
-    "train",
-    "fit",
-    "simulate",
-    "bracket",
-    "run",
-]
-
-
-@pytest.mark.parametrize("cmd", EXISTING_COMMANDS)
-def test_when_help_requested_existing_command_is_still_listed(cmd):
-    """Pre-Cycle-5 commands must still appear in the top-level help."""
-    result = runner.invoke(_app(), ["--help"])
-    assert result.exit_code == 0, result.output
-    assert cmd in result.output, (
-        f"Pre-existing '{cmd}' missing from help; backward-compat broken.\nOutput:\n{result.output}"
-    )
-
-
-@pytest.mark.parametrize("cmd", EXISTING_COMMANDS)
-def test_when_existing_command_help_requested_it_exits_zero(cmd):
-    """Each pre-existing command must still accept --help without error."""
-    result = runner.invoke(_app(), [cmd, "--help"])
-    assert result.exit_code == 0, f"'{cmd} --help' exited {result.exit_code}:\n{result.output}"
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Criterion 2 — ``forecast`` options: --config / --seed / --n-simulations

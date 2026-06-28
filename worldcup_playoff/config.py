@@ -20,93 +20,6 @@ class Martj42Config(BaseModel):
     goalscorers_file: str = "goalscorers.csv"
 
 
-class DataConfig(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    matches_path: str | None = "dataset/csv/matches.csv"
-    teams_path: str | None = "dataset/csv/teams.csv"
-    output_path: str = "dataset/train_data.csv"
-    min_date: str = "2006-01-01"
-    train_cutoff_date: str = "2026-06-01"
-    epsilon: float = 0.001
-    matches_start_year: int = 2006
-    matches_end_year: int = 2026
-    ranking_csv_path: str = "dataset/csv/ranking.csv"
-    ranking_start_year: int = 2006
-    ranking_end_year: int = 2026
-    players_csv_path: str = "dataset/csv/players.csv"
-    players_competition: str = "WC"
-    match_details_csv_path: str = "dataset/csv/match_details.csv"
-    match_details_checkpoint_every: int = 100
-
-
-class FeaturesConfig(BaseModel):
-    """Per-team match statistics fed to the classifier.
-
-    Five features per team (home + away) mirroring the NBA layout, expressed as
-    football box-score metrics: goals, shots, shots on target, possession %, and
-    pass accuracy %.
-    """
-
-    selected: list[str] = [
-        "GOALS_home",
-        "SHOTS_home",
-        "SHOTS_ON_TARGET_home",
-        "POSSESSION_home",
-        "PASS_PCT_home",
-        "GOALS_away",
-        "SHOTS_away",
-        "SHOTS_ON_TARGET_away",
-        "POSSESSION_away",
-        "PASS_PCT_away",
-    ]
-    per_team_count: int = 5
-
-
-class SVMConfig(BaseModel):
-    C: float = 0.1
-    gamma: float = 0.1
-    kernel: str = "linear"
-
-
-class RandomForestConfig(BaseModel):
-    n_estimators: int = 500
-    max_features: str = "sqrt"
-    max_depth: int = 50
-    bootstrap: bool = True
-
-
-class NaiveBayesConfig(BaseModel):
-    var_smoothing: float = 1.873817422860383e-07
-
-
-class TrainingConfig(BaseModel):
-    test_size: float = 0.3
-    random_state: int = 42
-    svm: SVMConfig = SVMConfig()
-    random_forest: RandomForestConfig = RandomForestConfig()
-    naive_bayes: NaiveBayesConfig = NaiveBayesConfig()
-
-
-class DistributionConfig(BaseModel):
-    min_season: int = 2018
-    candidates: list[str] = [
-        "norm",
-        "t",
-        "f",
-        "chi",
-        "cosine",
-        "alpha",
-        "beta",
-        "gamma",
-        "dgamma",
-        "dweibull",
-        "maxwell",
-        "pareto",
-        "fisk",
-    ]
-
-
 class SimulationConfig(BaseModel):
     """Knockout simulation settings.
 
@@ -336,24 +249,6 @@ class HybridConfig(BaseModel):
         return v
 
 
-class OrderedLogitConfig(BaseModel):
-    """Configuration for the Elo-diff ordered logit secondary/fallback model."""
-
-    model_config = ConfigDict(extra="ignore")
-
-    features: list[str] = ["elo_diff"]
-    maxiter: int = 100
-    test_size: float = 0.2
-    random_seed: int = 42
-
-    @field_validator("test_size")
-    @classmethod
-    def test_size_must_be_in_open_unit_interval(cls, v: float) -> float:
-        if not (0.0 < v < 1.0):
-            raise ValueError("test_size must be strictly between 0 and 1")
-        return v
-
-
 class OddsConfig(BaseModel):
     """Configuration for the historical bookmaker odds scraper (backtest baseline only)."""
 
@@ -419,11 +314,7 @@ class RFConfig(BaseModel):
 
 
 class AppConfig(BaseModel):
-    data: DataConfig = DataConfig()
-    features: FeaturesConfig = FeaturesConfig()
     features_build: FeatureBuildConfig = FeatureBuildConfig()
-    training: TrainingConfig = TrainingConfig()
-    distributions: DistributionConfig = DistributionConfig()
     simulation: SimulationConfig = SimulationConfig()
     visualization: VisualizationConfig = VisualizationConfig()
     client: ClientConfig = ClientConfig()
@@ -432,7 +323,6 @@ class AppConfig(BaseModel):
     elo: EloConfig = EloConfig()
     poisson: PoissonConfig = PoissonConfig()
     hybrid: HybridConfig = HybridConfig()
-    ordered_logit: OrderedLogitConfig = OrderedLogitConfig()
     odds: OddsConfig = OddsConfig()
     rf: RFConfig = RFConfig()
 

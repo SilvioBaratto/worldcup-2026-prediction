@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "worldcup-2026-prediction"
 version = "1.0.0"
-description = "Monte Carlo simulation of FIFA World Cup 2026 knockout outcomes using ML classifiers"
+description = "Live FIFA World Cup 2026 title-odds forecast (Elo + Dixon-Coles Monte Carlo)"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "Silvio Baratto" }]
@@ -15,14 +15,11 @@ dependencies = [
     "pandas>=2.0",
     "scikit-learn>=1.3",
     "scipy>=1.11",
-    "statsmodels>=0.14",
-    "fitter>=1.6",
     "matplotlib>=3.7",
     "requests>=2.31",
     "seaborn>=0.12",
     "typer[all]>=0.9",
     "pydantic>=2.0",
-    "joblib>=1.3",
     "rich>=13.0",
     "beautifulsoup4>=4.12",
 ]
