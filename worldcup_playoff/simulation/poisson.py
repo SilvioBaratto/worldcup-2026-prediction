@@ -164,6 +164,35 @@ def modal_scoreline(
     return flat // cols, flat % cols
 
 
+def decisive_scoreline(
+    abilities: TeamAbilities,
+    home: str,
+    away: str,
+    home_wins: bool,
+    max_goals: int = 10,
+    neutral: bool = True,
+) -> tuple[int, int]:
+    """Most-likely non-draw (home_goals, away_goals) with the given winner.
+
+    Argmax over the decisive half of the Dixon-Coles score matrix (home > away,
+    or away > home). Used for knockout ties, where a draw is settled by extra time
+    or penalties — so a drawn "predicted score" would contradict the team shown
+    advancing. Falls back to the favourite winning by one goal in the unreachable
+    edge case where the decisive half is empty.
+    """
+    lh, la = lambdas(abilities, home, away, neutral=neutral)
+    mat = score_matrix(lh, la, rho=abilities.rho, max_goals=max_goals)
+    rows = np.arange(mat.shape[0])[:, None]
+    cols_idx = np.arange(mat.shape[1])[None, :]
+    decisive = (rows > cols_idx) if home_wins else (rows < cols_idx)
+    if not decisive.any():
+        return (1, 0) if home_wins else (0, 1)
+    masked = np.where(decisive, mat, -1.0)
+    flat = int(masked.argmax())
+    cols = mat.shape[1]
+    return flat // cols, flat % cols
+
+
 def _apply_tau_correction(
     mat: np.ndarray, lh: float, la: float, rho: float, max_goals: int
 ) -> None:

@@ -189,22 +189,26 @@ def _representative_scores(
     round_probabilities: dict[str, dict[str, float]],
     max_goals: int,
 ) -> dict[str, tuple[int, int]]:
-    """Most-likely scoreline (Dixon-Coles argmax) for every representative pairing.
+    """Most-likely decisive scoreline for every representative knockout pairing.
 
-    This is the standard "most probable correct score": the cell with the highest
-    probability in the joint score matrix. It varies with the matchup — close ties
-    land on 1-0/1-1, mismatches on wider margins — which is the honest model output.
+    A knockout tie cannot end level, so the predicted score must have a winner and
+    that winner must match the team shown advancing. For each slot we take the most
+    probable *non-draw* scoreline (Dixon-Coles argmax over the winning half of the
+    score matrix) in favour of the higher-probability team for that round. The
+    margin still varies with the matchup — mismatches give 3-0/2-0, close ties 1-0.
     """
-    from worldcup_playoff.simulation.poisson import modal_scoreline
+    from worldcup_playoff.simulation.poisson import decisive_scoreline
     if not r32:
         return {}
     slots = forecast_slot_teams(list(r32), round_probabilities)
     scores: dict[str, tuple[int, int]] = {}
-    for pairs in slots.values():
+    for rnd, pairs in slots.items():
+        probs = round_probabilities.get(WC_ROUND_ORDER[min(rnd, len(WC_ROUND_ORDER) - 1)], {})
         for home, away in pairs:
             if home and away and home != "TBD" and away != "TBD":
-                scores[f"{home}|{away}"] = modal_scoreline(
-                    abilities, home, away, max_goals=max_goals
+                home_wins = probs.get(home, 0.0) >= probs.get(away, 0.0)
+                scores[f"{home}|{away}"] = decisive_scoreline(
+                    abilities, home, away, home_wins=home_wins, max_goals=max_goals
                 )
     return scores
 

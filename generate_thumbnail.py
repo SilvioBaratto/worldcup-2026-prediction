@@ -35,8 +35,8 @@ from worldcup_playoff.simulation.knockout import _make_sampler, resolve_tie
 from worldcup_playoff.simulation.poisson import (
     TeamAbilities,
     blend_abilities_with_elo,
+    decisive_scoreline,
     fit_dixon_coles,
-    modal_scoreline,
 )
 
 ROOT = Path(__file__).resolve().parent
@@ -56,7 +56,6 @@ class MatchPrediction(TypedDict):
     ag: int
     winner: str
     win_pct: int
-    draw_90: bool
 
 # Flag emojis keyed by martj42 team spelling (Apple Color Emoji renders these).
 _FLAGS: dict[str, str] = {
@@ -91,9 +90,7 @@ def _build_abilities(cfg: AppConfig) -> tuple[pd.DataFrame, TeamAbilities]:
 def _predict_match(
     abilities: TeamAbilities, cfg: AppConfig, home: str, away: str, n_sims: int
 ) -> MatchPrediction:
-    """Return modal 90-min scoreline + Monte-Carlo advance probability for one tie."""
-    hg, ag = modal_scoreline(abilities, home, away, max_goals=cfg.poisson.max_goals)
-
+    """Return the predicted decisive scoreline + Monte-Carlo advance probability."""
     rng = np.random.default_rng(cfg.simulation.random_seed)
     sampler = _make_sampler(abilities, cfg.poisson, rng)
     wins = {home: 0, away: 0}
@@ -107,10 +104,14 @@ def _predict_match(
         wins[w] += 1
     winner = home if wins[home] >= wins[away] else away
     win_pct = round(max(wins.values()) / n_sims * 100)
+    # Knockout ties have a winner — show the most-likely *decisive* score in the
+    # advancing team's favour (no drawn predicted score).
+    hg, ag = decisive_scoreline(
+        abilities, home, away, home_wins=(winner == home), max_goals=cfg.poisson.max_goals
+    )
     return {
         "home": home, "away": away, "hg": hg, "ag": ag,
         "winner": winner, "win_pct": win_pct,
-        "draw_90": hg == ag,
     }
 
 
@@ -157,7 +158,6 @@ def _card_html(m: MatchPrediction, hero: bool) -> str:
     home, away = m["home"], m["away"]
     hg, ag, winner = m["hg"], m["ag"], m["winner"]
     home_win = winner == home
-    note = '<span class="aet">AET / PENS</span>' if m["draw_90"] else ""
     cls = "card hero" if hero else "card"
     return f"""
     <div class="{cls}">
@@ -180,7 +180,6 @@ def _card_html(m: MatchPrediction, hero: bool) -> str:
         <span class="check">✓</span>
         <span class="wname">{_html.escape(winner).upper()}</span>
         <span class="prob">{m['win_pct']}%</span>
-        {note}
       </div>
     </div>"""
 
