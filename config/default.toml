@@ -69,7 +69,9 @@ candidates = [
 ]
 
 [simulation]
-n_simulations = 10000
+# 100k tournaments → Monte-Carlo 95% CI ≈ ±0.3% on title odds; beyond this the
+# model/calibration uncertainty dominates the sampling error (see README).
+n_simulations = 100000
 classifier = "naive_bayes"
 extra_time_factor = 0.33
 random_seed = 42

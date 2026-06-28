@@ -4,7 +4,7 @@ Monte Carlo simulation of the FIFA World Cup 2026 — a live, key-free **title-o
 
 ![FIFA World Cup 2026 — forecast bracket with champion](docs/bracket.png)
 
-*Representative knockout bracket with per-round advancement probabilities and the projected champion (seed 42, 10,000 simulations, `elo_prior_weight = 0.8`). The full ranked title-odds leaderboard (`docs/title_odds.png`) and a per-round heatmap are also produced. See [Live Title-Odds Forecast](#live-title-odds-forecast) to regenerate.*
+*Representative knockout bracket with per-round advancement probabilities and the projected champion (seed 42, 100,000 simulations, `elo_prior_weight = 0.8`). The full ranked title-odds leaderboard (`docs/title_odds.png`) and a per-round heatmap are also produced. See [Live Title-Odds Forecast](#live-title-odds-forecast) to regenerate.*
 
 ## Overview
 
@@ -22,11 +22,11 @@ Unlike the NBA original this project is derived from, World Cup knockout ties ar
 
 The **canonical** output is a live, in-tournament forecast of the World Cup 2026 winner — title odds for all 48 nations plus round-by-round advancement probabilities. It runs **without an API key**: team strengths come from the [martj42 international results](https://github.com/martj42/international_results) dataset (CC0, all nations 1872→present), and the WC2026 group state is reconstructed from the same cache when the live football-data.org API is unreachable.
 
-The engine is an Elo + Dixon-Coles bivariate-Poisson model (the same family the Opta supercomputer uses), conditioned on the group results played to date and run through ~10,000 Monte Carlo tournaments. The fitted attack/defence abilities — which on raw goals over-reward sides that ran up big group-stage scorelines — are blended toward an Elo strength prior (`poisson.elo_prior_weight`, default `0.8`) so reputable teams are not understated. The weight was tuned by match-level RPS over WC2014/18/22 (pure goals = 0.2195 RPS → `0.8` = 0.2082, ~5 % better).
+The engine is an Elo + Dixon-Coles bivariate-Poisson model (the same family the Opta supercomputer uses), conditioned on the group results played to date and run through 100,000 Monte Carlo tournaments (the config default: at 100k the sampling 95% CI on title odds is ≈ ±0.3%, below which the model/calibration uncertainty dominates). The fitted attack/defence abilities — which on raw goals over-reward sides that ran up big group-stage scorelines — are blended toward an Elo strength prior (`poisson.elo_prior_weight`, default `0.8`) so reputable teams are not understated. The weight was tuned by match-level RPS over WC2014/18/22 (pure goals = 0.2195 RPS → `0.8` = 0.2082, ~5 % better).
 
 ```bash
 # Live title-odds forecast (no API key required; renders PNG charts)
-worldcup-playoff forecast --seed 42 -n 10000 --output docs
+worldcup-playoff forecast --seed 42 --output docs   # 100k tournaments (config default)
 
 # Tune the Elo-prior blend weight by RPS / log-loss / Brier over past World Cups
 worldcup-playoff backtest --tune-prior
@@ -195,7 +195,7 @@ worldcup-playoff simulate --bracket config/playoff_2026.toml --n-simulations 100
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--bracket` / `-b` | `config/playoff_2026.toml` | Bracket TOML file |
-| `--n-simulations` / `-n` | from config (10000) | Override simulation count |
+| `--n-simulations` / `-n` | from config (100000) | Override simulation count |
 
 #### `bracket`
 
@@ -230,7 +230,7 @@ worldcup-playoff run --bracket config/playoff_2026.toml
 Run the live WC2026 title-odds forecast (no API key required; uses the martj42 schedule). Renders `bracket.png`, `title_odds.png`, and `advancement.png`.
 
 ```bash
-worldcup-playoff forecast --seed 42 -n 10000 --output docs
+worldcup-playoff forecast --seed 42 --output docs   # 100k tournaments (config default)
 ```
 
 | Flag | Default | Description |
@@ -344,7 +344,7 @@ All pipeline parameters live in TOML files.
 | `[features]` | 10 selected match statistics (5 home + 5 away): `GOALS`, `SHOTS`, `SHOTS_ON_TARGET`, `POSSESSION`, `PASS_PCT`; `per_team_count = 5` |
 | `[training]` | Test split (30%), random state (42), per-classifier hyperparameters |
 | `[distributions]` | Minimum season (2018), 13 candidate distribution families |
-| `[simulation]` | Number of simulations (10000), default classifier (`naive_bayes`) — no series length (single-match ties) |
+| `[simulation]` | Number of simulations (100000), default classifier (`naive_bayes`) — no series length (single-match ties) |
 | `[visualization]` | DPI (80), matplotlib style (`seaborn-v0_8`), output directory |
 | `[client]` | Rate-limit delay (6 s, tuned for the free 10 req/min tier), max retries (5), backoff base (2.0), timeout (120 s), custom headers toggle |
 
