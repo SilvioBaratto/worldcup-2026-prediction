@@ -23,7 +23,7 @@ Key design choices
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from typing import Any, Callable
 
 import numpy as np
@@ -90,6 +90,10 @@ class ForecastResult:
     #: deterministic group-stage resolution, used to lay out the bracket plot.
     #: Empty when no qualifiers could be resolved.
     representative_r32: tuple[tuple[str, str], ...] = ()
+    #: Most-likely scoreline per representative slot pairing, keyed ``"HOME|AWAY"``
+    #: -> ``(home_goals, away_goals)`` (Dixon-Coles modal score). Covers every
+    #: round of the representative bracket; empty when no draw is available.
+    representative_scores: dict[str, tuple[int, int]] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -137,6 +141,65 @@ def _to_probabilities(counts: dict[str, int], n: int) -> dict[str, float]:
     if n == 0:
         return {t: 0.0 for t in counts}
     return {t: c / n for t, c in counts.items()}
+
+
+# ---------------------------------------------------------------------------
+# Representative bracket topology (shared with the bracket visualization)
+# ---------------------------------------------------------------------------
+
+
+def favourite(teams: list[str], probs: dict[str, float]) -> str:
+    """Most-likely team in *teams* by advancement probability (name breaks ties)."""
+    return max(teams, key=lambda t: (probs.get(t, 0.0), t)) if teams else "TBD"
+
+
+def forecast_slot_teams(
+    r32: list[tuple[str, str]],
+    round_probabilities: dict[str, dict[str, float]],
+) -> dict[int, list[tuple[str, str]]]:
+    """Round index -> (home, away) pairs for the representative bracket.
+
+    Round 0 is the representative R32 draw. Each later-round box shows the
+    favourite of each of its two feeding sub-brackets, ranked by that round's
+    advancement probability, so the likeliest team fills each downstream slot.
+    """
+    slots: dict[int, list[tuple[str, str]]] = {0: [(h, a) for h, a in r32]}
+    under: list[list[str]] = [[h, a] for h, a in r32]
+    rnd = 1
+    while len(under) > 1:
+        name = WC_ROUND_ORDER[min(rnd, len(WC_ROUND_ORDER) - 1)]
+        probs = round_probabilities.get(name, {})
+        pairs: list[tuple[str, str]] = []
+        merged: list[list[str]] = []
+        for i in range(0, len(under) - 1, 2):
+            left, right = under[i], under[i + 1]
+            pairs.append((favourite(left, probs), favourite(right, probs)))
+            merged.append(left + right)
+        slots[rnd] = pairs
+        under = merged
+        rnd += 1
+    return slots
+
+
+def _representative_scores(
+    abilities: TeamAbilities,
+    r32: tuple[tuple[str, str], ...],
+    round_probabilities: dict[str, dict[str, float]],
+    max_goals: int,
+) -> dict[str, tuple[int, int]]:
+    """Modal scoreline (Dixon-Coles argmax) for every representative slot pairing."""
+    from worldcup_playoff.simulation.poisson import modal_scoreline
+    if not r32:
+        return {}
+    slots = forecast_slot_teams(list(r32), round_probabilities)
+    scores: dict[str, tuple[int, int]] = {}
+    for pairs in slots.values():
+        for home, away in pairs:
+            if home and away and home != "TBD" and away != "TBD":
+                scores[f"{home}|{away}"] = modal_scoreline(
+                    abilities, home, away, max_goals=max_goals
+                )
+    return scores
 
 
 # ---------------------------------------------------------------------------
@@ -251,9 +314,14 @@ def run_forecast(
         state, abilities = _fetch_state_and_abilities(resolved)
     except Exception:
         return None
-    return LiveForecaster(
+    result = LiveForecaster(
         _group_sim_fn(abilities), _knockout_sim_fn(abilities, resolved)
     ).run(state, abilities, n_simulations, seed)
+    scores = _representative_scores(
+        abilities, result.representative_r32, result.round_probabilities,
+        getattr(resolved.poisson, "max_goals", 10),
+    )
+    return replace(result, representative_scores=scores)
 
 
 class LiveForecaster:

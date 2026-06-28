@@ -36,8 +36,7 @@ from worldcup_playoff.simulation.poisson import (
     TeamAbilities,
     blend_abilities_with_elo,
     fit_dixon_coles,
-    lambdas,
-    score_matrix,
+    modal_scoreline,
 )
 
 ROOT = Path(__file__).resolve().parent
@@ -93,11 +92,7 @@ def _predict_match(
     abilities: TeamAbilities, cfg: AppConfig, home: str, away: str, n_sims: int
 ) -> MatchPrediction:
     """Return modal 90-min scoreline + Monte-Carlo advance probability for one tie."""
-    lh, la = lambdas(abilities, home, away, neutral=True)
-    mat = score_matrix(lh, la, rho=abilities.rho, max_goals=cfg.poisson.max_goals)
-    flat = int(mat.argmax())
-    g = mat.shape[0]
-    hg, ag = flat // g, flat % g
+    hg, ag = modal_scoreline(abilities, home, away, max_goals=cfg.poisson.max_goals)
 
     rng = np.random.default_rng(cfg.simulation.random_seed)
     sampler = _make_sampler(abilities, cfg.poisson, rng)

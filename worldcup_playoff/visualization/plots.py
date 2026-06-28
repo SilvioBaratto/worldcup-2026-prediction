@@ -183,6 +183,7 @@ class ResultPlotter:
         bracket: BracketConfig,
         output_path: Path | None = None,
         slot_teams: dict[int, list[tuple[str, str]]] | None = None,
+        slot_scores: dict[str, tuple[int, int]] | None = None,
     ) -> None:
         """Render the knockout bracket as a PNG with per-team probabilities.
 
@@ -207,13 +208,13 @@ class ResultPlotter:
         total_rounds = max_round + 1
 
         # --- Layout constants (tweaked for left-to-right single side) ---
-        BOX_W: float = 3.8
-        BOX_H: float = 1.6
-        ROW_GAP: float = 0.7
-        COL_SPACING: float = 5.2
+        BOX_W: float = 5.4
+        BOX_H: float = 1.7
+        ROW_GAP: float = 0.75
+        COL_SPACING: float = 7.0
         MARGIN_X: float = 1.0
-        MARGIN_TOP: float = 4.6  # room for title + reading guide + column labels
-        MARGIN_BOT: float = 2.5
+        MARGIN_TOP: float = 4.8  # room for title + reading guide + column labels
+        MARGIN_BOT: float = 4.2  # room for the legend below the bracket
 
         n_first = len(slots_by_round[0])
 
@@ -244,27 +245,18 @@ class ResultPlotter:
             fontfamily="sans-serif",
         )
 
-        # --- Reading guide (explains what the percentages mean) ---
-        guide_1 = (
-            "How to read:  % = each team's chance to WIN at that stage, across all simulations."
+        # --- Reading guide (one line; full key is in the legend below) ---
+        ax.text(
+            fig_w / 2,
+            fig_h - 1.45,
+            "Predicted knockout path — see the legend at the bottom for how to read the numbers.",
+            ha="center",
+            va="top",
+            fontsize=8,
+            style="italic",
+            color="#6b7280",
+            fontfamily="sans-serif",
         )
-        guide_2 = (
-            "Round of 32 boxes are head-to-head (sum to 100%).  Later rounds list only the 2 "
-            "likeliest of the many teams that can reach each slot, so they don't — and the "
-            "Final % is each team's chance to be champion."
-        )
-        for dy, txt in ((1.35, guide_1), (1.85, guide_2)):
-            ax.text(
-                fig_w / 2,
-                fig_h - dy,
-                txt,
-                ha="center",
-                va="top",
-                fontsize=7,
-                style="italic",
-                color="#6b7280",
-                fontfamily="sans-serif",
-            )
 
         # --- Compute box positions for each round ---
         # Round 0 positions: evenly spaced down the left column.
@@ -353,7 +345,9 @@ class ResultPlotter:
                     key=lambda tp: tp[1],
                     reverse=True,
                 )
-                self._draw_team_box(ax, bx, by, team_probs, palette, BOX_W, BOX_H)
+                score = (slot_scores or {}).get(f"{home}|{away}")
+                goals = {home: score[0], away: score[1]} if score else None
+                self._draw_team_box(ax, bx, by, team_probs, palette, BOX_W, BOX_H, goals)
 
         # --- Champion banner below the Final slot ---
         if max_round in rounds:
@@ -409,6 +403,11 @@ class ResultPlotter:
                     fontfamily="sans-serif",
                 )
 
+        # --- Legend (key for probabilities + predicted score) ---
+        legend_w = min(fig_w * 0.84, 40.0)
+        legend_h = 3.4
+        self._draw_legend(ax, (fig_w - legend_w) / 2, 0.6, legend_w, legend_h)
+
         if output_path:
             output_path.parent.mkdir(parents=True, exist_ok=True)
             fig.savefig(
@@ -436,6 +435,7 @@ class ResultPlotter:
         palette: tuple[str, str, str],
         box_w: float,
         box_h: float,
+        goals: dict[str, int] | None = None,
     ) -> None:
         """Draw a single bracket slot box at *(x, y)*.
 
@@ -492,20 +492,34 @@ class ResultPlotter:
                 )
 
             ty = ry + row_h / 2
+            name_fs = 8.5 if len(name) <= 15 else 7.0  # shrink long names to avoid overlap
             ax.text(
-                x + 0.3,
+                x + 0.42,
                 ty,
                 name,
                 ha="left",
                 va="center",
-                fontsize=8.5,
+                fontsize=name_fs,
                 fontweight="bold" if is_leader else "normal",
                 color=dark if is_leader else "#555555",
                 fontfamily="sans-serif",
             )
+            # Predicted goals (most-likely scoreline) — read the column vertically.
+            if goals is not None and name in goals:
+                ax.text(
+                    x + box_w - 1.55,
+                    ty,
+                    str(goals[name]),
+                    ha="center",
+                    va="center",
+                    fontsize=10.5,
+                    color=dark if is_leader else "#777777",
+                    fontweight="bold",
+                    fontfamily="sans-serif",
+                )
             if prob > 0.0:
                 ax.text(
-                    x + box_w - 0.25,
+                    x + box_w - 0.32,
                     ty,
                     f"{prob:.1%}",
                     ha="right",
@@ -526,6 +540,73 @@ class ResultPlotter:
             edgecolor="none",
         )
         ax.add_patch(stripe)
+
+    def _draw_legend(
+        self,
+        ax: matplotlib.axes.Axes,
+        x0: float,
+        y0: float,
+        w: float,
+        h: float,
+    ) -> None:
+        """Draw the bracket key: what the percentage, scoreline, and colours mean."""
+        panel = mpatches.FancyBboxPatch(
+            (x0, y0), w, h,
+            boxstyle=mpatches.BoxStyle.Round(pad=0.12),
+            facecolor="white", edgecolor="#cccccc", linewidth=1.0,
+        )
+        ax.add_patch(panel)
+        ax.text(
+            x0 + 0.5, y0 + h - 0.45, "HOW TO READ",
+            fontsize=9, fontweight="bold", color="#0d1b2a",
+            ha="left", va="top", fontfamily="sans-serif",
+        )
+
+        seg = w / 4.0
+        text_dx = 1.9
+        row_y = y0 + h * 0.52
+
+        def _label(i: int, l1: str, l2: str) -> float:
+            tx = x0 + i * seg + text_dx
+            ax.text(tx, row_y + 0.28, l1, fontsize=8, fontweight="bold",
+                    color="#333333", ha="left", va="center", fontfamily="sans-serif")
+            ax.text(tx, row_y - 0.30, l2, fontsize=7.5, color="#666666",
+                    ha="left", va="center", fontfamily="sans-serif")
+            return x0 + i * seg + 0.55
+
+        # 1 — winner swatch (shaded row + accent stripe)
+        ex = _label(0, "Shaded bold row", "= predicted winner")
+        sw = mpatches.FancyBboxPatch(
+            (ex, row_y - 0.32), 1.1, 0.64, boxstyle=mpatches.BoxStyle.Round(pad=0.03),
+            facecolor="#d6eaf8", edgecolor="none")
+        ax.add_patch(sw)
+        ax.add_patch(mpatches.FancyBboxPatch(
+            (ex, row_y - 0.32), 0.12, 0.64, boxstyle=mpatches.BoxStyle.Round(pad=0.01),
+            facecolor="#2e86c1", edgecolor="none"))
+
+        # 2 — percentage
+        ex = _label(1, "63%  = chance to win", "at this stage")
+        ax.text(ex + 0.55, row_y, "63%", fontsize=11, fontweight="bold",
+                color="#2e86c1", ha="center", va="center", fontfamily="sans-serif")
+
+        # 3 — predicted scoreline
+        ex = _label(2, "2 – 1  = predicted", "scoreline (goals)")
+        ax.text(ex + 0.55, row_y, "2–1", fontsize=12, fontweight="bold",
+                color="#0d1b2a", ha="center", va="center", fontfamily="sans-serif")
+
+        # 4 — champion
+        ex = _label(3, "Gold = CHAMPION", "(title probability)")
+        ax.add_patch(mpatches.FancyBboxPatch(
+            (ex, row_y - 0.32), 1.1, 0.64, boxstyle=mpatches.BoxStyle.Round(pad=0.03),
+            facecolor="#fef9e7", edgecolor="#d4af37", linewidth=1.5))
+
+        ax.text(
+            x0 + w / 2, y0 + 0.42,
+            "Round of 32 = head-to-head (the two %s sum to 100%).  Later rounds show only the "
+            "2 likeliest of all teams that can reach each slot — and the Final % is the title chance.",
+            fontsize=7.5, style="italic", color="#6b7280",
+            ha="center", va="center", fontfamily="sans-serif",
+        )
 
     @staticmethod
     def _draw_connector(

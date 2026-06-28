@@ -149,6 +149,21 @@ def score_matrix(
     return mat / mat.sum()  # type: ignore[no-any-return]
 
 
+def modal_scoreline(
+    abilities: TeamAbilities,
+    home: str,
+    away: str,
+    max_goals: int = 10,
+    neutral: bool = True,
+) -> tuple[int, int]:
+    """Most-likely (home_goals, away_goals) — the argmax of the Dixon-Coles score matrix."""
+    lh, la = lambdas(abilities, home, away, neutral=neutral)
+    mat = score_matrix(lh, la, rho=abilities.rho, max_goals=max_goals)
+    flat = int(mat.argmax())
+    cols = mat.shape[1]
+    return flat // cols, flat % cols
+
+
 def _apply_tau_correction(
     mat: np.ndarray, lh: float, la: float, rho: float, max_goals: int
 ) -> None:
