@@ -31,3 +31,11 @@ graphify-out/
 
 # code-generator scaffolding (local only)
 .code-generator/
+
+# Test / run logs and scratch
+*.log
+test_output.txt
+/todo/
+
+# Thumbnail render temp files (the committed daily PNGs are kept)
+thumbnails/*.html
