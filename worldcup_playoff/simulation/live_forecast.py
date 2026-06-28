@@ -90,10 +90,11 @@ class ForecastResult:
     #: deterministic group-stage resolution, used to lay out the bracket plot.
     #: Empty when no qualifiers could be resolved.
     representative_r32: tuple[tuple[str, str], ...] = ()
-    #: Most-likely scoreline per representative slot pairing, keyed ``"HOME|AWAY"``
-    #: -> ``(home_goals, away_goals)`` (Dixon-Coles modal score). Covers every
-    #: round of the representative bracket; empty when no draw is available.
-    representative_scores: dict[str, tuple[int, int]] = field(default_factory=dict)
+    #: Expected goals (xG) per representative slot pairing, keyed ``"HOME|AWAY"``
+    #: -> ``(xg_home, xg_away)`` — the Dixon-Coles goal rates λ, rounded to one
+    #: decimal. Preferred over the modal scoreline, whose mode collapses to 1-0
+    #: for almost every low-scoring match. Empty when no draw is available.
+    representative_xg: dict[str, tuple[float, float]] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -181,25 +182,28 @@ def forecast_slot_teams(
     return slots
 
 
-def _representative_scores(
+def _representative_xg(
     abilities: TeamAbilities,
     r32: tuple[tuple[str, str], ...],
     round_probabilities: dict[str, dict[str, float]],
-    max_goals: int,
-) -> dict[str, tuple[int, int]]:
-    """Modal scoreline (Dixon-Coles argmax) for every representative slot pairing."""
-    from worldcup_playoff.simulation.poisson import modal_scoreline
+) -> dict[str, tuple[float, float]]:
+    """Expected goals (Dixon-Coles λ, 1 dp) for every representative slot pairing.
+
+    Expected goals are used instead of the modal scoreline because the mode of a
+    low-scoring match collapses to 1-0 almost everywhere, hiding the differences
+    between fixtures; the λ rates vary smoothly with team strength.
+    """
+    from worldcup_playoff.simulation.poisson import lambdas
     if not r32:
         return {}
     slots = forecast_slot_teams(list(r32), round_probabilities)
-    scores: dict[str, tuple[int, int]] = {}
+    xg: dict[str, tuple[float, float]] = {}
     for pairs in slots.values():
         for home, away in pairs:
             if home and away and home != "TBD" and away != "TBD":
-                scores[f"{home}|{away}"] = modal_scoreline(
-                    abilities, home, away, max_goals=max_goals
-                )
-    return scores
+                lh, la = lambdas(abilities, home, away, neutral=True)
+                xg[f"{home}|{away}"] = (round(lh, 1), round(la, 1))
+    return xg
 
 
 # ---------------------------------------------------------------------------
@@ -317,11 +321,10 @@ def run_forecast(
     result = LiveForecaster(
         _group_sim_fn(abilities), _knockout_sim_fn(abilities, resolved)
     ).run(state, abilities, n_simulations, seed)
-    scores = _representative_scores(
+    xg = _representative_xg(
         abilities, result.representative_r32, result.round_probabilities,
-        getattr(resolved.poisson, "max_goals", 10),
     )
-    return replace(result, representative_scores=scores)
+    return replace(result, representative_xg=xg)
 
 
 class LiveForecaster:

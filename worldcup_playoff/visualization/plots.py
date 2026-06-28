@@ -183,7 +183,7 @@ class ResultPlotter:
         bracket: BracketConfig,
         output_path: Path | None = None,
         slot_teams: dict[int, list[tuple[str, str]]] | None = None,
-        slot_scores: dict[str, tuple[int, int]] | None = None,
+        slot_xg: dict[str, tuple[float, float]] | None = None,
     ) -> None:
         """Render the knockout bracket as a PNG with per-team probabilities.
 
@@ -208,10 +208,10 @@ class ResultPlotter:
         total_rounds = max_round + 1
 
         # --- Layout constants (tweaked for left-to-right single side) ---
-        BOX_W: float = 5.4
+        BOX_W: float = 6.2
         BOX_H: float = 1.7
         ROW_GAP: float = 0.75
-        COL_SPACING: float = 7.0
+        COL_SPACING: float = 7.9
         MARGIN_X: float = 1.0
         MARGIN_TOP: float = 4.8  # room for title + reading guide + column labels
         MARGIN_BOT: float = 4.2  # room for the legend below the bracket
@@ -345,9 +345,9 @@ class ResultPlotter:
                     key=lambda tp: tp[1],
                     reverse=True,
                 )
-                score = (slot_scores or {}).get(f"{home}|{away}")
-                goals = {home: score[0], away: score[1]} if score else None
-                self._draw_team_box(ax, bx, by, team_probs, palette, BOX_W, BOX_H, goals)
+                xg = (slot_xg or {}).get(f"{home}|{away}")
+                xg_map = {home: xg[0], away: xg[1]} if xg else None
+                self._draw_team_box(ax, bx, by, team_probs, palette, BOX_W, BOX_H, xg_map)
 
         # --- Champion banner below the Final slot ---
         if max_round in rounds:
@@ -435,7 +435,7 @@ class ResultPlotter:
         palette: tuple[str, str, str],
         box_w: float,
         box_h: float,
-        goals: dict[str, int] | None = None,
+        xg: dict[str, float] | None = None,
     ) -> None:
         """Draw a single bracket slot box at *(x, y)*.
 
@@ -492,9 +492,9 @@ class ResultPlotter:
                 )
 
             ty = ry + row_h / 2
-            name_fs = 8.5 if len(name) <= 15 else 7.0  # shrink long names to avoid overlap
+            name_fs = 8.5 if len(name) <= 16 else 7.5  # shrink long names to avoid overlap
             ax.text(
-                x + 0.42,
+                x + 0.45,
                 ty,
                 name,
                 ha="left",
@@ -504,22 +504,22 @@ class ResultPlotter:
                 color=dark if is_leader else "#555555",
                 fontfamily="sans-serif",
             )
-            # Predicted goals (most-likely scoreline) — read the column vertically.
-            if goals is not None and name in goals:
+            # Expected goals (xG) — read the column vertically as the scoreline.
+            if xg is not None and name in xg:
                 ax.text(
-                    x + box_w - 1.55,
+                    x + box_w - 2.05,
                     ty,
-                    str(goals[name]),
+                    f"{xg[name]:.1f}",
                     ha="center",
                     va="center",
-                    fontsize=10.5,
+                    fontsize=9.5,
                     color=dark if is_leader else "#777777",
                     fontweight="bold",
                     fontfamily="sans-serif",
                 )
             if prob > 0.0:
                 ax.text(
-                    x + box_w - 0.32,
+                    x + box_w - 0.35,
                     ty,
                     f"{prob:.1%}",
                     ha="right",
@@ -589,9 +589,9 @@ class ResultPlotter:
         ax.text(ex + 0.55, row_y, "63%", fontsize=11, fontweight="bold",
                 color="#2e86c1", ha="center", va="center", fontfamily="sans-serif")
 
-        # 3 — predicted scoreline
-        ex = _label(2, "2 – 1  = predicted", "scoreline (goals)")
-        ax.text(ex + 0.55, row_y, "2–1", fontsize=12, fontweight="bold",
+        # 3 — expected goals (xG)
+        ex = _label(2, "2.4 = expected goals", "(xG) per team")
+        ax.text(ex + 0.5, row_y, "2.4", fontsize=11, fontweight="bold",
                 color="#0d1b2a", ha="center", va="center", fontfamily="sans-serif")
 
         # 4 — champion
