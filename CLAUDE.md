@@ -47,7 +47,7 @@ export FOOTBALL_DATA_API_KEY="your-token-here"
 
 ## Architecture
 
-The canonical path is the **live forecast** (`cli_cycle5._forecast` → `simulation/live_forecast.py::run_forecast`):
+The canonical path is the **live forecast** (`cli.forecast` → `simulation/live_forecast.py::run_forecast`):
 
 1. **Abilities** — `data/martj42_loader` loads CC0 results → `simulation/poisson.fit_dixon_coles` → `poisson.blend_abilities_with_elo` with `data/elo.compute_elo`.
 2. **State** — `data/live.build_state_from_results` reconstructs the WC2026 group state (official A–L group labels) from the real results (live API via `data/client` when available, else the martj42 cache).
@@ -61,8 +61,7 @@ A secondary **backtest/calibration** path (`models/`, `features/`, `data/odds`) 
 
 ```
 worldcup_playoff/
-├── __main__.py / cli.py     # Typer app; registers cli_cycle5 commands
-├── cli_cycle5.py            # forecast, backtest, train-hybrid, build-features, fetch-live
+├── __main__.py / cli.py     # Typer app + all commands: forecast, backtest, train-hybrid, build-features, fetch-live
 ├── config.py                # Pydantic config models (AppConfig + sub-configs)
 ├── data/
 │   ├── martj42_loader.py    # CC0 historical international results loader
