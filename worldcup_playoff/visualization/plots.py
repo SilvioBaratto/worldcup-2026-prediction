@@ -212,7 +212,7 @@ class ResultPlotter:
         ROW_GAP: float = 0.7
         COL_SPACING: float = 5.2
         MARGIN_X: float = 1.0
-        MARGIN_TOP: float = 3.0
+        MARGIN_TOP: float = 4.6  # room for title + reading guide + column labels
         MARGIN_BOT: float = 2.5
 
         n_first = len(slots_by_round[0])
@@ -243,6 +243,28 @@ class ResultPlotter:
             color="#0d1b2a",
             fontfamily="sans-serif",
         )
+
+        # --- Reading guide (explains what the percentages mean) ---
+        guide_1 = (
+            "How to read:  % = each team's chance to WIN at that stage, across all simulations."
+        )
+        guide_2 = (
+            "Round of 32 boxes are head-to-head (sum to 100%).  Later rounds list only the 2 "
+            "likeliest of the many teams that can reach each slot, so they don't — and the "
+            "Final % is each team's chance to be champion."
+        )
+        for dy, txt in ((1.35, guide_1), (1.85, guide_2)):
+            ax.text(
+                fig_w / 2,
+                fig_h - dy,
+                txt,
+                ha="center",
+                va="top",
+                fontsize=7,
+                style="italic",
+                color="#6b7280",
+                fontfamily="sans-serif",
+            )
 
         # --- Compute box positions for each round ---
         # Round 0 positions: evenly spaced down the left column.
@@ -296,17 +318,21 @@ class ResultPlotter:
             return PALETTES[min(rnd, len(PALETTES) - 1)]
 
         # --- Round column labels ---
-        label_y = fig_h - 1.8
+        label_y = fig_h - 2.7
         for rnd in range(total_rounds):
             if positions[rnd]:
                 col_cx = positions[rnd][0][0] + BOX_W / 2
+                label = _round_label(rnd, total_rounds)
+                if rnd == max_round:
+                    label = f"{label}  ·  champion odds"
                 ax.text(
                     col_cx,
                     label_y,
-                    _round_label(rnd, total_rounds),
+                    label,
                     ha="center",
                     va="top",
                     fontsize=8,
+                    fontweight="bold" if rnd == max_round else "normal",
                     color="#555555",
                     fontfamily="sans-serif",
                 )
