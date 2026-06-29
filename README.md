@@ -4,13 +4,13 @@ A live, key-free **title-odds forecast** for all 48 nations, built on an **Elo +
 
 ![FIFA World Cup 2026 — forecast bracket with champion](docs/bracket.png)
 
-*Representative knockout bracket with per-round advancement probabilities and the projected champion (seed 42, 100,000 simulations, `elo_prior_weight = 0.8`). The ranked title-odds leaderboard (`docs/title_odds.png`) and a per-round heatmap (`docs/advancement.png`) are produced alongside it.*
+*Representative knockout bracket with per-round advancement probabilities and the projected champion (seed 42, 100,000 simulations, `elo_prior_weight = 0.8`, `market_value_prior_weight = 0.7`). The ranked title-odds leaderboard (`docs/title_odds.png`) and a per-round heatmap (`docs/advancement.png`) are produced alongside it.*
 
 ## Overview
 
 The forecast is a statistical-probabilistic engine (the same family Opta / FiveThirtyEight use), **not** a trained ML classifier. It runs in five steps:
 
-1. **Team strength** — fit a **Dixon-Coles bivariate-Poisson** model (attack/defence/ρ, time-decayed) to all historical international results, and blend the abilities toward an **Elo** strength prior so reputable sides are not understated.
+1. **Team strength** — fit a **Dixon-Coles bivariate-Poisson** model (attack/defence/ρ, time-decayed) to all historical international results, and blend the abilities toward an **Elo** prior and a **squad-market-value** prior (player-level signal) so reputable sides are not understated.
 2. **Real table** — the group stage is conditioned on the **actual played results**; the official **Round of 32** is derived from the final standings via FIFA's slotting rules and the 495-row **Annex C** third-place table.
 3. **Monte Carlo** — replay the real bracket *N* times; each tie is resolved **regulation (Poisson) → extra time (λ × 0.33) → penalties (50/50)**.
 4. **Aggregate** — title odds = `champion count / N`; per-round advancement = `count / N`.
@@ -28,7 +28,7 @@ worldcup-playoff forecast --seed 42 --output docs   # 100k tournaments (config d
 worldcup-playoff backtest --tune-prior
 ```
 
-The engine is conditioned on the group results played to date and run through **100,000 Monte Carlo tournaments** (the config default: at 100k the sampling 95% CI on title odds is ≈ ±0.3%, below which the model/calibration uncertainty dominates). The fitted attack/defence abilities — which on raw goals over-reward sides that ran up big group-stage scorelines — are blended toward an Elo strength prior (`poisson.elo_prior_weight`, default `0.8`). The weight was tuned by match-level **RPS** over WC2014/18/22 (pure goals = 0.2195 → `0.8` = 0.2082, ~5% better).
+The engine is conditioned on the group results played to date and run through **100,000 Monte Carlo tournaments** (the config default: at 100k the sampling 95% CI on title odds is ≈ ±0.3%, below which the model/calibration uncertainty dominates). The fitted attack/defence abilities — which on raw goals over-reward sides that ran up big group-stage scorelines — are blended toward two strength priors: an **Elo** prior (`poisson.elo_prior_weight = 0.8`, tuned by RPS over WC2014/18/22) and a **squad-market-value** prior (`poisson.market_value_prior_weight = 0.7`, a player-level signal). The market-value weight was chosen because it both minimises backtest RPS (WC2018/2022 + the 2026 groups, where squad value out-predicts Elo) and yields title odds closest to the bookmaker/expert consensus (L1 0.139 vs the FanDuel board, Spearman 0.93).
 
 The `forecast` command writes three charts to `--output`: `bracket.png` (the knockout tree with per-round advancement % and a champion banner), `title_odds.png` (ranked leaderboard), and `advancement.png` (per-round heatmap).
 
@@ -76,7 +76,7 @@ Run the live WC2026 title-odds forecast (no API key required). Renders `bracket.
 
 ### `backtest`
 
-Time-aware WC backtest (RPS / log-loss / Brier) of the RF hybrid vs the bookmaker baseline. With `--tune-prior`, sweep `poisson.elo_prior_weight` over WC2014/18/22 and report the best weight.
+Time-aware WC backtest (RPS / log-loss / Brier) of the RF hybrid vs the bookmaker baseline. With `--tune-prior` it prints three sweeps and their best weights: the Elo prior over WC2014/18/22, the market-value prior on the 2026 group stage, and the joint **Elo × market-value** grid over WC2018/2022.
 
 | Flag | Default | Description |
 |------|---------|-------------|
@@ -100,7 +100,7 @@ Renders a 1080×1920 brutalist story image of the day's Round-of-32 prediction(s
 
 ```
 martj42 results (CC0)  ─┐
-                        ├─► Dixon-Coles fit ──► blend with Elo prior ──► TeamAbilities
+                        ├─► Dixon-Coles fit ──► blend Elo + squad-value priors ──► TeamAbilities
 World Football Elo  ────┘                                                    │
                                                                              ▼
 real group results ──► standings ──► resolve_r32 (Annex C) ──► Monte-Carlo knockout
@@ -116,7 +116,7 @@ Only the knockout is stochastic; the group stage is fixed to the real results, s
 
 ```
 worldcup_playoff/
-├── cli.py / cli_cycle5.py   # Typer commands: forecast, backtest, train-hybrid, build-features, fetch-live
+├── cli.py                   # Typer commands: forecast, backtest, train-hybrid, build-features, fetch-live
 ├── config.py                # Pydantic config models
 ├── data/
 │   ├── martj42_loader.py    # CC0 historical international results
@@ -164,7 +164,7 @@ All parameters live in `config/default.toml`:
 
 ## Results
 
-`worldcup-playoff forecast` produces the bracket at the top of this README, the ranked title-odds leaderboard (`docs/title_odds.png`), and a per-round advancement heatmap (`docs/advancement.png`). With `elo_prior_weight = 0.8` the top tier — Argentina, Spain, France, England, Brazil — matches expert/bookmaker consensus.
+`worldcup-playoff forecast` produces the bracket at the top of this README, the ranked title-odds leaderboard (`docs/title_odds.png`), and a per-round advancement heatmap (`docs/advancement.png`). With the default priors the top tier — Argentina (~18%), France (~14%), England (~12%), Spain (~12%), Brazil (~7%) — tracks the bookmaker/expert consensus closely.
 
 ## Testing
 

@@ -32,9 +32,11 @@ from worldcup_playoff.config import AppConfig, load_config
 from worldcup_playoff.data.elo import compute_elo
 from worldcup_playoff.data.martj42_loader import load_martj42_results
 from worldcup_playoff.simulation.knockout import _make_sampler, resolve_tie
+from worldcup_playoff.data.squad_value import WC2026_SQUAD_VALUE_EUR_M
 from worldcup_playoff.simulation.poisson import (
     TeamAbilities,
     blend_abilities_with_elo,
+    blend_abilities_with_market_value,
     decisive_scoreline,
     fit_dixon_coles,
 )
@@ -77,13 +79,23 @@ _FLAGS: dict[str, str] = {
 
 
 def _build_abilities(cfg: AppConfig) -> tuple[pd.DataFrame, TeamAbilities]:
-    """Fit Dixon-Coles abilities, optionally blended with the Elo strength prior."""
+    """Fit Dixon-Coles abilities, blended with the Elo and squad-market-value priors.
+
+    Mirrors the live forecast (``live_forecast._fetch_state_and_abilities``) so the
+    thumbnail uses the same model: Elo prior first, then the squad-market-value
+    prior, both weighted from the config.
+    """
     df = load_martj42_results(cfg.martj42)
     abilities = fit_dixon_coles(df, cfg.poisson)
     weight = getattr(cfg.poisson, "elo_prior_weight", 0.0)
     if weight > 0.0:
         elo = compute_elo(df, cfg.elo)
         abilities = blend_abilities_with_elo(abilities, elo.final_ratings, weight)
+    mv_weight = getattr(cfg.poisson, "market_value_prior_weight", 0.0)
+    if mv_weight > 0.0:
+        abilities = blend_abilities_with_market_value(
+            abilities, WC2026_SQUAD_VALUE_EUR_M, mv_weight
+        )
     return df, abilities
 
 
