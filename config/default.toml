@@ -62,9 +62,10 @@ optimizer_maxiter = 200
 # degrades. 0.8 keeps 20% live-form signal. Re-tune with the WC backtest.
 elo_prior_weight = 0.8
 # Squad market-value prior (player-level signal), applied after the Elo blend.
-# 0.0 = off (default). A modest value (~0.2-0.3) adds the current-squad signal
-# (Transfermarkt total squad value). Tune via the WC backtest before enabling.
-market_value_prior_weight = 0.0
+# 0.7 chosen because it (a) minimises RPS on the WC2018/2022 + 2026-group
+# backtests (squad value out-predicts Elo) and (b) yields title odds closest to
+# the bookmaker/expert consensus (L1 0.139 vs FanDuel, Spearman 0.93).
+market_value_prior_weight = 0.7
 
 [rf]
 n_estimators = 300

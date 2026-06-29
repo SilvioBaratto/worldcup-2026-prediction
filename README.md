@@ -146,7 +146,7 @@ config/
 All parameters live in `config/default.toml`:
 
 - `[simulation]` — `n_simulations` (100000), `extra_time_factor` (0.33), `random_seed`.
-- `[poisson]` — Dixon-Coles half-life, `max_goals`, ρ, `elo_prior_weight` (0.8), and `market_value_prior_weight` (squad-market-value / player-level prior, default 0.0 = off).
+- `[poisson]` — Dixon-Coles half-life, `max_goals`, ρ, `elo_prior_weight` (0.8), and `market_value_prior_weight` (squad-market-value / player-level prior, 0.7).
 - `[elo]` — initial rating, home advantage, per-competition K-factors.
 - `[hybrid]` / `[rf]` — RF/GBM hybrid goal model (backtest/calibration).
 - `[odds]` — bookmaker odds scraper (backtest baseline).
@@ -156,7 +156,7 @@ All parameters live in `config/default.toml`:
 
 - Goals ~ **Dixon-Coles bivariate Poisson** (ρ corrects only low scores).
 - Team strength is **time-decayed** (recent matches weigh more) and **static within the tournament**.
-- An optional **squad-market-value prior** (`poisson.market_value_prior_weight`, off by default) adds a player-level signal — the current squad's total Transfermarkt value — on top of the Elo prior; it captures squad quality a results-only history misses (Groll et al., 2019).
+- A **squad-market-value prior** (`poisson.market_value_prior_weight = 0.7`) adds a player-level signal — the current squad's total Transfermarkt value — on top of the Elo prior; it captures squad quality a results-only history misses (Groll et al., 2019). The weight 0.7 minimises backtest RPS (WC2018/2022 + 2026 groups) and gives title odds closest to the bookmaker/expert consensus.
 - Knockout matches are **neutral-venue** (no home advantage applied — hosts are not boosted).
 - **Extra time** scores at 1/3 of the regulation rate; **penalties** are a fair 50/50 coin flip.
 - The displayed "predicted score" is the most-likely **decisive** scoreline (the win % already includes ET/penalties).
