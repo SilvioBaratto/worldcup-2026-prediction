@@ -89,7 +89,7 @@ generate_thumbnail.py        # daily 1080x1920 prediction thumbnail
 - **Bracket order matters**: `R32_SLOTS` is in true bracket-adjacency order (NOT FIFA match-number order) so the knockout simulators — which pair adjacent winners — reproduce the official R16→Final tree.
 - **Official Annex C**: third-place slotting uses the verbatim 495-row FIFA table (`wc2026_annexc`), not a generic bipartite matching (which finds a feasible but not FIFA's chosen assignment).
 - **Neutral venue**: knockout `lambdas(..., neutral=True)` — no home advantage applied (hosts are not boosted). The `home_adv` parameter is only estimated during the fit.
-- **Penalties / ET**: extra time scores at λ × `extra_time_factor` (0.33); penalties are a 50/50 coin flip. The win % includes both; the displayed "predicted score" is the most-likely **decisive** scoreline (`decisive_scoreline`).
+- **Penalties / ET**: extra time scores at λ × `extra_time_factor` (0.33); the penalty shootout is near-random but `simulation.penalty_skill` (0.25) gives the stronger team a small capped edge (`_shootout_winner`; 0 = coin flip). The win % includes both; the displayed "predicted score" is the most-likely **decisive** scoreline (`decisive_scoreline`).
 - **Reproducible**: a fixed seed expands to N independent child seeds via `SeedSequence.spawn`, so the same seed yields identical odds.
 - **`RoundResult.probabilities`** are per-team advancement (counts / n_simulations) — they sum to the number of ties in the round, not 1.0.
 - **All config is Pydantic** loaded from TOML.

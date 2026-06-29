@@ -32,6 +32,10 @@ class SimulationConfig(BaseModel):
     classifier: str = "naive_bayes"
     extra_time_factor: float = 0.33
     random_seed: int = 42
+    # Penalty-shootout skill edge for the stronger team: 0.0 = fair coin flip,
+    # 1.0 = full (capped) edge. Shootouts are close to random, so a small value
+    # (0.25) gives the favourite only a slight, literature-calibrated advantage.
+    penalty_skill: float = 0.25
 
     @field_validator("n_simulations")
     @classmethod
@@ -52,6 +56,13 @@ class SimulationConfig(BaseModel):
     def random_seed_must_be_non_negative(cls, v: int) -> int:
         if v < 0:
             raise ValueError("random_seed must be >= 0")
+        return v
+
+    @field_validator("penalty_skill")
+    @classmethod
+    def penalty_skill_in_unit_interval(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("penalty_skill must be in [0, 1]")
         return v
 
 

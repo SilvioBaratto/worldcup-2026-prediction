@@ -50,6 +50,7 @@ __all__ = [
     "KnockoutSimulator",
     "R32_SLOTS",
     "RoundResult",
+    "representative_shootout",
     "resolve_r32",
     "resolve_tie",
     "simulate",
@@ -75,6 +76,60 @@ def _penalty_flip(home: str, away: str, seed: int) -> str:
     """Return the penalty winner via a seeded coin-flip (0 → home, 1 → away)."""
     rng = np.random.default_rng(seed)
     return home if rng.integers(2) == 0 else away
+
+
+# Penalty shootouts are close to a coin toss — a ~50-Elo edge is worth only ~52%
+# (arXiv:2510.17641; FiveThirtyEight) — so any skill edge is capped near 50/50.
+_PEN_MAX_TILT: float = 0.15
+
+
+def _shootout_winner(
+    home: str,
+    away: str,
+    seed: int,
+    abilities: TeamAbilities | None,
+    poisson_config: PoissonConfig | None,
+    rng: np.random.Generator | None,
+    penalty_skill: float,
+) -> str:
+    """Penalty-shootout winner: a small, literature-calibrated edge for the stronger
+    team when *penalty_skill* > 0 and abilities are available, else a fair coin flip.
+
+    The edge is the team's share of *decisive* regulation outcomes, tilted around
+    0.5 by *penalty_skill* and clamped to ±``_PEN_MAX_TILT`` so shootouts stay
+    close to random (as the evidence suggests).
+    """
+    if abilities is None or rng is None or penalty_skill <= 0.0:
+        return _penalty_flip(home, away, seed)
+    cfg = poisson_config or PoissonConfig()
+    lh, la = lambdas(abilities, home, away, neutral=True)
+    mat = score_matrix(lh, la, rho=abilities.rho, max_goals=cfg.max_goals)
+    hw = float(np.tril(mat, -1).sum())  # P(home wins in regulation)
+    aw = float(np.triu(mat, 1).sum())   # P(away wins in regulation)
+    decisive = hw + aw
+    edge = (hw - aw) / decisive if decisive > 0 else 0.0  # in [-1, 1]
+    prob_home = 0.5 + penalty_skill * 0.5 * edge
+    prob_home = min(max(prob_home, 0.5 - _PEN_MAX_TILT), 0.5 + _PEN_MAX_TILT)
+    return home if float(rng.random()) < prob_home else away
+
+
+def representative_shootout(seed: int, conversion: float = 0.75) -> tuple[int, int]:
+    """A representative penalty-shootout score as ``(winner_kicks, loser_kicks)``.
+
+    Best-of-five then sudden death, each kick converted with probability
+    *conversion* (~75% historically). Returns the decisive tally with the winner
+    first, e.g. ``(4, 3)`` or ``(5, 4)`` — used only to *display* how a tie that
+    the model expects to go level was settled, not to decide who advances.
+    """
+    rng = np.random.default_rng(seed)
+    h = a = 0
+    for _ in range(5):
+        h += int(rng.random() < conversion)
+        a += int(rng.random() < conversion)
+    while h == a:
+        h += int(rng.random() < conversion)
+        a += int(rng.random() < conversion)
+    return (max(h, a), min(h, a))
 
 
 def _et_goals(
@@ -154,13 +209,16 @@ def resolve_tie(
     abilities: TeamAbilities | None = None,
     poisson_config: PoissonConfig | None = None,
     rng: np.random.Generator | None = None,
+    penalty_skill: float = 0.0,
 ) -> str:
-    """Resolve one knockout tie: regulation → extra time → penalty coin-flip.
+    """Resolve one knockout tie: regulation → extra time → penalty shootout.
 
     *sampler* is called for regulation.  Extra-time goals use the scaled Poisson
     model when *abilities* and *rng* are supplied; otherwise *sampler* is called
     a second time (convenient for stub-based tests).  ET goals are **added** to
-    the full-time score.  The penalty coin-flip is seeded by *seed*.
+    the full-time score.  The shootout is a fair coin flip (seeded by *seed*)
+    unless *penalty_skill* > 0 and abilities are available, in which case the
+    stronger team gets a small, capped edge.
     """
     h, a = sampler(home, away)
     if h != a:
@@ -169,7 +227,7 @@ def resolve_tie(
     h, a = h + eth, a + eta
     if h != a:
         return home if h > a else away
-    return _penalty_flip(home, away, seed)
+    return _shootout_winner(home, away, seed, abilities, poisson_config, rng, penalty_skill)
 
 
 # ---------------------------------------------------------------------------
@@ -303,5 +361,6 @@ class KnockoutSimulator:
                 extra_time_factor=self._config.extra_time_factor,
                 seed=seed, abilities=self._abilities,
                 poisson_config=self._pcfg, rng=rng,
+                penalty_skill=getattr(self._config, "penalty_skill", 0.0),
             )
         return _resolve

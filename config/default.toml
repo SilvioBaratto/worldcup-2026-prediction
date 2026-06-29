@@ -6,6 +6,9 @@
 n_simulations = 100000
 extra_time_factor = 0.33
 random_seed = 42
+# Penalty-shootout skill edge for the stronger team (0 = coin flip). Shootouts
+# are near-random, so 0.25 gives only a small, capped advantage to the favourite.
+penalty_skill = 0.25
 
 [visualization]
 dpi = 80

@@ -184,6 +184,7 @@ class ResultPlotter:
         output_path: Path | None = None,
         slot_teams: dict[int, list[tuple[str, str]]] | None = None,
         slot_scores: dict[str, tuple[int, int]] | None = None,
+        slot_pens: dict[str, tuple[int, int]] | None = None,
     ) -> None:
         """Render the knockout bracket as a PNG with per-team probabilities.
 
@@ -346,7 +347,13 @@ class ResultPlotter:
                     reverse=True,
                 )
                 score = (slot_scores or {}).get(f"{home}|{away}")
-                goals = {home: score[0], away: score[1]} if score else None
+                pens = (slot_pens or {}).get(f"{home}|{away}")
+                goals: dict[str, str] | None = None
+                if score is not None:
+                    if pens is not None:  # level after 120' → show "goals (pens)"
+                        goals = {home: f"{score[0]} ({pens[0]})", away: f"{score[1]} ({pens[1]})"}
+                    else:
+                        goals = {home: str(score[0]), away: str(score[1])}
                 self._draw_team_box(ax, bx, by, team_probs, palette, BOX_W, BOX_H, goals)
 
         # --- Champion banner below the Final slot ---
@@ -435,7 +442,7 @@ class ResultPlotter:
         palette: tuple[str, str, str],
         box_w: float,
         box_h: float,
-        goals: dict[str, int] | None = None,
+        goals: dict[str, str] | None = None,
     ) -> None:
         """Draw a single bracket slot box at *(x, y)*.
 
@@ -504,15 +511,16 @@ class ResultPlotter:
                 color=dark if is_leader else "#555555",
                 fontfamily="sans-serif",
             )
-            # Most-likely goals — read the column vertically as the scoreline.
+            # Most-likely goals (with the shootout score in parentheses when the
+            # tie went to penalties) — read the column vertically as the scoreline.
             if goals is not None and name in goals:
                 ax.text(
-                    x + box_w - 2.05,
+                    x + box_w - 2.0,
                     ty,
-                    str(goals[name]),
+                    goals[name],
                     ha="center",
                     va="center",
-                    fontsize=10.5,
+                    fontsize=10.0,
                     color=dark if is_leader else "#777777",
                     fontweight="bold",
                     fontfamily="sans-serif",
@@ -589,8 +597,8 @@ class ResultPlotter:
         ax.text(ex + 0.55, row_y, "63%", fontsize=11, fontweight="bold",
                 color="#2e86c1", ha="center", va="center", fontfamily="sans-serif")
 
-        # 3 — most-likely scoreline
-        ex = _label(2, "1 – 0  = most likely", "score (goals per team)")
+        # 3 — most-likely scoreline (with penalties in parentheses)
+        ex = _label(2, "1 – 0 = most likely score", "1 (4) = won on penalties")
         ax.text(ex + 0.5, row_y, "1–0", fontsize=12, fontweight="bold",
                 color="#0d1b2a", ha="center", va="center", fontfamily="sans-serif")
 

@@ -219,11 +219,15 @@ def plot_forecast_bracket(
     slot_scores: dict[str, tuple[int, int]] = getattr(
         forecast_result, "representative_scores", {}
     )
+    slot_pens: dict[str, tuple[int, int]] = getattr(
+        forecast_result, "representative_pens", {}
+    )
     rounds = {
         idx: SimpleNamespace(probabilities=round_probs.get(WC_ROUND_ORDER[idx], {}))
         for idx in range(len(slot_teams))
     }
     bracket = BracketConfig(name=title, matchups=[Matchup(home=h, away=a) for h, a in r32])
     ResultPlotter(_resolve_config(config)).plot_bracket(
-        rounds, bracket, Path(output_path), slot_teams=slot_teams, slot_scores=slot_scores
+        rounds, bracket, Path(output_path), slot_teams=slot_teams,
+        slot_scores=slot_scores, slot_pens=slot_pens,
     )

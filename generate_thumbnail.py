@@ -31,14 +31,18 @@ from playwright.async_api import async_playwright
 from worldcup_playoff.config import AppConfig, load_config
 from worldcup_playoff.data.elo import compute_elo
 from worldcup_playoff.data.martj42_loader import load_martj42_results
-from worldcup_playoff.simulation.knockout import _make_sampler, resolve_tie
+from worldcup_playoff.simulation.knockout import (
+    _make_sampler,
+    representative_shootout,
+    resolve_tie,
+)
 from worldcup_playoff.data.squad_value import WC2026_SQUAD_VALUE_EUR_M
 from worldcup_playoff.simulation.poisson import (
     TeamAbilities,
     blend_abilities_with_elo,
     blend_abilities_with_market_value,
-    decisive_scoreline,
     fit_dixon_coles,
+    modal_scoreline,
 )
 
 ROOT = Path(__file__).resolve().parent
@@ -50,7 +54,11 @@ WIDTH, HEIGHT = 1080, 1920
 
 
 class MatchPrediction(TypedDict):
-    """One tie's predicted modal scoreline + Monte-Carlo advance probability."""
+    """One tie's predicted modal scoreline + Monte-Carlo advance probability.
+
+    ``pens`` is ``(winner_kicks, loser_kicks)`` when the predicted 120-minute
+    result is level and the tie is settled on penalties, else ``None``.
+    """
 
     home: str
     away: str
@@ -58,6 +66,7 @@ class MatchPrediction(TypedDict):
     ag: int
     winner: str
     win_pct: int
+    pens: tuple[int, int] | None
 
 # Flag emojis keyed by martj42 team spelling (Apple Color Emoji renders these).
 _FLAGS: dict[str, str] = {
@@ -102,7 +111,7 @@ def _build_abilities(cfg: AppConfig) -> tuple[pd.DataFrame, TeamAbilities]:
 def _predict_match(
     abilities: TeamAbilities, cfg: AppConfig, home: str, away: str, n_sims: int
 ) -> MatchPrediction:
-    """Return the predicted decisive scoreline + Monte-Carlo advance probability."""
+    """Predict a tie: most-likely 90-min score, advance %, and the shootout if level."""
     rng = np.random.default_rng(cfg.simulation.random_seed)
     sampler = _make_sampler(abilities, cfg.poisson, rng)
     wins = {home: 0, away: 0}
@@ -112,18 +121,23 @@ def _predict_match(
             extra_time_factor=cfg.simulation.extra_time_factor,
             seed=int(rng.integers(2**32)), abilities=abilities,
             poisson_config=cfg.poisson, rng=rng,
+            penalty_skill=getattr(cfg.simulation, "penalty_skill", 0.0),
         )
         wins[w] += 1
-    winner = home if wins[home] >= wins[away] else away
-    win_pct = round(max(wins.values()) / n_sims * 100)
-    # Knockout ties have a winner — show the most-likely *decisive* score in the
-    # advancing team's favour (no drawn predicted score).
-    hg, ag = decisive_scoreline(
-        abilities, home, away, home_wins=(winner == home), max_goals=cfg.poisson.max_goals
-    )
+    hg, ag = modal_scoreline(abilities, home, away, max_goals=cfg.poisson.max_goals)
+    pens: tuple[int, int] | None = None
+    if hg == ag:
+        # Most-likely result is level → settled on penalties. Winner = the team
+        # the simulation advances most often; show a representative shootout score.
+        winner = home if wins[home] >= wins[away] else away
+        seed = int(cfg.simulation.random_seed) + sum(ord(c) for c in home + away)
+        pens = representative_shootout(seed)
+    else:
+        winner = home if hg > ag else away
+    win_pct = round(wins[winner] / n_sims * 100)
     return {
         "home": home, "away": away, "hg": hg, "ag": ag,
-        "winner": winner, "win_pct": win_pct,
+        "winner": winner, "win_pct": win_pct, "pens": pens,
     }
 
 
@@ -168,9 +182,14 @@ def _flag(team: str) -> str:
 
 def _card_html(m: MatchPrediction, hero: bool) -> str:
     home, away = m["home"], m["away"]
-    hg, ag, winner = m["hg"], m["ag"], m["winner"]
+    hg, ag, winner, pens = m["hg"], m["ag"], m["winner"], m["pens"]
     home_win = winner == home
     cls = "card hero" if hero else "card"
+    # On a penalty tie the 90-min score is level: don't colour either side, and
+    # show the shootout result; the winner is still marked in the verdict.
+    home_sc = "win" if (pens is None and home_win) else ""
+    away_sc = "win" if (pens is None and not home_win) else ""
+    pen_badge = f'<span class="pens">PENS {pens[0]}–{pens[1]}</span>' if pens else ""
     return f"""
     <div class="{cls}">
       <div class="teams">
@@ -179,9 +198,9 @@ def _card_html(m: MatchPrediction, hero: bool) -> str:
           <span class="tname">{_html.escape(home).upper()}</span>
         </div>
         <div class="score">
-          <span class="sc {'win' if home_win else ''}">{hg}</span>
+          <span class="sc {home_sc}">{hg}</span>
           <span class="dash">–</span>
-          <span class="sc {'win' if not home_win else ''}">{ag}</span>
+          <span class="sc {away_sc}">{ag}</span>
         </div>
         <div class="team {'win' if not home_win else 'lose'}">
           <span class="flag">{_flag(away)}</span>
@@ -191,6 +210,7 @@ def _card_html(m: MatchPrediction, hero: bool) -> str:
       <div class="verdict">
         <span class="check">✓</span>
         <span class="wname">{_html.escape(winner).upper()}</span>
+        {pen_badge}
         <span class="prob">{m['win_pct']}%</span>
       </div>
     </div>"""
@@ -290,8 +310,8 @@ body {{
 .wname {{ color:#fff; font-size:44px; font-weight:700; letter-spacing:2px; }}
 .prob {{ background:#FFC72C; color:#0a0a0a; font-size:40px; font-weight:700;
   padding:8px 24px; box-shadow:6px 6px 0 #000; }}
-.aet {{ background:#E4002B; color:#fff; font-size:28px; font-weight:700; letter-spacing:3px;
-  padding:8px 20px; box-shadow:5px 5px 0 #000; }}
+.pens {{ background:#E4002B; color:#fff; font-size:30px; font-weight:700; letter-spacing:2px;
+  padding:8px 22px; box-shadow:5px 5px 0 #000; }}
 
 .footer {{ flex-shrink:0; transform:rotate(2deg);
   z-index:60; background:#fff; color:#0a0a0a; font-weight:700; font-size:34px;

@@ -96,6 +96,10 @@ class ForecastResult:
     #: to low scores (1-0 / 1-1) and mismatches to wider margins, as in real
     #: football. Empty when no representative draw is available.
     representative_scores: dict[str, tuple[int, int]] = field(default_factory=dict)
+    #: Penalty-shootout score for the slot pairings whose modal 90-min result is
+    #: level, keyed ``"HOME|AWAY"`` -> ``(home_kicks, away_kicks)``. Lets the
+    #: bracket show how a tie expected to go level was settled. Empty otherwise.
+    representative_pens: dict[str, tuple[int, int]] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -188,29 +192,35 @@ def _representative_scores(
     r32: tuple[tuple[str, str], ...],
     round_probabilities: dict[str, dict[str, float]],
     max_goals: int,
-) -> dict[str, tuple[int, int]]:
-    """Most-likely decisive scoreline for every representative knockout pairing.
+    seed: int = 0,
+) -> tuple[dict[str, tuple[int, int]], dict[str, tuple[int, int]]]:
+    """Most-likely 90-minute scoreline (+ shootout) for each representative pairing.
 
-    A knockout tie cannot end level, so the predicted score must have a winner and
-    that winner must match the team shown advancing. For each slot we take the most
-    probable *non-draw* scoreline (Dixon-Coles argmax over the winning half of the
-    score matrix) in favour of the higher-probability team for that round. The
-    margin still varies with the matchup — mismatches give 3-0/2-0, close ties 1-0.
+    Returns ``(scores, pens)``. ``scores[pair]`` is the modal regulation scoreline
+    (argmax of the Dixon-Coles matrix) — decisive for mismatches, level for close
+    ties. When it is level the tie goes to penalties, so ``pens[pair]`` holds a
+    representative ``(home_kicks, away_kicks)`` shootout score with the
+    higher-probability team for that round winning — letting the bracket show how
+    a tie expected to finish level was actually settled.
     """
-    from worldcup_playoff.simulation.poisson import decisive_scoreline
+    from worldcup_playoff.simulation.knockout import representative_shootout
+    from worldcup_playoff.simulation.poisson import modal_scoreline
     if not r32:
-        return {}
+        return {}, {}
     slots = forecast_slot_teams(list(r32), round_probabilities)
     scores: dict[str, tuple[int, int]] = {}
+    pens: dict[str, tuple[int, int]] = {}
     for rnd, pairs in slots.items():
         probs = round_probabilities.get(WC_ROUND_ORDER[min(rnd, len(WC_ROUND_ORDER) - 1)], {})
         for home, away in pairs:
             if home and away and home != "TBD" and away != "TBD":
-                home_wins = probs.get(home, 0.0) >= probs.get(away, 0.0)
-                scores[f"{home}|{away}"] = decisive_scoreline(
-                    abilities, home, away, home_wins=home_wins, max_goals=max_goals
-                )
-    return scores
+                hg, ag = modal_scoreline(abilities, home, away, max_goals=max_goals)
+                scores[f"{home}|{away}"] = (hg, ag)
+                if hg == ag:
+                    home_wins = probs.get(home, 0.0) >= probs.get(away, 0.0)
+                    pk = representative_shootout(seed + sum(ord(c) for c in home + away))
+                    pens[f"{home}|{away}"] = pk if home_wins else (pk[1], pk[0])
+    return scores, pens
 
 
 # ---------------------------------------------------------------------------
@@ -264,11 +274,13 @@ def _play_round(
     rng: np.random.Generator,
     extra_time_factor: float,
     pcfg: Any,
+    penalty_skill: float = 0.0,
 ) -> list[str]:
     from worldcup_playoff.simulation.knockout import resolve_tie
     return [
         resolve_tie(h, a, sampler=sampler, extra_time_factor=extra_time_factor,
-                    seed=int(rng.integers(2**32)), abilities=abilities, poisson_config=pcfg, rng=rng)
+                    seed=int(rng.integers(2**32)), abilities=abilities, poisson_config=pcfg,
+                    rng=rng, penalty_skill=penalty_skill)
         for h, a in pairs
     ]
 
@@ -285,14 +297,15 @@ def _knockout_sim_fn(abilities: TeamAbilities, cfg: Any) -> _KnockoutSimFn:
         sampler = _make_sampler(ab, pcfg, rng)
         pairs = [(qualified[i], qualified[i + 1]) for i in range(0, len(qualified), 2)]
         rounds: dict[str, dict[str, int]] = {}
-        current = _play_round(pairs, ab, sampler, rng, sim_cfg.extra_time_factor, pcfg)
+        pen = getattr(sim_cfg, "penalty_skill", 0.0)
+        current = _play_round(pairs, ab, sampler, rng, sim_cfg.extra_time_factor, pcfg, pen)
         rounds["R32"] = {w: 1 for w in current}
         for rnd in ("R16", "QF", "SF", "Final"):
             if len(current) <= 1:
                 break
             current = _play_round(
                 [(current[i], current[i + 1]) for i in range(0, len(current), 2)],
-                ab, sampler, rng, sim_cfg.extra_time_factor, pcfg,
+                ab, sampler, rng, sim_cfg.extra_time_factor, pcfg, pen,
             )
             rounds[rnd] = {w: 1 for w in current}
         return {"champion": current[0] if current else "", "rounds": rounds}
@@ -336,11 +349,11 @@ def run_forecast(
     result = LiveForecaster(
         _group_sim_fn(abilities), _knockout_sim_fn(abilities, resolved)
     ).run(state, abilities, n_simulations, seed)
-    scores = _representative_scores(
+    scores, pens = _representative_scores(
         abilities, result.representative_r32, result.round_probabilities,
-        getattr(resolved.poisson, "max_goals", 10),
+        getattr(resolved.poisson, "max_goals", 10), seed,
     )
-    return replace(result, representative_scores=scores)
+    return replace(result, representative_scores=scores, representative_pens=pens)
 
 
 class LiveForecaster:

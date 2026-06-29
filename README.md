@@ -158,7 +158,7 @@ All parameters live in `config/default.toml`:
 - Team strength is **time-decayed** (recent matches weigh more) and **static within the tournament**.
 - A **squad-market-value prior** (`poisson.market_value_prior_weight = 0.7`) adds a player-level signal — the current squad's total Transfermarkt value — on top of the Elo prior; it captures squad quality a results-only history misses (Groll et al., 2019). The weight 0.7 minimises backtest RPS (WC2018/2022 + 2026 groups) and gives title odds closest to the bookmaker/expert consensus.
 - Knockout matches are **neutral-venue** (no home advantage applied — hosts are not boosted).
-- **Extra time** scores at 1/3 of the regulation rate; **penalties** are a fair 50/50 coin flip.
+- **Extra time** scores at 1/3 of the regulation rate; the **penalty shootout** is near-random — `simulation.penalty_skill = 0.25` gives the stronger team only a small, capped edge (evidence: shootouts are close to a coin toss).
 - The displayed "predicted score" is the most-likely **decisive** scoreline (the win % already includes ET/penalties).
 - Calibration is tuned on only 3 past World Cups — wide confidence intervals.
 
