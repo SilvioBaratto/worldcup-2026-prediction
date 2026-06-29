@@ -452,6 +452,108 @@ def run_market_value_tuning(
     )
 
 
+# ── 2D prior tuning (elo × market value) over past World Cups ──────────────────
+
+_DEFAULT_2D_ELO_WEIGHTS: tuple[float, ...] = (0.0, 0.4, 0.8)
+_DEFAULT_2D_MV_WEIGHTS: tuple[float, ...] = (0.0, 0.2, 0.4, 0.6, 0.8)
+_HISTORICAL_WC_YEARS: tuple[int, ...] = (2018, 2022)
+
+
+def backtest_2d_prior_weights(
+    results: pd.DataFrame,
+    cfg: Any,
+    squad_values_by_year: dict[int, dict[str, float]],
+    elo_weights: "list[float] | tuple[float, ...]" = _DEFAULT_2D_ELO_WEIGHTS,
+    mv_weights: "list[float] | tuple[float, ...]" = _DEFAULT_2D_MV_WEIGHTS,
+    years: "list[int] | tuple[int, ...]" = _HISTORICAL_WC_YEARS,
+) -> pd.DataFrame:
+    """Joint (Elo × market-value) prior tuning, pooled over past World Cups.
+
+    For each year with bundled squad values, fits Dixon-Coles + Elo on all
+    matches **before** the tournament (no leakage), then scores that year's WC
+    matches for every ``(elo_weight, market_value_weight)`` grid point (Elo blend
+    first, then the as-of-tournament market-value blend). Returns a long DataFrame
+    with columns ``elo_weight``, ``market_value_weight``, ``rps``, ``log_loss``,
+    ``brier``, ``n_matches``. Lower RPS is better.
+    """
+    from worldcup_playoff.data.elo import compute_elo
+    from worldcup_playoff.simulation.poisson import (
+        blend_abilities_with_elo,
+        blend_abilities_with_market_value,
+        fit_dixon_coles,
+    )
+
+    df = results.copy()
+    df["DATE"] = pd.to_datetime(df["DATE"], errors="coerce")
+    max_goals = cfg.poisson.max_goals
+
+    fitted: dict[int, tuple[Any, dict[str, float], list[tuple[str, str, int]], dict[str, float]]] = {}
+    for year in years:
+        sv = squad_values_by_year.get(year)
+        if not sv:
+            continue
+        train = df[df["DATE"] < pd.Timestamp(f"{year}-05-01")]
+        wc = df[
+            (df["TOURNAMENT"] == _WC_TOURNAMENT)
+            & (df["DATE"].dt.year == year)
+            & df["HOME_GOALS"].notna()
+            & df["AWAY_GOALS"].notna()
+        ]
+        if train.empty or wc.empty:
+            continue
+        abilities = fit_dixon_coles(train, cfg.poisson)
+        elo = compute_elo(train, getattr(cfg, "elo", None)).final_ratings
+        matches = [
+            (r.HOME_TEAM, r.AWAY_TEAM, _outcome(int(r.HOME_GOALS), int(r.AWAY_GOALS)))
+            for r in wc.itertuples(index=False)
+            if r.HOME_TEAM in abilities.attack and r.AWAY_TEAM in abilities.attack
+        ]
+        if matches:
+            fitted[year] = (abilities, elo, matches, sv)
+
+    rows: list[dict[str, float]] = []
+    for ew in elo_weights:
+        for mw in mv_weights:
+            yt_all: list[int] = []
+            yp_all: list[list[float]] = []
+            for _year, (abilities, elo, matches, sv) in fitted.items():
+                blended = blend_abilities_with_elo(abilities, elo, ew) if ew > 0 else abilities
+                if mw > 0:
+                    blended = blend_abilities_with_market_value(blended, sv, mw)
+                yt_all.extend(o for _, _, o in matches)
+                yp_all.extend(_wdl_probs(blended, h, a, max_goals) for h, a, _ in matches)
+            if not yt_all:
+                continue
+            yt, yp = np.array(yt_all), np.array(yp_all)
+            rows.append(
+                {
+                    "elo_weight": float(ew),
+                    "market_value_weight": float(mw),
+                    "rps": rank_probability_score(yt, yp),
+                    "log_loss": multiclass_log_loss(yt, yp),
+                    "brier": brier_score(yt, yp),
+                    "n_matches": float(len(yt_all)),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def run_2d_prior_tuning(cfg: Any = None, root: Any = None) -> "pd.DataFrame | None":
+    """High-level CLI entry: joint Elo × market-value tuning over WC2018/2022."""
+    from worldcup_playoff.config import AppConfig
+    from worldcup_playoff.data.martj42_loader import load_martj42_results
+    from worldcup_playoff.data.squad_value import WC_SQUAD_VALUE_HISTORICAL_EUR_M
+
+    resolved = cfg if cfg is not None else AppConfig()
+    try:
+        results = load_martj42_results(resolved.martj42)
+    except Exception:
+        return None
+    if results is None or results.empty:
+        return None
+    return backtest_2d_prior_weights(results, resolved, WC_SQUAD_VALUE_HISTORICAL_EUR_M)
+
+
 class ModelEvaluator:
     """Evaluates classifier performance."""
 

@@ -173,6 +173,19 @@ def backtest(
             )
         else:
             _console.print("[yellow]Market-value tuning skipped (data unavailable).[/yellow]")
+        with _console.status("[bold]Joint Elo x market-value tuning over WC2018/2022..."):
+            grid = _evaluation.run_2d_prior_tuning(cfg=cfg, root=_root(config))
+        if grid is not None and not grid.empty:
+            _console.print(
+                "\n[bold]Joint Elo x market-value prior — pooled over WC2018/2022:[/bold]"
+            )
+            _console.print(grid.sort_values("rps").head(8).to_string(index=False))
+            best = grid.loc[grid["rps"].idxmin()]
+            _console.print(
+                f"[green]Best (elo_prior_weight={best['elo_weight']}, "
+                f"market_value_prior_weight={best['market_value_weight']}) "
+                f"RPS {best['rps']:.5f}[/green]"
+            )
         return
     with _console.status("[bold]Running backtest..."):
         result = _evaluation.run_backtest(cfg=cfg, root=_root(config))

@@ -6,7 +6,10 @@ import numpy as np
 import pandas as pd
 
 from worldcup_playoff.config import AppConfig
-from worldcup_playoff.models.evaluation import backtest_market_value_weight
+from worldcup_playoff.models.evaluation import (
+    backtest_2d_prior_weights,
+    backtest_market_value_weight,
+)
 
 
 def _results() -> pd.DataFrame:
@@ -30,7 +33,9 @@ def _results() -> pd.DataFrame:
                  "HOME_GOALS": 2, "AWAY_GOALS": 0, "TOURNAMENT": "FIFA World Cup"})
     rows.append({"DATE": "2026-06-16", "HOME_TEAM": "C", "AWAY_TEAM": "D",
                  "HOME_GOALS": 1, "AWAY_GOALS": 1, "TOURNAMENT": "FIFA World Cup"})
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+    df["NEUTRAL"] = True  # required by compute_elo when an Elo blend is applied
+    return df
 
 
 def test_market_value_tuning_returns_weight_indexed_metrics():
@@ -49,3 +54,39 @@ def test_market_value_tuning_empty_when_no_2026_group_matches():
     df = df[df["TOURNAMENT"] == "Friendly"]  # drop the WC2026 rows
     tbl = backtest_market_value_weight(df, AppConfig(), {"A": 1.0, "B": 1.0}, weights=(0.0,))
     assert tbl.empty
+
+
+def _historical_results() -> pd.DataFrame:
+    """Friendlies before 2018 + two 2018 WC matches to score against."""
+    teams = ["A", "B", "C", "D"]
+    rng = np.random.default_rng(1)
+    rows: list[dict[str, object]] = []
+    for rep in range(3):
+        for i, h in enumerate(teams):
+            for a in teams[i + 1 :]:
+                rows.append({
+                    "DATE": f"2017-0{rep + 1}-1{i}",
+                    "HOME_TEAM": h, "AWAY_TEAM": a,
+                    "HOME_GOALS": int(rng.integers(0, 4)),
+                    "AWAY_GOALS": int(rng.integers(0, 3)),
+                    "TOURNAMENT": "Friendly",
+                })
+    rows.append({"DATE": "2018-06-20", "HOME_TEAM": "A", "AWAY_TEAM": "B",
+                 "HOME_GOALS": 1, "AWAY_GOALS": 0, "TOURNAMENT": "FIFA World Cup"})
+    rows.append({"DATE": "2018-06-21", "HOME_TEAM": "C", "AWAY_TEAM": "D",
+                 "HOME_GOALS": 0, "AWAY_GOALS": 2, "TOURNAMENT": "FIFA World Cup"})
+    df = pd.DataFrame(rows)
+    df["NEUTRAL"] = True  # required by compute_elo when an Elo blend is applied
+    return df
+
+
+def test_2d_tuning_returns_grid_of_elo_and_market_value_weights():
+    grid = backtest_2d_prior_weights(
+        _historical_results(), AppConfig(),
+        {2018: {"A": 1000.0, "B": 10.0, "C": 500.0, "D": 50.0}},
+        elo_weights=(0.0, 0.8), mv_weights=(0.0, 0.5), years=(2018,),
+    )
+    assert {"elo_weight", "market_value_weight", "rps", "n_matches"} <= set(grid.columns)
+    assert len(grid) == 4  # 2 elo × 2 mv
+    assert (grid["n_matches"] == 2).all()
+    assert grid["rps"].notna().all()

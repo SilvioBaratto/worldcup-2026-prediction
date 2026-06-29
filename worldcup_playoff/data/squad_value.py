@@ -65,4 +65,32 @@ WC2026_SQUAD_VALUE_EUR_M: dict[str, float] = {
     "Qatar": 19.93,
 }
 
-__all__ = ["WC2026_SQUAD_VALUE_EUR_M"]
+# Historical total squad market value (EUR millions) *as of each tournament*,
+# from the published Transfermarkt-based rankings (planetfootball 2022; Goal.com
+# 2018). Used to validate the market-value prior on past World Cups. Coverage is
+# partial for the cheapest 2018 outsiders (omitted rather than guessed); the
+# blend simply leaves an unlisted team on its Elo-only abilities. 2014 is left
+# out — no complete, verifiable as-of-2014 source was available.
+WC_SQUAD_VALUE_HISTORICAL_EUR_M: dict[int, dict[str, float]] = {
+    2018: {
+        "France": 1037.0, "Spain": 1001.0, "Brazil": 948.0, "Germany": 896.0,
+        "England": 668.0, "Belgium": 602.0, "Argentina": 529.0, "Portugal": 355.0,
+        "Croatia": 291.0, "Uruguay": 280.0, "Senegal": 252.0, "Denmark": 200.0,
+        "Poland": 200.0, "Colombia": 196.0, "Serbia": 181.0, "Switzerland": 161.0,
+        "Egypt": 150.0, "Russia": 105.0, "Mexico": 101.0, "Nigeria": 100.0,
+        "Morocco": 90.0, "Sweden": 86.0, "South Korea": 63.0, "Iceland": 56.0,
+        "Japan": 53.0,
+    },
+    2022: {
+        "England": 1260.0, "Brazil": 1140.0, "France": 1060.0, "Portugal": 937.0,
+        "Spain": 902.0, "Germany": 855.5, "Argentina": 633.2, "Netherlands": 587.25,
+        "Belgium": 563.2, "Uruguay": 449.7, "Croatia": 377.0, "Serbia": 359.5,
+        "Denmark": 353.0, "Senegal": 288.0, "Switzerland": 281.0, "United States": 277.4,
+        "Poland": 255.6, "Morocco": 251.1, "Ghana": 216.9, "Canada": 187.3,
+        "Mexico": 176.1, "South Korea": 164.48, "Wales": 160.15, "Cameroon": 155.0,
+        "Japan": 154.0, "Ecuador": 146.5, "Tunisia": 62.4, "Iran": 59.53,
+        "Australia": 38.4, "Saudi Arabia": 25.2, "Costa Rica": 18.75, "Qatar": 14.9,
+    },
+}
+
+__all__ = ["WC2026_SQUAD_VALUE_EUR_M", "WC_SQUAD_VALUE_HISTORICAL_EUR_M"]
