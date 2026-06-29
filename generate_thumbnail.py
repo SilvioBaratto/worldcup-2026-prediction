@@ -201,6 +201,8 @@ body {{
   width:{WIDTH}px; height:{HEIGHT}px; overflow:hidden;
   font-family:'Space Grotesk',-apple-system,sans-serif;
   background:#0a0a0a; position:relative;
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:space-between; padding:55px 0 40px;
 }}
 .noise {{
   position:absolute; width:100%; height:100%;
@@ -244,7 +246,7 @@ body {{
   background-image:radial-gradient(circle, rgba(255,255,255,0.06) 2px, transparent 2px);
   background-size:30px 30px; z-index:1; }}
 
-.head {{ position:absolute; top:60px; left:50%; transform:translateX(-50%); text-align:center; z-index:60; width:94%; }}
+.head {{ text-align:center; z-index:60; width:94%; flex-shrink:0; }}
 .kicker {{ display:inline-block; background:#E4002B; color:#fff; font-weight:700;
   font-size:34px; letter-spacing:8px; padding:14px 34px; transform:rotate(-2deg);
   box-shadow:8px 8px 0 #000; border:4px solid #fff; text-transform:uppercase; }}
@@ -255,31 +257,31 @@ body {{
   font-weight:700; font-size:38px; letter-spacing:6px; padding:12px 40px;
   transform:rotate(1deg); box-shadow:8px 8px 0 #000; text-transform:uppercase; }}
 
-.content {{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-  z-index:55; width:90%; display:flex; flex-direction:column; gap:34px; }}
-.card {{ background:#000; border:5px solid #fff; box-shadow:18px 18px 0 #00A859;
-  padding:46px 40px; transform:rotate(-1deg); }}
+.content {{ z-index:55; width:90%; flex:1; display:flex; flex-direction:column;
+  justify-content:center; gap:26px; padding:24px 0; }}
+.card {{ background:#000; border:5px solid #fff; box-shadow:16px 16px 0 #00A859;
+  padding:34px 38px; transform:rotate(-1deg); }}
 .card.hero {{ box-shadow:22px 22px 0 #E4002B; transform:rotate(-1.5deg) scale(1.02); }}
 .teams {{ display:flex; align-items:center; justify-content:space-between; gap:20px; }}
 .team {{ flex:1; display:flex; flex-direction:column; align-items:center; gap:14px; }}
-.flag {{ font-size:96px; line-height:1; }}
-.tname {{ color:#fff; font-size:34px; font-weight:700; letter-spacing:1px; text-align:center; }}
+.flag {{ font-size:82px; line-height:1; }}
+.tname {{ color:#fff; font-size:32px; font-weight:700; letter-spacing:1px; text-align:center; }}
 .team.lose {{ opacity:0.45; }}
 .team.win .tname {{ color:#FFC72C; }}
 .score {{ display:flex; align-items:center; gap:18px; }}
-.sc {{ font-size:130px; font-weight:700; color:#fff; line-height:0.8; }}
+.sc {{ font-size:104px; font-weight:700; color:#fff; line-height:0.8; }}
 .sc.win {{ color:#FFC72C; }}
-.dash {{ font-size:70px; color:#E4002B; font-weight:700; }}
-.verdict {{ display:flex; align-items:center; justify-content:center; gap:22px;
-  margin-top:38px; flex-wrap:wrap; }}
-.check {{ color:#00A859; font-size:56px; font-weight:700; }}
-.wname {{ color:#fff; font-size:48px; font-weight:700; letter-spacing:2px; }}
-.prob {{ background:#FFC72C; color:#0a0a0a; font-size:44px; font-weight:700;
-  padding:8px 26px; box-shadow:6px 6px 0 #000; }}
+.dash {{ font-size:58px; color:#E4002B; font-weight:700; }}
+.verdict {{ display:flex; align-items:center; justify-content:center; gap:20px;
+  margin-top:28px; flex-wrap:wrap; }}
+.check {{ color:#00A859; font-size:48px; font-weight:700; }}
+.wname {{ color:#fff; font-size:44px; font-weight:700; letter-spacing:2px; }}
+.prob {{ background:#FFC72C; color:#0a0a0a; font-size:40px; font-weight:700;
+  padding:8px 24px; box-shadow:6px 6px 0 #000; }}
 .aet {{ background:#E4002B; color:#fff; font-size:28px; font-weight:700; letter-spacing:3px;
   padding:8px 20px; box-shadow:5px 5px 0 #000; }}
 
-.footer {{ position:absolute; bottom:70px; left:50%; transform:translateX(-50%) rotate(2deg);
+.footer {{ flex-shrink:0; transform:rotate(2deg);
   z-index:60; background:#fff; color:#0a0a0a; font-weight:700; font-size:34px;
   letter-spacing:5px; padding:18px 46px; box-shadow:10px 10px 0 #E4002B; text-transform:uppercase; }}
 .footer .ai {{ color:#E4002B; }}
