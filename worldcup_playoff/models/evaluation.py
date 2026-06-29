@@ -342,6 +342,116 @@ def run_prior_tuning(
     )
 
 
+# ── Market-value-prior tuning (validated on the WC2026 group stage) ────────────
+
+_DEFAULT_MV_WEIGHTS: tuple[float, ...] = (0.0, 0.1, 0.2, 0.3, 0.4, 0.5)
+_WC2026_GROUP_START: pd.Timestamp = pd.Timestamp("2026-06-11")
+_WC2026_KNOCKOUT_START: pd.Timestamp = pd.Timestamp("2026-06-28")
+
+
+def backtest_market_value_weight(
+    results: pd.DataFrame,
+    cfg: Any,
+    squad_values: dict[str, float],
+    weights: "list[float] | tuple[float, ...]" = _DEFAULT_MV_WEIGHTS,
+    elo_weight: float | None = None,
+) -> pd.DataFrame:
+    """Tune ``poisson.market_value_prior_weight`` on the WC2026 group stage.
+
+    Historical squad values for past World Cups are not bundled, so the market-
+    value prior is validated on the only data we have values for: the real 2026
+    group stage. Dixon-Coles + Elo are fit on all matches **before** the
+    tournament (train cutoff = the first group match, so there is no leakage);
+    abilities are blended with Elo at ``elo_weight`` (default
+    ``cfg.poisson.elo_prior_weight``) and then, for each candidate weight, with
+    the squad-market-value prior. Each played group match is scored by its
+    neutral-venue W/D/L probability against the real result.
+
+    Returns a ``market_value_weight``-indexed DataFrame of pooled ``rps`` /
+    ``log_loss`` / ``brier`` (+ ``n_matches``). Lower RPS is better.
+    """
+    from worldcup_playoff.data.elo import compute_elo
+    from worldcup_playoff.simulation.poisson import (
+        blend_abilities_with_elo,
+        blend_abilities_with_market_value,
+        fit_dixon_coles,
+    )
+
+    df = results.copy()
+    df["DATE"] = pd.to_datetime(df["DATE"], errors="coerce")
+    train = df[df["DATE"] < _WC2026_GROUP_START]
+    grp = df[
+        (df["TOURNAMENT"] == _WC_TOURNAMENT)
+        & (df["DATE"] >= _WC2026_GROUP_START)
+        & (df["DATE"] < _WC2026_KNOCKOUT_START)
+        & df["HOME_GOALS"].notna()
+        & df["AWAY_GOALS"].notna()
+    ]
+    empty = pd.DataFrame(
+        columns=["rps", "log_loss", "brier", "n_matches"]
+    ).rename_axis("market_value_weight")
+    if train.empty or grp.empty:
+        return empty
+
+    abilities = fit_dixon_coles(train, cfg.poisson)
+    ew = elo_weight if elo_weight is not None else getattr(cfg.poisson, "elo_prior_weight", 0.0)
+    if ew > 0.0:
+        abilities = blend_abilities_with_elo(
+            abilities, compute_elo(train, getattr(cfg, "elo", None)).final_ratings, ew
+        )
+    matches = [
+        (r.HOME_TEAM, r.AWAY_TEAM, _outcome(int(r.HOME_GOALS), int(r.AWAY_GOALS)))
+        for r in grp.itertuples(index=False)
+        if r.HOME_TEAM in abilities.attack and r.AWAY_TEAM in abilities.attack
+    ]
+    if not matches:
+        return empty
+
+    max_goals = cfg.poisson.max_goals
+    yt = np.array([o for _, _, o in matches])
+    rows: list[dict[str, float]] = []
+    for w in weights:
+        blended = blend_abilities_with_market_value(abilities, squad_values, w)
+        yp = np.array([_wdl_probs(blended, h, a, max_goals) for h, a, _ in matches])
+        rows.append(
+            {
+                "market_value_weight": float(w),
+                "rps": rank_probability_score(yt, yp),
+                "log_loss": multiclass_log_loss(yt, yp),
+                "brier": brier_score(yt, yp),
+                "n_matches": float(len(matches)),
+            }
+        )
+    return pd.DataFrame(rows).set_index("market_value_weight")
+
+
+def run_market_value_tuning(
+    cfg: Any = None,
+    root: Any = None,
+    weights: "list[float] | tuple[float, ...] | None" = None,
+) -> "pd.DataFrame | None":
+    """High-level CLI entry: tune ``market_value_prior_weight`` on the 2026 groups.
+
+    Returns a weight-indexed DataFrame of RPS / log-loss / Brier, or None when the
+    martj42 cache is unavailable. ``root`` is accepted for parity with the other
+    tuning entries.
+    """
+    from worldcup_playoff.config import AppConfig
+    from worldcup_playoff.data.martj42_loader import load_martj42_results
+    from worldcup_playoff.data.squad_value import WC2026_SQUAD_VALUE_EUR_M
+
+    resolved = cfg if cfg is not None else AppConfig()
+    try:
+        results = load_martj42_results(resolved.martj42)
+    except Exception:
+        return None
+    if results is None or results.empty:
+        return None
+    return backtest_market_value_weight(
+        results, resolved, WC2026_SQUAD_VALUE_EUR_M, weights or _DEFAULT_MV_WEIGHTS
+    )
+
+
 class ModelEvaluator:
     """Evaluates classifier performance."""
 

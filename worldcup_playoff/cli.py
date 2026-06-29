@@ -151,6 +151,7 @@ def backtest(
         with _console.status("[bold]Tuning elo_prior_weight over WC2014/18/22..."):
             table = _evaluation.run_prior_tuning(cfg=cfg, root=_root(config))
         if table is not None and not table.empty:
+            _console.print("[bold]Elo prior — WC2014/18/22:[/bold]")
             _console.print(table.to_string())
             best = table["rps"].idxmin()
             _console.print(
@@ -158,6 +159,20 @@ def backtest(
             )
         else:
             _console.print("[yellow]Prior tuning skipped (martj42 results unavailable).[/yellow]")
+        with _console.status("[bold]Tuning market_value_prior_weight on the 2026 groups..."):
+            mv = _evaluation.run_market_value_tuning(cfg=cfg, root=_root(config))
+        if mv is not None and not mv.empty:
+            _console.print(
+                "\n[bold]Squad-market-value prior — validated on the WC2026 group stage:[/bold]"
+            )
+            _console.print(mv.to_string())
+            best_mv = mv["rps"].idxmin()
+            _console.print(
+                f"[green]Best market_value_prior_weight = {best_mv} "
+                f"(RPS {mv['rps'].min():.5f}) on the 2026 group stage[/green]"
+            )
+        else:
+            _console.print("[yellow]Market-value tuning skipped (data unavailable).[/yellow]")
         return
     with _console.status("[bold]Running backtest..."):
         result = _evaluation.run_backtest(cfg=cfg, root=_root(config))
