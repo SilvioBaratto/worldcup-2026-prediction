@@ -241,6 +241,14 @@ def _fetch_state_and_abilities(cfg: Any) -> tuple[TournamentState, TeamAbilities
         elo = compute_elo(df, getattr(cfg, "elo", None))
         abilities = blend_abilities_with_elo(abilities, elo.final_ratings, weight)
         logger.info("Blended Dixon-Coles abilities with Elo prior (weight=%.2f).", weight)
+    mv_weight = getattr(cfg.poisson, "market_value_prior_weight", 0.0)
+    if mv_weight > 0.0:
+        from worldcup_playoff.data.squad_value import WC2026_SQUAD_VALUE_EUR_M
+        from worldcup_playoff.simulation.poisson import blend_abilities_with_market_value
+        abilities = blend_abilities_with_market_value(
+            abilities, WC2026_SQUAD_VALUE_EUR_M, mv_weight
+        )
+        logger.info("Blended abilities with squad-market-value prior (weight=%.2f).", mv_weight)
     try:
         state = fetch_tournament_state()
     except Exception:

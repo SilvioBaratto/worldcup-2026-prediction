@@ -96,7 +96,7 @@ generate_thumbnail.py        # daily 1080x1920 prediction thumbnail
 
 ## Configuration
 
-- `config/default.toml` — `[simulation]` (n_simulations=100000, extra_time_factor, seed), `[poisson]` (half-life, ρ, `elo_prior_weight`=0.8), `[elo]`, `[hybrid]`/`[rf]` + `[odds]` (calibration), `[client]`/`[live]`/`[martj42]` (data sources).
+- `config/default.toml` — `[simulation]` (n_simulations=100000, extra_time_factor, seed), `[poisson]` (half-life, ρ, `elo_prior_weight`=0.8, `market_value_prior_weight`=0.0 squad-value prior), `[elo]`, `[hybrid]`/`[rf]` + `[odds]` (calibration), `[client]`/`[live]`/`[martj42]` (data sources).
 - `config/playoff_2026*.toml` — the real Round of 32 bracket (reference; the forecast derives R32 from standings).
 - Environment: `FOOTBALL_DATA_API_KEY` — optional football-data.org token (live fixtures only).
 

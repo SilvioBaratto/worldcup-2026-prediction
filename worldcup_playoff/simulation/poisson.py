@@ -89,6 +89,31 @@ def blend_abilities_with_elo(
     )
 
 
+def blend_abilities_with_market_value(
+    abilities: TeamAbilities,
+    squad_values_eur_m: dict[str, float],
+    weight: float,
+) -> TeamAbilities:
+    """Shrink abilities toward a squad-market-value strength prior (player-level signal).
+
+    Market value is a "wisdom of the crowd" estimate of the *current* squad
+    quality — information a results-only history (Elo / fitted goals) misses. We
+    take ``log(value)`` (squad values span ~20m to ~1.5bn, a heavy right tail) so
+    the prior is roughly linear in strength, then reuse the same standardize-and-
+    blend logic as the Elo prior. ``weight <= 0`` returns the abilities unchanged;
+    teams without a value are left untouched. Apply *after* the Elo blend to add
+    the squad signal on top of the long-run strength prior.
+    """
+    if weight <= 0.0:
+        return abilities
+    log_values = {
+        team: float(np.log(value))
+        for team, value in squad_values_eur_m.items()
+        if value > 0 and team in abilities.attack
+    }
+    return blend_abilities_with_elo(abilities, log_values, weight)
+
+
 @dataclass(frozen=True)
 class _PreparedData:
     teams: list[str]

@@ -164,6 +164,10 @@ class PoissonConfig(BaseModel):
     # Shrink fitted attack/defence toward an Elo-implied strength prior:
     # 0.0 = pure Dixon-Coles (unchanged), 1.0 = pure Elo-shaped abilities.
     elo_prior_weight: float = 0.0
+    # Additionally shrink toward a squad-market-value prior (player-level signal),
+    # applied AFTER the Elo blend. 0.0 = off (default); a modest value (~0.2–0.3)
+    # adds the current-squad signal on top of Elo. Tune via backtest before raising.
+    market_value_prior_weight: float = 0.0
 
     @field_validator("half_life_days")
     @classmethod
@@ -172,11 +176,11 @@ class PoissonConfig(BaseModel):
             raise ValueError("half_life_days must be positive")
         return v
 
-    @field_validator("elo_prior_weight")
+    @field_validator("elo_prior_weight", "market_value_prior_weight")
     @classmethod
-    def elo_prior_weight_in_unit_interval(cls, v: float) -> float:
+    def prior_weight_in_unit_interval(cls, v: float) -> float:
         if not 0.0 <= v <= 1.0:
-            raise ValueError("elo_prior_weight must be in [0, 1]")
+            raise ValueError("prior weight must be in [0, 1]")
         return v
 
     @field_validator("max_goals")
