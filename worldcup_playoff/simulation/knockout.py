@@ -91,21 +91,26 @@ def _shootout_winner(
     poisson_config: PoissonConfig | None,
     rng: np.random.Generator | None,
     penalty_skill: float,
+    extra_time_factor: float = 0.33,
 ) -> str:
     """Penalty-shootout winner: a small, literature-calibrated edge for the stronger
     team when *penalty_skill* > 0 and abilities are available, else a fair coin flip.
 
-    The edge is the team's share of *decisive* regulation outcomes, tilted around
-    0.5 by *penalty_skill* and clamped to ±``_PEN_MAX_TILT`` so shootouts stay
-    close to random (as the evidence suggests).
+    The shootout is reached only when the tie is level after extra time, so the
+    edge is conditioned on that state: it is the stronger team's share of
+    *decisive* outcomes over the full **120 minutes** (regulation + extra time,
+    via ``λ × (1 + extra_time_factor)``), not the 90-minute regulation matrix.
+    That share is tilted around 0.5 by *penalty_skill* and clamped to
+    ±``_PEN_MAX_TILT`` so shootouts stay close to random (as the evidence suggests).
     """
     if abilities is None or rng is None or penalty_skill <= 0.0:
         return _penalty_flip(home, away, seed)
     cfg = poisson_config or PoissonConfig()
+    full = 1.0 + extra_time_factor  # 120 minutes of scoring: regulation + extra time
     lh, la = lambdas(abilities, home, away, neutral=True)
-    mat = score_matrix(lh, la, rho=abilities.rho, max_goals=cfg.max_goals)
-    hw = float(np.tril(mat, -1).sum())  # P(home wins in regulation)
-    aw = float(np.triu(mat, 1).sum())   # P(away wins in regulation)
+    mat = score_matrix(lh * full, la * full, rho=abilities.rho, max_goals=cfg.max_goals)
+    hw = float(np.tril(mat, -1).sum())  # P(home leads over 120')
+    aw = float(np.triu(mat, 1).sum())   # P(away leads over 120')
     decisive = hw + aw
     edge = (hw - aw) / decisive if decisive > 0 else 0.0  # in [-1, 1]
     prob_home = 0.5 + penalty_skill * 0.5 * edge
@@ -227,7 +232,9 @@ def resolve_tie(
     h, a = h + eth, a + eta
     if h != a:
         return home if h > a else away
-    return _shootout_winner(home, away, seed, abilities, poisson_config, rng, penalty_skill)
+    return _shootout_winner(
+        home, away, seed, abilities, poisson_config, rng, penalty_skill, extra_time_factor
+    )
 
 
 # ---------------------------------------------------------------------------
